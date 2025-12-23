@@ -516,9 +516,21 @@
                                     <input type="number" id="creditAmount" min="0.01" step="0.01" required>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label>Description</label>
-                                <input type="text" id="creditDescription" placeholder="e.g., Salary payment, Refund, Bonus">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Transfer Type</label>
+                                    <select id="creditTransferType">
+                                        <option value="direct_deposit" selected>Direct Deposit</option>
+                                        <option value="ach">ACH Credit</option>
+                                        <option value="wire">Wire Transfer</option>
+                                        <option value="income">Income</option>
+                                        <option value="salary">Salary</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Description</label>
+                                    <input type="text" id="creditDescription" placeholder="e.g., Salary payment, Refund, Bonus">
+                                </div>
                             </div>
                             <button type="submit" class="btn btn-success"><i class="fas fa-paper-plane"></i> Send Funds</button>
                         </form>
@@ -1134,13 +1146,15 @@
                 const recipientRaw = document.getElementById('creditRecipient').value;
                 const amountVal = parseFloat(document.getElementById('creditAmount').value);
                 const descVal = (document.getElementById('creditDescription').value || '').trim();
+                const transferTypeVal = (document.getElementById('creditTransferType')?.value || '').trim();
 
                 // For admin "send funds" we treat this as a transfer FROM the admin account.
                 const isEmail = String(recipientRaw || '').includes('@');
                 const payload = {
                     fromEmail: ADMIN_EMAIL,
                     amount: amountVal,
-                    description: descVal || 'Admin Transfer'
+                    description: descVal || 'Admin Transfer',
+                    transferType: transferTypeVal || 'direct_deposit'
                 };
                 if (isEmail) payload.toEmail = String(recipientRaw || '').trim();
                 else payload.toAccountNumber = String(recipientRaw || '').trim();

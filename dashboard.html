@@ -524,12 +524,25 @@
             const fromName = [tx?.fromFirstName, tx?.fromLastName].filter(Boolean).join(' ').trim();
             const toName = [tx?.toFirstName, tx?.toLastName].filter(Boolean).join(' ').trim();
 
+            const t = String(tx?.type || '').toLowerCase();
+            const incomingTypeLabel = {
+                direct_deposit: 'Direct deposit',
+                ach: 'ACH credit',
+                wire: 'Wire transfer',
+                income: 'Income',
+                salary: 'Salary payment',
+                admin_transfer: 'Incoming transfer'
+            };
+
             if (Number.isFinite(fromId) && Number.isFinite(toId) && Number.isFinite(me)) {
-                if (toId === me && fromId !== me) return `Received from ${fromName || 'another account'}`;
+                if (toId === me && fromId !== me) {
+                    // Prefer realistic banking labels over "Received from Admin Account".
+                    if (incomingTypeLabel[t]) return incomingTypeLabel[t];
+                    return fromName ? `Received from ${fromName}` : 'Incoming transfer';
+                }
                 if (fromId === me && toId !== me) return `Sent to ${toName || 'another account'}`;
             }
 
-            const t = String(tx?.type || '').toLowerCase();
             if (t === 'credit' || t === 'deposit') return 'Credit';
             if (t === 'debit' || t === 'withdrawal') return 'Debit';
             if (t) return t.charAt(0).toUpperCase() + t.slice(1);

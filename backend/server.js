@@ -884,6 +884,23 @@ function normalizeTransactionRow(row) {
     };
 }
 
+// Admin transfer types: keep tight + user-friendly. This value is stored in transactions.type
+// so it can be used for display (e.g., "Direct Deposit") on the user dashboard.
+const ADMIN_TRANSFER_TYPES = new Set([
+    'admin_transfer',
+    'ach',
+    'wire',
+    'direct_deposit',
+    'income',
+    'salary'
+]);
+
+function sanitizeAdminTransferType(raw) {
+    const t = String(raw || '').trim().toLowerCase();
+    if (!t) return 'direct_deposit';
+    return ADMIN_TRANSFER_TYPES.has(t) ? t : 'direct_deposit';
+}
+
 // Calculate available balance (ledger - holds)
 async function getAvailableBalance(userId) {
     const [users] = await pool.execute('SELECT balance FROM users WHERE id = ?', [userId]);
@@ -2580,7 +2597,7 @@ app.get('/api/admin/users-with-balances', requireAuth, requireAdmin, async (req,
 app.post('/api/admin/fund-user', requireAuth, requireAdmin, async (req, res) => {
     const connection = await pool.getConnection();
     try {
-        const { toEmail, toAccountNumber, amount, description } = req.body;
+        const { toEmail, toAccountNumber, amount, description, transferType, type } = req.body;
 
         const amountValue = parseFloat(amount);
         if (!Number.isFinite(amountValue) || amountValue <= 0) {
@@ -2627,10 +2644,11 @@ app.post('/api/admin/fund-user', requireAuth, requireAdmin, async (req, res) => 
         await connection.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amountValue, recipient.id]);
 
         const reference = 'ADM' + Date.now().toString(36).toUpperCase();
+        const txType = sanitizeAdminTransferType(transferType || type);
         await connection.execute(
             `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
-             VALUES (?, ?, ?, 'admin_transfer', 'completed', ?, ?)`,
-            [sender.id, recipient.id, amountValue, (description || 'Admin Transfer'), reference]
+             VALUES (?, ?, ?, ?, 'completed', ?, ?)`,
+            [sender.id, recipient.id, amountValue, txType, (description || 'Admin Transfer'), reference]
         );
 
         await connection.commit();
@@ -2848,6 +2866,8 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
             toAccountNumber,
             amount,
             description,
+            transferType,
+            type,
             bypassBalanceCheck,
             // tolerate alternate field names used in other clients
             senderEmail,
@@ -2926,11 +2946,15 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
         // Generate reference
         const reference = 'ADM' + Date.now().toString(36).toUpperCase();
 
+        // Store a realistic transfer type for user-facing labeling.
+        // (Default to direct deposit if not provided.)
+        const txType = sanitizeAdminTransferType(transferType || type);
+
         // Log transaction
         await connection.execute(
             `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
-             VALUES (?, ?, ?, 'admin_transfer', 'completed', ?, ?)`,
-            [sender.id, recipient.id, amountValue, description || 'Admin Transfer', reference]
+             VALUES (?, ?, ?, ?, 'completed', ?, ?)`,
+            [sender.id, recipient.id, amountValue, txType, description || 'Admin Transfer', reference]
         );
 
         // Get updated balances
