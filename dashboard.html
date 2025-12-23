@@ -438,11 +438,28 @@
                     // Load transactions and activity
                     loadTransactions();
                     loadActivity();
+                    loadNotifications();
                 } else {
                     window.location.href = 'signin.html';
                 }
             } catch (e) {
                 console.error('Dashboard load error:', e);
+            }
+        }
+
+        async function loadNotifications() {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/notifications?limit=10`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('notifBadge').textContent = data.unreadCount || 0;
+                }
+            } catch (e) {
+                // Keep badge as-is on errors
+                console.error('Notifications load error:', e);
             }
         }
         
@@ -595,7 +612,7 @@
         }
         
         function showAllTransactions() {
-            alert('Full transaction history coming soon!');
+            location.href = 'transactions.html';
         }
         
         function toggleSidebar() {

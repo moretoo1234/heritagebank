@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Transactions - Heritage Bank</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+        .container { max-width: 1100px; margin: 30px auto; padding: 20px; }
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .back-btn { width: 40px; height: 40px; border-radius: 50%; background: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .back-btn i { color: #1a472a; }
+        h1 { color: #1a472a; }
+
+        .card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .toolbar-left { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .input { padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; min-width: 240px; }
+        .btn { padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: #1a472a; color: white; }
+        .btn-primary:hover { background: #2d5f3f; }
+        .btn-secondary { background: #d4af37; color: #1a472a; }
+        .btn-secondary:hover { background: #c19b2e; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 10px; border-bottom: 1px solid #eee; text-align: left; vertical-align: middle; }
+        th { color: #1a472a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { color: #333; font-size: 14px; }
+        .muted { color: #777; font-size: 12px; }
+        .amount.credit { color: #28a745; font-weight: 700; }
+        .amount.debit { color: #dc3545; font-weight: 700; }
+
+        .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+        .pill.completed { background: #d4edda; color: #155724; }
+        .pill.pending { background: #fff3cd; color: #856404; }
+        .pill.failed { background: #f8d7da; color: #721c24; }
+
+        .empty { padding: 40px; text-align: center; color: #666; }
+        .empty i { font-size: 42px; color: #ddd; display: block; margin-bottom: 10px; }
+
+        @media (max-width: 700px) {
+            .input { min-width: 180px; }
+            th:nth-child(3), td:nth-child(3), th:nth-child(4), td:nth-child(4) { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="location.href='dashboard.html'" title="Back to Dashboard"><i class="fas fa-arrow-left"></i></button>
+            <div>
+                <h1>Transactions</h1>
+                <div class="muted">Full transaction history (latest 100)</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <input class="input" id="search" placeholder="Search description, reference, type…" oninput="applyFilter()" />
+                    <button class="btn btn-secondary" onclick="refresh()"><i class="fas fa-sync"></i> Refresh</button>
+                </div>
+                <button class="btn btn-primary" onclick="downloadCurrentStatement()"><i class="fas fa-file-invoice"></i> Download Statement</button>
+            </div>
+
+            <div id="tableWrap"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3001'
+            : '';
+
+        let userId = null;
+        let allTx = [];
+
+        function formatMoney(amount) {
+            const v = Number(amount || 0);
+            return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatDate(d) {
+            try {
+                return new Date(d).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            } catch {
+                return '-';
+            }
+        }
+
+        function pill(status) {
+            const s = (status || 'completed').toLowerCase();
+            const cls = (s === 'completed' || s === 'success') ? 'completed' : (s === 'pending' ? 'pending' : 'failed');
+            return `<span class="pill ${cls}">${s}</span>`;
+        }
+
+        function isCredit(tx) {
+            return tx.type === 'credit' || tx.type === 'deposit' || tx.type === 'received';
+        }
+
+        async function init() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                location.href = 'signin.html';
+                return;
+            }
+
+            const profileRes = await fetch(`${API_URL}/api/auth/profile`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const profile = await profileRes.json();
+            if (!profile.success || !profile.user) {
+                location.href = 'signin.html';
+                return;
+            }
+            userId = profile.user.id;
+            await refresh();
+        }
+
+        async function refresh() {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/user/${userId}/transactions`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            allTx = (data && data.success && Array.isArray(data.transactions)) ? data.transactions : [];
+            applyFilter();
+        }
+
+        function applyFilter() {
+            const q = (document.getElementById('search').value || '').trim().toLowerCase();
+            const filtered = !q
+                ? allTx
+                : allTx.filter(t => {
+                    const hay = `${t.description || ''} ${t.reference || ''} ${t.type || ''}`.toLowerCase();
+                    return hay.includes(q);
+                });
+            renderTable(filtered);
+        }
+
+        function renderTable(list) {
+            const wrap = document.getElementById('tableWrap');
+            if (!list.length) {
+                wrap.innerHTML = `
+                    <div class="empty">
+                        <i class="fas fa-receipt"></i>
+                        <div>No transactions found.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            wrap.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Reference</th>
+                            <th>Status</th>
+                            <th style="text-align:right;">Amount</th>
+                            <th>Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${list.map(tx => {
+                            const credit = isCredit(tx);
+                            const cls = credit ? 'credit' : 'debit';
+                            const sign = credit ? '+' : '-';
+                            const date = tx.createdAt || tx.date || tx.created_at;
+                            return `
+                                <tr>
+                                    <td>${formatDate(date)}</td>
+                                    <td>
+                                        <div>${tx.description || tx.type || 'Transaction'}</div>
+                                        <div class="muted">From: ${tx.fromFirstName || ''} ${tx.fromLastName || ''} • To: ${tx.toFirstName || ''} ${tx.toLastName || ''}</div>
+                                    </td>
+                                    <td>${tx.type || '-'}</td>
+                                    <td>${tx.reference || '-'}</td>
+                                    <td>${pill(tx.status)}</td>
+                                    <td class="amount ${cls}" style="text-align:right;">${sign}$${formatMoney(Math.abs(tx.amount))}</td>
+                                    <td>
+                                        <button class="btn btn-secondary" style="padding:8px 10px;" onclick="downloadReceipt(${tx.id})">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function downloadReceipt(id) {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/transactions/${id}/receipt`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!response.ok) {
+                alert('Error downloading receipt');
+                return;
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `receipt_${id}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function downloadCurrentStatement() {
+            location.href = 'statements.html';
+        }
+
+        init().catch(err => {
+            console.error(err);
+            alert('Failed to load transactions. Please sign in again.');
+            location.href = 'signin.html';
+        });
+    </script>
+</body>
+</html>

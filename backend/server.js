@@ -387,6 +387,22 @@ async function initializeDatabase() {
             )
         `);
 
+        // Activity logs table (powers "Recent Activity" feeds)
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS activity_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NULL,
+                action_type VARCHAR(100) NOT NULL,
+                action_details TEXT,
+                ip_address VARCHAR(45),
+                user_agent TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_user_activity (user_id),
+                INDEX idx_activity_created (created_at),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            )
+        `);
+
         // Support Tickets table
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS support_tickets (
@@ -2303,6 +2319,37 @@ app.get('/api/user/profile', async (req, res) => {
     }
 });
 
+// Frontend compatibility: several pages call /api/auth/profile
+app.get('/api/auth/profile', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ success: false, message: 'No token' });
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [decoded.id]);
+
+        if (users.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
+
+        const user = users[0];
+        res.json({
+            success: true,
+            user: {
+                id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                phone: user.phone,
+                accountNumber: user.accountNumber,
+                routingNumber: user.routingNumber,
+                balance: parseFloat(user.balance),
+                isAdmin: Boolean(user.isAdmin) || user.isAdmin === 1 || user.isAdmin === '1'
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Admin: Get all users with balances
 app.get('/api/admin/users-with-balances', async (req, res) => {
     try {
@@ -2846,6 +2893,54 @@ app.get('/api/user/:userId/transactions', async (req, res) => {
         );
 
         res.json({ success: true, transactions, txCount: transactions.length });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// User: Recent activity feed for dashboard
+app.get('/api/user/:userId/activity', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Authorization token required' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const requestedUserId = parseInt(req.params.userId, 10);
+        if (!Number.isFinite(requestedUserId)) {
+            return res.status(400).json({ success: false, message: 'Invalid userId' });
+        }
+
+        const [requesterRows] = await pool.execute('SELECT id, isAdmin FROM users WHERE id = ?', [decoded.id]);
+        const requester = requesterRows[0];
+        const isAdmin = !!requester?.isAdmin;
+
+        if (!isAdmin && decoded.id !== requestedUserId) {
+            return res.status(403).json({ success: false, message: 'Forbidden' });
+        }
+
+        let logs = [];
+        try {
+            const [rows] = await pool.execute(
+                'SELECT id, action_type, action_details, ip_address, created_at FROM activity_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+                [requestedUserId]
+            );
+            logs = rows;
+        } catch (e) {
+            // activity_logs may not exist on some older DBs; return empty list
+            logs = [];
+        }
+
+        const activities = logs.map((l) => ({
+            id: l.id,
+            action: l.action_type,
+            description: l.action_details,
+            ipAddress: l.ip_address,
+            timestamp: l.created_at
+        }));
+
+        res.json({ success: true, activities });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -4388,6 +4483,81 @@ app.delete('/api/user/documents/:id', async (req, res) => {
 
 // ==================== BENEFICIARIES (User API) ====================
 
+// Frontend compatibility: some pages call /api/beneficiaries*
+app.get('/api/beneficiaries', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ success: false, message: 'No token' });
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const [beneficiaries] = await pool.execute(
+            'SELECT * FROM beneficiaries WHERE userId = ? ORDER BY createdAt DESC',
+            [decoded.id]
+        );
+        res.json({ success: true, beneficiaries });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.post('/api/beneficiaries', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ success: false, message: 'No token' });
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { name, nickname, accountNumber, routingNumber, bankName, email } = req.body;
+
+        if (!name || !accountNumber) {
+            return res.status(400).json({ success: false, message: 'Name and account number required' });
+        }
+
+        const [result] = await pool.execute(
+            'INSERT INTO beneficiaries (userId, name, nickname, accountNumber, routingNumber, bankName, email, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+            [decoded.id, name, nickname, accountNumber, routingNumber, bankName || 'Heritage Bank', email || null]
+        );
+
+        res.json({ success: true, message: 'Beneficiary added', beneficiaryId: result.insertId });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.put('/api/beneficiaries/:id', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ success: false, message: 'No token' });
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { id } = req.params;
+        const { name, nickname, accountNumber, routingNumber, bankName, email } = req.body;
+
+        await pool.execute(
+            'UPDATE beneficiaries SET name = ?, nickname = ?, accountNumber = ?, routingNumber = ?, bankName = ?, email = ? WHERE id = ? AND userId = ?',
+            [name, nickname, accountNumber, routingNumber, bankName, email || null, id, decoded.id]
+        );
+
+        res.json({ success: true, message: 'Beneficiary updated' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.delete('/api/beneficiaries/:id', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ success: false, message: 'No token' });
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { id } = req.params;
+
+        await pool.execute('DELETE FROM beneficiaries WHERE id = ? AND userId = ?', [id, decoded.id]);
+        res.json({ success: true, message: 'Beneficiary deleted' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Get user beneficiaries
 app.get('/api/user/beneficiaries', async (req, res) => {
     try {
@@ -4413,15 +4583,15 @@ app.post('/api/user/beneficiaries', async (req, res) => {
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        const { name, nickname, accountNumber, routingNumber, bankName } = req.body;
+        const { name, nickname, accountNumber, routingNumber, bankName, email } = req.body;
 
         if (!name || !accountNumber) {
             return res.status(400).json({ success: false, message: 'Name and account number required' });
         }
 
         const [result] = await pool.execute(
-            'INSERT INTO beneficiaries (userId, name, nickname, accountNumber, routingNumber, bankName, createdAt) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-            [decoded.id, name, nickname, accountNumber, routingNumber, bankName || 'Heritage Bank']
+            'INSERT INTO beneficiaries (userId, name, nickname, accountNumber, routingNumber, bankName, email, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+            [decoded.id, name, nickname, accountNumber, routingNumber, bankName || 'Heritage Bank', email || null]
         );
 
         res.json({ success: true, message: 'Beneficiary added', beneficiaryId: result.insertId });
@@ -4438,11 +4608,11 @@ app.put('/api/user/beneficiaries/:id', async (req, res) => {
 
         const decoded = jwt.verify(token, JWT_SECRET);
         const { id } = req.params;
-        const { name, nickname, accountNumber, routingNumber, bankName } = req.body;
+        const { name, nickname, accountNumber, routingNumber, bankName, email } = req.body;
 
         await pool.execute(
-            'UPDATE beneficiaries SET name = ?, nickname = ?, accountNumber = ?, routingNumber = ?, bankName = ? WHERE id = ? AND userId = ?',
-            [name, nickname, accountNumber, routingNumber, bankName, id, decoded.id]
+            'UPDATE beneficiaries SET name = ?, nickname = ?, accountNumber = ?, routingNumber = ?, bankName = ?, email = ? WHERE id = ? AND userId = ?',
+            [name, nickname, accountNumber, routingNumber, bankName, email || null, id, decoded.id]
         );
 
         res.json({ success: true, message: 'Beneficiary updated' });
