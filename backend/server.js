@@ -49,6 +49,37 @@ if (!JWT_SECRET) {
     process.exit(1);
 }
 
+// Auth helpers
+function requireAuth(req, res, next) {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Authorization token required' });
+        }
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.auth = { id: decoded.id, email: decoded.email };
+        return next();
+    } catch (error) {
+        return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    }
+}
+
+async function requireAdmin(req, res, next) {
+    try {
+        if (!req.auth?.id) {
+            return res.status(401).json({ success: false, message: 'Authorization token required' });
+        }
+        const [rows] = await pool.execute('SELECT isAdmin FROM users WHERE id = ?', [req.auth.id]);
+        const isAdmin = !!rows[0]?.isAdmin;
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Admin access required' });
+        }
+        return next();
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
 // Banking Details
 const ROUTING_NUMBER = process.env.ROUTING_NUMBER || '091238946';
 const BANK_NAME = 'Heritage Bank';
@@ -2370,7 +2401,7 @@ app.post('/api/admin/create-user', async (req, res) => {
 });
 
 // Admin: Lookup user by email or account number
-app.post('/api/admin/lookup-user', async (req, res) => {
+app.post('/api/admin/lookup-user', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { email, accountNumber } = req.body;
         const emailValue = email ? String(email).trim().toLowerCase() : '';
@@ -2402,7 +2433,7 @@ app.post('/api/admin/lookup-user', async (req, res) => {
 });
 
 // Admin: Lookup user by email or account number (GET version for frontend compatibility)
-app.get('/api/admin/lookup-user', async (req, res) => {
+app.get('/api/admin/lookup-user', requireAuth, requireAdmin, async (req, res) => {
     try {
         const emailValue = req.query.email ? String(req.query.email).trim().toLowerCase() : '';
         const accountNumberValue = req.query.accountNumber ? String(req.query.accountNumber).trim() : '';
@@ -2433,7 +2464,8 @@ app.get('/api/admin/lookup-user', async (req, res) => {
 });
 
 // Admin: Transfer between any accounts (with optional bypass)
-app.post('/api/admin/transfer', async (req, res) => {
+app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
+    const connection = await pool.getConnection();
     try {
         const {
             fromEmail,
@@ -2460,34 +2492,38 @@ app.post('/api/admin/transfer', async (req, res) => {
         const recipientEmailValue = (toEmail || recipientEmail) ? String(toEmail || recipientEmail).trim().toLowerCase() : '';
         const recipientAccountValue = (toAccountNumber || recipientAccountNumber) ? String(toAccountNumber || recipientAccountNumber).trim() : '';
         
-        // Find sender
+        await connection.beginTransaction();
+
+        // Find & lock sender
         let sender;
         if (senderEmailValue) {
-            const [users] = await pool.execute('SELECT * FROM users WHERE email = ?', [senderEmailValue]);
+            const [users] = await connection.execute('SELECT * FROM users WHERE email = ? FOR UPDATE', [senderEmailValue]);
             sender = users[0];
         } else if (senderAccountValue) {
-            const [users] = await pool.execute('SELECT * FROM users WHERE accountNumber = ?', [senderAccountValue]);
+            const [users] = await connection.execute('SELECT * FROM users WHERE accountNumber = ? FOR UPDATE', [senderAccountValue]);
             sender = users[0];
         }
 
         if (!sender) {
+            await connection.rollback();
             return res.status(404).json({
                 success: false,
                 message: `Sender not found${senderAccountValue ? ` (accountNumber: ${senderAccountValue})` : ''}${senderEmailValue ? ` (email: ${senderEmailValue})` : ''}`
             });
         }
 
-        // Find recipient
+        // Find & lock recipient
         let recipient;
         if (recipientEmailValue) {
-            const [users] = await pool.execute('SELECT * FROM users WHERE email = ?', [recipientEmailValue]);
+            const [users] = await connection.execute('SELECT * FROM users WHERE email = ? FOR UPDATE', [recipientEmailValue]);
             recipient = users[0];
         } else if (recipientAccountValue) {
-            const [users] = await pool.execute('SELECT * FROM users WHERE accountNumber = ?', [recipientAccountValue]);
+            const [users] = await connection.execute('SELECT * FROM users WHERE accountNumber = ? FOR UPDATE', [recipientAccountValue]);
             recipient = users[0];
         }
 
         if (!recipient) {
+            await connection.rollback();
             return res.status(404).json({
                 success: false,
                 message: `Recipient not found${recipientAccountValue ? ` (accountNumber: ${recipientAccountValue})` : ''}${recipientEmailValue ? ` (email: ${recipientEmailValue})` : ''}`
@@ -2495,90 +2531,119 @@ app.post('/api/admin/transfer', async (req, res) => {
         }
 
         if (sender.id === recipient.id) {
+            await connection.rollback();
             return res.status(400).json({ success: false, message: 'Cannot transfer to the same account' });
         }
 
         // Check balance unless bypassing
-        if (!bypassBalanceCheck && parseFloat(sender.balance) < amountValue) {
-            return res.status(400).json({ 
-                success: false, 
-                message: `Insufficient funds. Sender balance: $${parseFloat(sender.balance).toLocaleString()}` 
+        const senderBalance = parseFloat(sender.balance);
+        if (!bypassBalanceCheck && senderBalance < amountValue) {
+            await connection.rollback();
+            return res.status(400).json({
+                success: false,
+                message: `Insufficient funds. Sender balance: $${senderBalance.toLocaleString()}`
             });
         }
 
         // Execute transfer
-        await pool.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amountValue, sender.id]);
-        await pool.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amountValue, recipient.id]);
+        await connection.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amountValue, sender.id]);
+        await connection.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amountValue, recipient.id]);
 
         // Generate reference
         const reference = 'ADM' + Date.now().toString(36).toUpperCase();
 
         // Log transaction
-        await pool.execute(
+        await connection.execute(
             `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
              VALUES (?, ?, ?, 'admin_transfer', 'completed', ?, ?)`,
             [sender.id, recipient.id, amountValue, description || 'Admin Transfer', reference]
         );
 
         // Get updated balances
-        const [updatedSender] = await pool.execute('SELECT balance FROM users WHERE id = ?', [sender.id]);
-        const [updatedRecipient] = await pool.execute('SELECT balance FROM users WHERE id = ?', [recipient.id]);
+        const [updatedSender] = await connection.execute('SELECT balance FROM users WHERE id = ?', [sender.id]);
+        const [updatedRecipient] = await connection.execute('SELECT balance FROM users WHERE id = ?', [recipient.id]);
+
+        await connection.commit();
 
         res.json({
             success: true,
             message: `$${amountValue.toLocaleString()} transferred from ${sender.firstName} ${sender.lastName} to ${recipient.firstName} ${recipient.lastName}`,
             reference,
-            senderNewBalance: updatedSender[0].balance,
-            recipientNewBalance: updatedRecipient[0].balance
+            senderNewBalance: updatedSender[0]?.balance,
+            recipientNewBalance: updatedRecipient[0]?.balance
         });
     } catch (error) {
+        try { await connection.rollback(); } catch (e) {}
         res.status(500).json({ success: false, message: error.message });
+    } finally {
+        connection.release();
     }
 });
 
 // Admin: Credit account (add money)
-app.post('/api/admin/credit-account', async (req, res) => {
+app.post('/api/admin/credit-account', requireAuth, requireAdmin, async (req, res) => {
+    const connection = await pool.getConnection();
     try {
-        const { email, accountNumber, amount, reason, notes } = req.body;
-        
+        const { email, accountNumber, amount, reason, notes, recipient, description } = req.body;
+
+        const amountValue = parseFloat(amount);
+        if (!Number.isFinite(amountValue) || amountValue <= 0) {
+            return res.status(400).json({ success: false, message: 'Valid amount is required' });
+        }
+
+        // Support admin.html payload: { recipient: "email-or-account", description }
+        const recipientValue = recipient ? String(recipient).trim() : '';
+        const emailValue = email ? String(email).trim().toLowerCase() : (recipientValue.includes('@') ? recipientValue.toLowerCase() : '');
+        const accountNumberValue = accountNumber ? String(accountNumber).trim() : (!recipientValue.includes('@') ? recipientValue : '');
+
+        await connection.beginTransaction();
+
         let user;
-        if (email) {
-            const [users] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
+        if (emailValue) {
+            const [users] = await connection.execute('SELECT * FROM users WHERE email = ? FOR UPDATE', [emailValue]);
             user = users[0];
-        } else if (accountNumber) {
-            const [users] = await pool.execute('SELECT * FROM users WHERE accountNumber = ?', [accountNumber]);
+        } else if (accountNumberValue) {
+            const [users] = await connection.execute('SELECT * FROM users WHERE accountNumber = ? FOR UPDATE', [accountNumberValue]);
             user = users[0];
         }
 
         if (!user) {
+            await connection.rollback();
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         const previousBalance = parseFloat(user.balance);
-        const creditAmount = parseFloat(amount);
-        const newBalance = previousBalance + creditAmount;
+        const newBalance = previousBalance + amountValue;
 
-        await pool.execute('UPDATE users SET balance = ? WHERE id = ?', [newBalance, user.id]);
+        await connection.execute('UPDATE users SET balance = ? WHERE id = ?', [newBalance, user.id]);
 
         // Generate reference
         const reference = 'CRD' + Date.now().toString(36).toUpperCase();
 
+        const txDescription = description || (reason ? `${reason}${notes ? `: ${notes}` : ''}` : 'Admin Credit');
+
         // Log transaction
-        await pool.execute(
+        await connection.execute(
             `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
              VALUES (NULL, ?, ?, 'credit', 'completed', ?, ?)`,
-            [user.id, creditAmount, `${reason}: ${notes || 'Admin credit'}`, reference]
+            [user.id, amountValue, txDescription, reference]
         );
 
         // Log activity
-        await pool.execute(
-            'INSERT INTO activity_logs (user_id, action_type, action_details) VALUES (?, ?, ?)',
-            [user.id, 'ADMIN_CREDIT', `$${creditAmount} credited. Reason: ${reason}. Notes: ${notes || 'N/A'}`]
-        );
+        try {
+            await connection.execute(
+                'INSERT INTO activity_logs (user_id, action_type, action_details) VALUES (?, ?, ?)',
+                [user.id, 'ADMIN_CREDIT', `$${amountValue} credited. ${txDescription}`]
+            );
+        } catch (e) {
+            // activity_logs table may not exist in some environments; ignore.
+        }
+
+        await connection.commit();
 
         res.json({
             success: true,
-            message: `$${creditAmount.toLocaleString()} credited to ${user.firstName} ${user.lastName}`,
+            message: `$${amountValue.toLocaleString()} credited to ${user.firstName} ${user.lastName}`,
             reference,
             previousBalance,
             newBalance,
@@ -2588,62 +2653,78 @@ app.post('/api/admin/credit-account', async (req, res) => {
             }
         });
     } catch (error) {
+        try { await connection.rollback(); } catch (e) {}
         res.status(500).json({ success: false, message: error.message });
+    } finally {
+        connection.release();
     }
 });
 
 // Admin: Debit account (remove money)
-app.post('/api/admin/debit-account', async (req, res) => {
+app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res) => {
+    const connection = await pool.getConnection();
     try {
-        const { email, accountNumber, amount, reason, notes, forceDebit } = req.body;
-        
+        const { email, accountNumber, amount, reason, notes, forceDebit, recipient, description } = req.body;
+
+        const amountValue = parseFloat(amount);
+        if (!Number.isFinite(amountValue) || amountValue <= 0) {
+            return res.status(400).json({ success: false, message: 'Valid amount is required' });
+        }
+
+        const recipientValue = recipient ? String(recipient).trim() : '';
+        const emailValue = email ? String(email).trim().toLowerCase() : (recipientValue.includes('@') ? recipientValue.toLowerCase() : '');
+        const accountNumberValue = accountNumber ? String(accountNumber).trim() : (!recipientValue.includes('@') ? recipientValue : '');
+
+        await connection.beginTransaction();
+
         let user;
-        if (email) {
-            const [users] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
+        if (emailValue) {
+            const [users] = await connection.execute('SELECT * FROM users WHERE email = ? FOR UPDATE', [emailValue]);
             user = users[0];
-        } else if (accountNumber) {
-            const [users] = await pool.execute('SELECT * FROM users WHERE accountNumber = ?', [accountNumber]);
+        } else if (accountNumberValue) {
+            const [users] = await connection.execute('SELECT * FROM users WHERE accountNumber = ? FOR UPDATE', [accountNumberValue]);
             user = users[0];
         }
 
         if (!user) {
+            await connection.rollback();
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         const previousBalance = parseFloat(user.balance);
-        const debitAmount = parseFloat(amount);
 
-        // Check if debit would cause negative balance
-        if (!forceDebit && previousBalance < debitAmount) {
-            return res.status(400).json({ 
-                success: false, 
-                message: `Insufficient balance. Current: $${previousBalance.toLocaleString()}, Debit: $${debitAmount.toLocaleString()}. Use force debit to allow negative balance.` 
+        if (!forceDebit && previousBalance < amountValue) {
+            await connection.rollback();
+            return res.status(400).json({
+                success: false,
+                message: `Insufficient balance. Current: $${previousBalance.toLocaleString()}, Debit: $${amountValue.toLocaleString()}. Use force debit to allow negative balance.`
             });
         }
 
-        const newBalance = previousBalance - debitAmount;
+        const newBalance = previousBalance - amountValue;
+        await connection.execute('UPDATE users SET balance = ? WHERE id = ?', [newBalance, user.id]);
 
-        await pool.execute('UPDATE users SET balance = ? WHERE id = ?', [newBalance, user.id]);
-
-        // Generate reference
         const reference = 'DBT' + Date.now().toString(36).toUpperCase();
+        const txDescription = description || (reason ? `${reason}${notes ? `: ${notes}` : ''}` : 'Admin Debit');
 
-        // Log transaction
-        await pool.execute(
+        await connection.execute(
             `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
              VALUES (?, NULL, ?, 'debit', 'completed', ?, ?)`,
-            [user.id, debitAmount, `${reason}: ${notes || 'Admin debit'}`, reference]
+            [user.id, amountValue, txDescription, reference]
         );
 
-        // Log activity
-        await pool.execute(
-            'INSERT INTO activity_logs (user_id, action_type, action_details) VALUES (?, ?, ?)',
-            [user.id, 'ADMIN_DEBIT', `$${debitAmount} debited. Reason: ${reason}. Notes: ${notes || 'N/A'}`]
-        );
+        try {
+            await connection.execute(
+                'INSERT INTO activity_logs (user_id, action_type, action_details) VALUES (?, ?, ?)',
+                [user.id, 'ADMIN_DEBIT', `$${amountValue} debited. ${txDescription}`]
+            );
+        } catch (e) {}
+
+        await connection.commit();
 
         res.json({
             success: true,
-            message: `$${debitAmount.toLocaleString()} debited from ${user.firstName} ${user.lastName}`,
+            message: `$${amountValue.toLocaleString()} debited from ${user.firstName} ${user.lastName}`,
             reference,
             previousBalance,
             newBalance,
@@ -2653,7 +2734,10 @@ app.post('/api/admin/debit-account', async (req, res) => {
             }
         });
     } catch (error) {
+        try { await connection.rollback(); } catch (e) {}
         res.status(500).json({ success: false, message: error.message });
+    } finally {
+        connection.release();
     }
 });
 
