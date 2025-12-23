@@ -6,10 +6,19 @@ const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2/promise');
+const crypto = require('crypto');
 const path = require('path');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+let nodemailer = null;
+try {
+    // Optional dependency: only needed when SMTP is configured.
+    // If not installed, password reset endpoints will return a clear config error.
+    nodemailer = require('nodemailer');
+} catch (e) {
+    nodemailer = null;
+}
 // Load environment variables.
 // - In production (Render/etc), values are typically provided via real environment variables.
 // - For local development, explicitly load `backend/.env` even if the process is started from repo root.
@@ -296,6 +305,10 @@ async function initializeDatabase() {
         // Best-effort schema alignment for newer auth features.
         try { await connection.execute('ALTER TABLE users ADD COLUMN forcePasswordChange BOOLEAN DEFAULT false'); } catch (e) {}
 
+        // Password reset fields (used by forgot-password / admin password reset)
+        try { await connection.execute('ALTER TABLE users ADD COLUMN resetToken VARCHAR(255) NULL'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN resetTokenExpiry TIMESTAMP NULL'); } catch (e) {}
+
         // Best-effort schema alignment for user profile fields (older DBs may be missing these columns).
         try { await connection.execute('ALTER TABLE users ADD COLUMN phone VARCHAR(20) NULL'); } catch (e) {}
         try { await connection.execute('ALTER TABLE users ADD COLUMN dateOfBirth DATE NULL'); } catch (e) {}
@@ -444,6 +457,26 @@ async function initializeDatabase() {
                 INDEX idx_user_login (userId),
                 INDEX idx_login_time (loginAt),
                 INDEX idx_suspicious (isSuspicious)
+            )
+        `);
+
+        // Session revocation tracking (best-effort). Note: JWTs are stateless; this mainly powers
+        // the UI “active sessions” list and “logout session/all” buttons.
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS user_session_revocations (
+                userId INT NOT NULL PRIMARY KEY,
+                revokedAfter TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS user_session_revocations_specific (
+                userId INT NOT NULL,
+                sessionKey VARCHAR(64) NOT NULL,
+                revokedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (userId, sessionKey),
+                FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+                INDEX idx_user_session_revoked (userId, revokedAt)
             )
         `);
 
@@ -856,6 +889,54 @@ async function createNotification(userId, type, title, message, data = null, pri
     } catch (error) {
         console.error('Failed to create notification:', error.message);
     }
+}
+
+function getSmtpConfig() {
+    return {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        secure: String(process.env.SMTP_SECURE || '').toLowerCase() === 'true',
+        appBaseUrl: process.env.APP_BASE_URL
+    };
+}
+
+async function sendTransactionalEmail({ to, subject, text, html }) {
+    const cfg = getSmtpConfig();
+    const hasAll = !!(cfg.host && cfg.port && cfg.user && cfg.pass && cfg.from);
+    if (!hasAll) {
+        const missing = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM']
+            .filter((k) => !process.env[k]);
+        const msg = `Email service not configured. Missing: ${missing.join(', ')}`;
+        const err = new Error(msg);
+        err.code = 'EMAIL_NOT_CONFIGURED';
+        throw err;
+    }
+    if (!nodemailer) {
+        const err = new Error('Email dependency not installed (nodemailer).');
+        err.code = 'EMAIL_NOT_CONFIGURED';
+        throw err;
+    }
+
+    const transporter = nodemailer.createTransport({
+        host: cfg.host,
+        port: cfg.port,
+        secure: cfg.secure,
+        auth: {
+            user: cfg.user,
+            pass: cfg.pass
+        }
+    });
+
+    await transporter.sendMail({
+        from: cfg.from,
+        to,
+        subject,
+        text,
+        html
+    });
 }
 
 // ==================== BANKING UTILITY FUNCTIONS ====================
@@ -4858,8 +4939,8 @@ app.post('/api/auth/forgot-password', async (req, res) => {
             return res.json({ success: true, message: 'If email exists, reset link sent' });
         }
 
-        // Generate reset token (in production, send via email)
-        const resetToken = Math.random().toString(36).substring(2, 15);
+        // Generate reset token (NEVER return it in API response)
+        const resetToken = crypto.randomBytes(24).toString('hex');
         const resetExpiry = new Date(Date.now() + 3600000); // 1 hour
         
         await pool.execute(
@@ -4867,12 +4948,33 @@ app.post('/api/auth/forgot-password', async (req, res) => {
             [resetToken, resetExpiry, email]
         );
 
-        res.json({ 
-            success: true, 
-            message: 'Password reset instructions sent to email',
-            // For demo purposes only - remove in production
-            resetToken: resetToken
-        });
+        const appBaseUrl = process.env.APP_BASE_URL;
+        if (!appBaseUrl) {
+            return res.status(500).json({
+                success: false,
+                message: 'APP_BASE_URL is not configured (needed to send reset link)'
+            });
+        }
+
+        const resetLink = `${String(appBaseUrl).replace(/\/$/, '')}/forgot-password.html?email=${encodeURIComponent(email)}&token=${encodeURIComponent(resetToken)}`;
+        const emailText = `We received a request to reset your Heritage Bank password.\n\nReset your password using this link (valid for 1 hour):\n${resetLink}\n\nIf you did not request this, you can ignore this email.`;
+        const emailHtml = `<p>We received a request to reset your Heritage Bank password.</p><p><a href="${resetLink}">Reset your password</a> (valid for 1 hour)</p><p>If you did not request this, you can ignore this email.</p>`;
+        try {
+            await sendTransactionalEmail({
+                to: email,
+                subject: 'Reset your Heritage Bank password',
+                text: emailText,
+                html: emailHtml
+            });
+        } catch (e) {
+            // Don’t leak resetToken; just report config issue.
+            if (e && e.code === 'EMAIL_NOT_CONFIGURED') {
+                return res.status(500).json({ success: false, message: e.message });
+            }
+            throw e;
+        }
+
+        res.json({ success: true, message: 'Password reset instructions sent to email' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -5211,36 +5313,32 @@ app.post('/api/admin/reverse-transaction/:transactionId', requireAuth, requireAd
 app.post('/api/admin/force-password-reset/:userId', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
-        const { temporaryPassword } = req.body;
-
-        const temp = (temporaryPassword !== undefined && temporaryPassword !== null)
-            ? String(temporaryPassword)
-            : '';
-
-        // Allow generating a temporary password if one isn't provided.
-        const effectiveTemp = temp || (`Temp-${Math.random().toString(36).slice(2, 10)}!`);
-
-        if (effectiveTemp.length < 8) {
-            return res.status(400).json({ success: false, message: 'temporaryPassword must be at least 8 characters' });
-        }
+        // Admin-triggered reset should not reveal passwords/tokens in API.
+        // We create a reset token and email the user a reset link.
 
         const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [userId]);
         if (users.length === 0) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const hashedPassword = await bcrypt.hash(effectiveTemp, 10);
-        
+        const user = users[0];
+        if (!user.email) {
+            return res.status(400).json({ success: false, message: 'User has no email on file' });
+        }
+
+        const resetToken = crypto.randomBytes(24).toString('hex');
+        const resetExpiry = new Date(Date.now() + 3600000); // 1 hour
+
         try {
             await pool.execute(
-                'UPDATE users SET password = ?, forcePasswordChange = 1 WHERE id = ?',
-                [hashedPassword, userId]
+                'UPDATE users SET resetToken = ?, resetTokenExpiry = ?, forcePasswordChange = 1 WHERE id = ?',
+                [resetToken, resetExpiry, userId]
             );
         } catch (e) {
             // In case the DB doesn't have forcePasswordChange yet.
             await pool.execute(
-                'UPDATE users SET password = ? WHERE id = ?',
-                [hashedPassword, userId]
+                'UPDATE users SET resetToken = ?, resetTokenExpiry = ? WHERE id = ?',
+                [resetToken, resetExpiry, userId]
             );
         }
 
@@ -5250,11 +5348,32 @@ app.post('/api/admin/force-password-reset/:userId', requireAuth, requireAdmin, a
             [userId, 'PASSWORD_RESET', 'Admin forced password reset', req.ip]
         );
 
-        res.json({ 
-            success: true, 
-            message: 'Password reset successfully',
-            temporaryPassword: effectiveTemp // Only for demo - send via secure channel in production
-        });
+        const appBaseUrl = process.env.APP_BASE_URL;
+        if (!appBaseUrl) {
+            return res.status(500).json({
+                success: false,
+                message: 'APP_BASE_URL is not configured (needed to send reset link)'
+            });
+        }
+
+        const resetLink = `${String(appBaseUrl).replace(/\/$/, '')}/forgot-password.html?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(resetToken)}`;
+        const emailText = `An administrator requested a password reset for your Heritage Bank account.\n\nReset your password using this link (valid for 1 hour):\n${resetLink}`;
+        const emailHtml = `<p>An administrator requested a password reset for your Heritage Bank account.</p><p><a href="${resetLink}">Reset your password</a> (valid for 1 hour)</p>`;
+        try {
+            await sendTransactionalEmail({
+                to: user.email,
+                subject: 'Heritage Bank password reset',
+                text: emailText,
+                html: emailHtml
+            });
+        } catch (e) {
+            if (e && e.code === 'EMAIL_NOT_CONFIGURED') {
+                return res.status(500).json({ success: false, message: e.message });
+            }
+            throw e;
+        }
+
+        res.json({ success: true, message: 'Password reset email sent to user' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -5532,6 +5651,29 @@ app.put('/api/user/profile/complete', async (req, res) => {
 
 // ==================== LOGIN HISTORY & SESSIONS ====================
 
+let _loginHistoryColumnsCache = null;
+let _loginHistoryColumnsCacheAt = 0;
+async function getLoginHistoryTableColumns() {
+    const now = Date.now();
+    if (_loginHistoryColumnsCache && (now - _loginHistoryColumnsCacheAt) < 5 * 60 * 1000) {
+        return _loginHistoryColumnsCache;
+    }
+    try {
+        const [rows] = await pool.execute('SHOW COLUMNS FROM login_history');
+        const cols = Array.isArray(rows) ? rows.map(r => String(r.Field || '')).filter(Boolean) : [];
+        _loginHistoryColumnsCache = cols;
+        _loginHistoryColumnsCacheAt = now;
+        return cols;
+    } catch (e) {
+        return null;
+    }
+}
+
+function computeSessionKey(ip, userAgent) {
+    const raw = `${String(ip || '').trim()}|${String(userAgent || '').trim()}`;
+    return crypto.createHash('sha256').update(raw).digest('hex');
+}
+
 // Get login history
 app.get('/api/user/security/login-history', async (req, res) => {
     try {
@@ -5557,17 +5699,91 @@ app.get('/api/user/security/active-sessions', async (req, res) => {
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        
-        // Return mock sessions for now - in production, track actual sessions
-        const sessions = [
-            {
-                id: 'session_current',
-                deviceName: 'Current Device',
-                browserName: 'Chrome',
-                location: 'Current Location',
-                lastActivity: new Date()
-            }
-        ];
+
+        const cols = await getLoginHistoryTableColumns();
+        const colSet = new Set((cols || []).map(c => String(c).toLowerCase()));
+        const hasCol = (name) => colSet.has(String(name).toLowerCase());
+
+        const ipCol = hasCol('ipAddress') ? 'ipAddress' : (hasCol('ip_address') ? 'ip_address' : null);
+        const uaCol = hasCol('userAgent') ? 'userAgent' : (hasCol('user_agent') ? 'user_agent' : null);
+        const statusCol = hasCol('loginStatus') ? 'loginStatus' : (hasCol('login_status') ? 'login_status' : null);
+        const timeCol = hasCol('loginAt') ? 'loginAt' : (hasCol('login_at') ? 'login_at' : (hasCol('createdAt') ? 'createdAt' : (hasCol('created_at') ? 'created_at' : null)));
+
+        if (!ipCol || !uaCol || !timeCol) {
+            // If schema is missing required fields, return empty list (no mock data).
+            return res.json({ success: true, sessions: [] });
+        }
+
+        const timeExpr = timeCol ? `MAX(${timeCol})` : 'MAX(NOW())';
+        const minTimeExpr = timeCol ? `MIN(${timeCol})` : 'MIN(NOW())';
+        const statusFilter = statusCol ? `AND ${statusCol} = 'success'` : '';
+
+        // Pull recent “session-like” groups from real login history.
+        const [rows] = await pool.execute(`
+            SELECT ${ipCol} AS ip,
+                   ${uaCol} AS userAgent,
+                   ${timeExpr} AS lastActivity,
+                   ${minTimeExpr} AS firstSeen,
+                   COUNT(*) AS loginCount
+            FROM login_history
+            WHERE userId = ?
+            ${statusFilter}
+            GROUP BY ${ipCol}, ${uaCol}
+            ORDER BY lastActivity DESC
+            LIMIT 10
+        `, [decoded.id]);
+
+        // Apply revocations
+        let revokedAfter = null;
+        try {
+            const [globalRows] = await pool.execute(
+                'SELECT revokedAfter FROM user_session_revocations WHERE userId = ? LIMIT 1',
+                [decoded.id]
+            );
+            revokedAfter = globalRows?.[0]?.revokedAfter || null;
+        } catch (e) {
+            revokedAfter = null;
+        }
+
+        let revokedKeys = new Set();
+        try {
+            const [specRows] = await pool.execute(
+                'SELECT sessionKey FROM user_session_revocations_specific WHERE userId = ?',
+                [decoded.id]
+            );
+            revokedKeys = new Set((specRows || []).map(r => String(r.sessionKey || '')));
+        } catch (e) {
+            revokedKeys = new Set();
+        }
+
+        const sessions = (rows || [])
+            .map(r => {
+                const ip = r.ip || '';
+                const ua = r.userAgent || '';
+                const sessionKey = computeSessionKey(ip, ua);
+                return {
+                    id: sessionKey,
+                    deviceName: ua ? String(ua).slice(0, 80) : 'Unknown Device',
+                    browserName: ua ? String(ua).slice(0, 40) : 'Unknown',
+                    location: ip || 'Unknown',
+                    ipAddress: ip || null,
+                    userAgent: ua || null,
+                    firstSeen: r.firstSeen || null,
+                    lastActivity: r.lastActivity || null,
+                    loginCount: Number(r.loginCount || 0)
+                };
+            })
+            .filter(s => {
+                if (revokedKeys.has(s.id)) return false;
+                if (revokedAfter && s.lastActivity) {
+                    try {
+                        return new Date(s.lastActivity).getTime() > new Date(revokedAfter).getTime();
+                    } catch (e) {
+                        return true;
+                    }
+                }
+                return true;
+            });
 
         res.json({ success: true, sessions });
     } catch (error) {
@@ -5581,10 +5797,20 @@ app.post('/api/user/security/logout-session/:sessionId', async (req, res) => {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
 
-        jwt.verify(token, JWT_SECRET);
-        
-        // In production, invalidate the session
-        res.json({ success: true, message: 'Session logged out' });
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { sessionId } = req.params;
+        const sessionKey = String(sessionId || '').trim();
+        if (!sessionKey || sessionKey.length < 16) {
+            return res.status(400).json({ success: false, message: 'Invalid session id' });
+        }
+
+        // Best-effort: revoke the “session” in our UI list (JWT remains valid until expiry).
+        await pool.execute(
+            'INSERT INTO user_session_revocations_specific (userId, sessionKey, revokedAt) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE revokedAt = NOW()',
+            [decoded.id, sessionKey]
+        );
+
+        res.json({ success: true, message: 'Session removed from active sessions list' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -5596,10 +5822,18 @@ app.post('/api/user/security/logout-all', async (req, res) => {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
 
-        jwt.verify(token, JWT_SECRET);
-        
-        // In production, invalidate all user sessions
-        res.json({ success: true, message: 'All sessions logged out' });
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        await pool.execute(
+            'INSERT INTO user_session_revocations (userId, revokedAfter) VALUES (?, NOW()) ON DUPLICATE KEY UPDATE revokedAfter = NOW()',
+            [decoded.id]
+        );
+        // Also clear specific revocations (optional) so the global cutoff is authoritative.
+        try {
+            await pool.execute('DELETE FROM user_session_revocations_specific WHERE userId = ?', [decoded.id]);
+        } catch (e) {}
+
+        res.json({ success: true, message: 'All sessions removed from active sessions list' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
