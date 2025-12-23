@@ -195,6 +195,9 @@
         .loader { text-align: center; padding: 40px; color: #888; }
         .loader i { font-size: 30px; margin-bottom: 10px; }
 
+        .clickable-row { cursor: pointer; }
+        .clickable-row:hover { background: rgba(255,215,0,0.08); }
+
         /* Quick Actions */
         .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
 
@@ -624,6 +627,17 @@
         </div>
     </div>
 
+    <!-- Transaction Detail Modal -->
+    <div id="transactionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-receipt"></i> Transaction Details</h3>
+                <button class="modal-close" onclick="closeModal('transactionModal')">&times;</button>
+            </div>
+            <div id="transactionModalContent"></div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? 'http://localhost:3001'
@@ -841,6 +855,113 @@
             );
         }
 
+        // Keep the last loaded transaction list in memory so we can show details on click.
+        // (Avoids needing an extra API endpoint for transaction-by-id.)
+        let ADMIN_TRANSACTIONS_CACHE = [];
+
+        function escapeHtml(value) {
+            const s = String(value ?? '');
+            return s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatMoney(value) {
+            const n = Number(value);
+            if (!isFinite(n)) return '$0.00';
+            return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function findTxnById(id) {
+            const txnId = Number(id);
+            if (!isFinite(txnId)) return null;
+            return ADMIN_TRANSACTIONS_CACHE.find(t => Number(t.id) === txnId) || null;
+        }
+
+        async function downloadTxnReceipt(txnId) {
+            try {
+                const res = await fetch(`${API_BASE}/api/transactions/${txnId}/receipt`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                if (!res.ok) {
+                    const text = await res.text().catch(() => '');
+                    throw new Error(`Receipt download failed (${res.status}) ${text}`);
+                }
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `transaction_receipt_${txnId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error('Error downloading receipt:', e);
+                alert('Could not download receipt. Please try again.');
+            }
+        }
+
+        function openTransactionDetails(txnId) {
+            const t = findTxnById(txnId);
+            if (!t) {
+                alert('Transaction details not available. Please refresh transactions and try again.');
+                return;
+            }
+
+            const created = t.createdAt || t.created_at || t.created || t.timestamp;
+            const createdText = created ? (isNaN(new Date(created).getTime()) ? String(created) : new Date(created).toLocaleString()) : '-';
+
+            const fromName = (t.senderFirst ? `${t.senderFirst} ${t.senderLast || ''}`.trim() : '') || '-';
+            const toName = (t.recipientFirst ? `${t.recipientFirst} ${t.recipientLast || ''}`.trim() : '') || '-';
+
+            const fromEmail = t.senderEmail || '-';
+            const toEmail = t.recipientEmail || '-';
+
+            const fromAcct = t.senderAccountNumber || t.fromAccountNumber || t.fromAccount || '-';
+            const toAcct = t.recipientAccountNumber || t.toAccountNumber || t.toAccount || '-';
+
+            const status = t.status || 'completed';
+            const type = t.type || 'transfer';
+            const ref = t.reference || '-';
+            const desc = t.description || '-';
+
+            document.getElementById('transactionModalContent').innerHTML = `
+                <div class="user-details-grid">
+                    <div class="detail-item"><div class="label">Transaction ID</div><div class="value">${escapeHtml(t.id)}</div></div>
+                    <div class="detail-item"><div class="label">Date</div><div class="value">${escapeHtml(createdText)}</div></div>
+                    <div class="detail-item"><div class="label">Type</div><div class="value">${escapeHtml(type)}</div></div>
+                    <div class="detail-item"><div class="label">Status</div><div class="value">${escapeHtml(status)}</div></div>
+
+                    <div class="detail-item"><div class="label">Amount</div><div class="value">${escapeHtml(formatMoney(t.amount))}</div></div>
+                    <div class="detail-item"><div class="label">Reference</div><div class="value">${escapeHtml(ref)}</div></div>
+
+                    <div class="detail-item"><div class="label">From (Name)</div><div class="value">${escapeHtml(fromName)}</div></div>
+                    <div class="detail-item"><div class="label">From (Email)</div><div class="value">${escapeHtml(fromEmail)}</div></div>
+                    <div class="detail-item"><div class="label">From (Account)</div><div class="value">${escapeHtml(fromAcct)}</div></div>
+                    <div class="detail-item"><div class="label">From User ID</div><div class="value">${escapeHtml(t.fromUserId ?? '-')}</div></div>
+
+                    <div class="detail-item"><div class="label">To (Name)</div><div class="value">${escapeHtml(toName)}</div></div>
+                    <div class="detail-item"><div class="label">To (Email)</div><div class="value">${escapeHtml(toEmail)}</div></div>
+                    <div class="detail-item"><div class="label">To (Account)</div><div class="value">${escapeHtml(toAcct)}</div></div>
+                    <div class="detail-item"><div class="label">To User ID</div><div class="value">${escapeHtml(t.toUserId ?? '-')}</div></div>
+                </div>
+
+                <div style="margin-top: 16px;">
+                    <div class="detail-item" style="margin-bottom: 12px;">
+                        <div class="label">Description</div>
+                        <div class="value" style="font-size: 14px; white-space: pre-wrap;">${escapeHtml(desc)}</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="downloadTxnReceipt(${Number(t.id)})"><i class="fas fa-download"></i> Download Receipt (PDF)</button>
+                </div>
+            `;
+
+            document.getElementById('transactionModal').classList.add('active');
+        }
+
         // Load Transactions
         async function loadTransactions() {
             const tbody = document.getElementById('transactionsTableBody');
@@ -851,13 +972,14 @@
                 });
                 const data = await res.json();
                 if (data.success && data.transactions) {
+                    ADMIN_TRANSACTIONS_CACHE = Array.isArray(data.transactions) ? data.transactions : [];
                     if (data.transactions.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No transactions found</td></tr>';
                         document.getElementById('recentTransactionsBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">No recent transactions</td></tr>';
                         return;
                     }
                     const rows = data.transactions.map(t => `
-                        <tr>
+                        <tr class="clickable-row" onclick="openTransactionDetails(${Number(t.id)})" title="Click to view transaction details">
                             <td>${formatTxnDate(t)}</td>
                             <td>${formatTxnFrom(t)}</td>
                             <td>${formatTxnTo(t)}</td>
@@ -871,7 +993,7 @@
                     
                     // Update recent transactions on dashboard
                     document.getElementById('recentTransactionsBody').innerHTML = data.transactions.slice(0, 5).map(t => `
-                        <tr>
+                        <tr class="clickable-row" onclick="openTransactionDetails(${Number(t.id)})" title="Click to view transaction details">
                             <td>${formatTxnDate(t)}</td>
                             <td>${formatTxnFrom(t)}</td>
                             <td>${formatTxnTo(t)}</td>
@@ -900,12 +1022,13 @@
                 });
                 const data = await res.json();
                 if (data.success && data.transactions) {
+                    ADMIN_TRANSACTIONS_CACHE = Array.isArray(data.transactions) ? data.transactions : [];
                     if (data.transactions.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No transactions found</td></tr>';
                         return;
                     }
                     tbody.innerHTML = data.transactions.map(t => `
-                        <tr>
+                        <tr class="clickable-row" onclick="openTransactionDetails(${Number(t.id)})" title="Click to view transaction details">
                             <td>${formatTxnDate(t)}</td>
                             <td>${formatTxnFrom(t)}</td>
                             <td>${formatTxnTo(t)}</td>
