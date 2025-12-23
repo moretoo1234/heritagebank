@@ -1168,7 +1168,13 @@
         // View User
         async function viewUser(userId) {
             try {
-                const res = await fetch(`${API_BASE}/api/admin/users-with-balances`);
+                const res = await fetch(`${API_BASE}/api/admin/users-with-balances`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                if (!res.ok) {
+                    const text = await res.text().catch(() => '');
+                    throw new Error(`Request failed (${res.status}) ${text}`);
+                }
                 const data = await res.json();
                 const user = data.users?.find(u => u.id === userId);
                 if (user) {
@@ -1191,7 +1197,8 @@
                     document.getElementById('userModal').classList.add('active');
                 }
             } catch (e) {
-                alert('Error loading user details');
+                console.error('Error loading user details:', e);
+                alert('Error loading user details. Please refresh and try again.');
             }
         }
 
