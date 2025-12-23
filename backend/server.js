@@ -3163,18 +3163,43 @@ app.get('/api/user/:userId/transactions', async (req, res) => {
             return res.status(403).json({ success: false, message: 'Forbidden' });
         }
 
-        const [transactions] = await pool.execute(
-            `SELECT t.*,
-                    uf.firstName AS fromFirstName, uf.lastName AS fromLastName,
-                    ut.firstName AS toFirstName, ut.lastName AS toLastName
-             FROM transactions t
-             LEFT JOIN users uf ON t.fromUserId = uf.id
-             LEFT JOIN users ut ON t.toUserId = ut.id
-             WHERE t.fromUserId = ? OR t.toUserId = ?
-             ORDER BY t.createdAt DESC
-             LIMIT 100`,
-            [requestedUserId, requestedUserId]
-        );
+        let transactions = [];
+        try {
+            const [rows] = await pool.execute(
+                `SELECT t.*,
+                        uf.firstName AS fromFirstName, uf.lastName AS fromLastName,
+                        ut.firstName AS toFirstName, ut.lastName AS toLastName
+                 FROM transactions t
+                 LEFT JOIN users uf ON t.fromUserId = uf.id
+                 LEFT JOIN users ut ON t.toUserId = ut.id
+                 WHERE t.fromUserId = ? OR t.toUserId = ?
+                 ORDER BY t.createdAt DESC
+                 LIMIT 100`,
+                [requestedUserId, requestedUserId]
+            );
+            transactions = rows;
+        } catch (e) {
+            // Older schemas may use created_at instead of createdAt.
+            const msg = String(e && e.message ? e.message : '');
+            if (e && (e.code === 'ER_BAD_FIELD_ERROR' || msg.includes('createdAt'))) {
+                const [rows2] = await pool.execute(
+                    `SELECT t.*,
+                            t.created_at AS createdAt,
+                            uf.firstName AS fromFirstName, uf.lastName AS fromLastName,
+                            ut.firstName AS toFirstName, ut.lastName AS toLastName
+                     FROM transactions t
+                     LEFT JOIN users uf ON t.fromUserId = uf.id
+                     LEFT JOIN users ut ON t.toUserId = ut.id
+                     WHERE t.fromUserId = ? OR t.toUserId = ?
+                     ORDER BY t.created_at DESC
+                     LIMIT 100`,
+                    [requestedUserId, requestedUserId]
+                );
+                transactions = rows2;
+            } else {
+                throw e;
+            }
+        }
 
         res.json({ success: true, transactions, txCount: transactions.length });
     } catch (error) {

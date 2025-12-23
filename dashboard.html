@@ -472,13 +472,50 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
-                
-                if (data.success && data.transactions && data.transactions.length > 0) {
+
+                if (data.success && Array.isArray(data.transactions)) {
                     displayTransactions(data.transactions.slice(0, 5));
+                } else {
+                    displayTransactions([]);
                 }
             } catch (e) {
                 console.error('Transactions load error:', e);
+                displayTransactions([]);
             }
+        }
+
+        function escapeHtml(value) {
+            const s = String(value ?? '');
+            return s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function txnTimestamp(tx) {
+            return tx?.date || tx?.createdAt || tx?.created_at || tx?.created || tx?.timestamp || null;
+        }
+
+        function txnDirectionLabel(tx) {
+            const fromId = Number(tx?.fromUserId);
+            const toId = Number(tx?.toUserId);
+            const me = Number(userId);
+
+            const fromName = [tx?.fromFirstName, tx?.fromLastName].filter(Boolean).join(' ').trim();
+            const toName = [tx?.toFirstName, tx?.toLastName].filter(Boolean).join(' ').trim();
+
+            if (Number.isFinite(fromId) && Number.isFinite(toId) && Number.isFinite(me)) {
+                if (toId === me && fromId !== me) return `Received from ${fromName || 'another account'}`;
+                if (fromId === me && toId !== me) return `Sent to ${toName || 'another account'}`;
+            }
+
+            const t = String(tx?.type || '').toLowerCase();
+            if (t === 'credit' || t === 'deposit') return 'Credit';
+            if (t === 'debit' || t === 'withdrawal') return 'Debit';
+            if (t) return t.charAt(0).toUpperCase() + t.slice(1);
+            return 'Transaction';
         }
         
         function displayTransactions(transactions) {
@@ -499,11 +536,15 @@
                 const icon = isCredit ? 'fa-arrow-down' : 'fa-arrow-up';
                 const amountClass = isCredit ? 'credit' : 'debit';
                 const amountPrefix = isCredit ? '+' : '-';
-                const date = new Date(tx.date || tx.createdAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                });
+
+                const ts = txnTimestamp(tx);
+                const d = ts ? new Date(ts) : null;
+                const date = d && !isNaN(d.getTime())
+                    ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : '-';
+
+                const subtitle = txnDirectionLabel(tx);
+                const title = tx.description ? String(tx.description) : subtitle;
                 
                 return `
                     <div class="transaction-item">
@@ -511,8 +552,8 @@
                             <i class="fas ${icon}"></i>
                         </div>
                         <div class="transaction-details">
-                            <h4>${tx.description || tx.type || 'Transaction'}</h4>
-                            <span>${date}</span>
+                            <h4>${escapeHtml(title)}</h4>
+                            <span>${escapeHtml(subtitle)} • ${escapeHtml(date)}</span>
                         </div>
                         <div class="transaction-amount ${amountClass}">
                             ${amountPrefix}$${Math.abs(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
