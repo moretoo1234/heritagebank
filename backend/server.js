@@ -39,6 +39,9 @@ const pool = mysql.createPool({
     ssl: { rejectUnauthorized: false }
 });
 
+// Tracks whether DB schema initialization has completed.
+let DB_READY = false;
+
 // JWT Secret - Must be set in environment
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -447,6 +450,26 @@ async function initializeDatabase() {
             ('checking_apy', '0.01', 'number', 'Current checking APY percentage', TRUE)
         `);
 
+        // Scheduled jobs table (required by the scheduled jobs runner)
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS scheduled_jobs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                jobType VARCHAR(100) NOT NULL,
+                frequency ENUM('hourly','daily','weekly','monthly','quarterly','annually') DEFAULT 'daily',
+                isActive BOOLEAN DEFAULT true,
+                status ENUM('idle','running','failed') DEFAULT 'idle',
+                nextRunAt DATETIME NOT NULL,
+                lastRunAt DATETIME NULL,
+                lastResult JSON NULL,
+                recordsProcessed INT DEFAULT 0,
+                errorMessage TEXT NULL,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_scheduled_jobs_due (isActive, status, nextRunAt),
+                INDEX idx_scheduled_jobs_type (jobType)
+            )
+        `);
+
         // Check if admin exists
         const [adminCheck] = await connection.execute(
             'SELECT * FROM users WHERE email = ?',
@@ -464,6 +487,7 @@ async function initializeDatabase() {
         }
 
         connection.release();
+        DB_READY = true;
         console.log('✅ Database initialized with all tables');
     } catch (error) {
         console.error('❌ Database error:', error.message);
@@ -667,6 +691,12 @@ async function checkSuspiciousActivity(userId, amount, type) {
 // Run scheduled jobs (call this via cron or setInterval)
 async function runScheduledJobs() {
     console.log('🔄 Running scheduled jobs...');
+
+    // During startup, database initialization can take time. Avoid querying tables
+    // before schema creation finishes.
+    if (!DB_READY) {
+        return;
+    }
     
     try {
         // Get due jobs
@@ -1080,10 +1110,18 @@ async function runDailyReport() {
 }
 
 // Start scheduled job runner (every 5 minutes)
-setInterval(runScheduledJobs, 5 * 60 * 1000);
+setInterval(() => {
+    runScheduledJobs().catch((err) => {
+        console.error('❌ Scheduled jobs runner error:', err?.message || err);
+    });
+}, 5 * 60 * 1000);
 
 // Run once on startup after a short delay
-setTimeout(runScheduledJobs, 10000);
+setTimeout(() => {
+    runScheduledJobs().catch((err) => {
+        console.error('❌ Scheduled jobs runner error:', err?.message || err);
+    });
+}, 10000);
 
 // ==================== SIGNUP APPROVAL WORKFLOW ====================
 
