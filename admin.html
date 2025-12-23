@@ -303,6 +303,9 @@
                 <div class="nav-item" onclick="showSection('transactions')">
                     <i class="fas fa-exchange-alt"></i> Transactions
                 </div>
+                <div class="nav-item" onclick="showSection('cards')">
+                    <i class="fas fa-credit-card"></i> Cards
+                </div>
                 <div class="nav-item" onclick="showSection('transfers')">
                     <i class="fas fa-paper-plane"></i> Fund Account
                 </div>
@@ -479,6 +482,36 @@
                                     </tr>
                                 </thead>
                                 <tbody id="transactionsTableBody">
+                                    <tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cards Section -->
+                <div id="cards" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-credit-card"></i> Cards</h2>
+                        <div class="search-box">
+                            <input type="text" id="cardSearchInput" placeholder="Search by email, name, account number, or masked card..." onkeyup="if(event.key==='Enter'){searchCards();}">
+                            <button class="btn btn-primary" onclick="searchCards()"><i class="fas fa-search"></i> Search</button>
+                            <button class="btn btn-info" onclick="loadCards()"><i class="fas fa-sync"></i> Refresh</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Issued</th>
+                                        <th>User</th>
+                                        <th>Masked</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Delivery</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cardsTableBody">
                                     <tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
                                 </tbody>
                             </table>
@@ -714,8 +747,120 @@
             // Load data for specific sections
             if (sectionId === 'users') loadAllUsers();
             if (sectionId === 'transactions') loadTransactions();
+            if (sectionId === 'cards') loadCards();
             if (sectionId === 'loans') loadLoans();
             if (sectionId === 'activity') loadActivityLogs();
+        }
+
+        function fmtDate(value) {
+            if (!value) return '-';
+            const d = new Date(value);
+            if (isNaN(d.getTime())) return '-';
+            return d.toLocaleString();
+        }
+
+        function escapeHtml(value) {
+            const s = String(value ?? '');
+            return s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        async function loadCards(query) {
+            const tbody = document.getElementById('cardsTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            try {
+                const q = (query ?? '').toString().trim();
+                const url = `${API_BASE}/api/admin/cards?limit=200${q ? `&q=${encodeURIComponent(q)}` : ''}`;
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#e74c3c;">${escapeHtml(data.message || 'Error loading cards')}</td></tr>`;
+                    return;
+                }
+
+                const cards = Array.isArray(data.cards) ? data.cards : [];
+                if (cards.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No cards found</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = cards.map(c => {
+                    const status = String(c.status || '').toLowerCase();
+                    const type = String(c.cardType || '').toLowerCase();
+                    const userLabel = `${c.firstName || ''} ${c.lastName || ''}`.trim() || (c.email || 'User');
+                    const delivery = type === 'virtual'
+                        ? 'Instant'
+                        : (c.deliveryEtaText || '7-8 business days');
+
+                    const freezeBtn = (status === 'frozen')
+                        ? `<button class="btn btn-info" onclick="adminSetCardStatus('${c.id}','unfreeze')"><i class="fas fa-fire"></i> Unfreeze</button>`
+                        : `<button class="btn btn-primary" onclick="adminSetCardStatus('${c.id}','freeze')"><i class="fas fa-snowflake"></i> Freeze</button>`;
+
+                    const pauseBtn = (status === 'paused')
+                        ? `<button class="btn btn-info" onclick="adminSetCardStatus('${c.id}','unpause')"><i class="fas fa-play"></i> Unpause</button>`
+                        : `<button class="btn btn-warning" onclick="adminSetCardStatus('${c.id}','pause')"><i class="fas fa-pause"></i> Pause</button>`;
+
+                    return `
+                        <tr>
+                            <td>${escapeHtml(fmtDate(c.issuedAt))}</td>
+                            <td>${escapeHtml(userLabel)}<br><span style="color:#888;font-size:12px;">${escapeHtml(c.email || '')}</span></td>
+                            <td>${escapeHtml(c.cardNumberMasked || '—')}</td>
+                            <td>${escapeHtml(type || '—')}</td>
+                            <td>${escapeHtml(status ? status.toUpperCase() : '—')}</td>
+                            <td>${escapeHtml(delivery)}</td>
+                            <td style="display:flex; gap:8px; flex-wrap:wrap;">
+                                ${pauseBtn}
+                                ${freezeBtn}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Error loading cards</td></tr>';
+            }
+        }
+
+        function searchCards() {
+            const q = document.getElementById('cardSearchInput').value;
+            loadCards(q);
+        }
+
+        async function adminSetCardStatus(cardId, action) {
+            const reason = prompt('Optional reason (leave blank if none):') || '';
+
+            const routeMap = {
+                freeze: 'freeze',
+                unfreeze: 'unfreeze',
+                pause: 'pause',
+                unpause: 'unpause'
+            };
+            const route = routeMap[action];
+            if (!route) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/cards/${cardId}/${route}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ reason })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadCards(document.getElementById('cardSearchInput').value);
+                } else {
+                    alert(data.message || 'Failed to update card');
+                }
+            } catch (e) {
+                alert('Failed to update card');
+            }
         }
 
         function showAlert(elementId, message, isSuccess) {

@@ -200,39 +200,47 @@
         </div>
 
         <div class="card">
-            <h2 style="color: #1a472a; margin-top: 0;">Request New Card</h2>
-            
-            <form onsubmit="requestCard(event)">
-                <div class="form-group">
-                    <label>Card Type</label>
-                    <select id="cardType" required>
-                        <option value="">Select card type...</option>
-                        <option value="debit">Debit Card</option>
-                        <option value="credit">Credit Card</option>
-                        <option value="premium">Premium Card</option>
-                        <option value="business">Business Card</option>
-                    </select>
+            <h2 style="color: #1a472a; margin-top: 0;">Apply for a Card</h2>
+
+            <div style="display:grid; gap: 20px;">
+                <div style="background:#f5f7fa; padding: 18px; border-radius: 10px;">
+                    <h3 style="margin:0 0 8px 0; color:#1a472a;"><i class="fas fa-bolt"></i> Instant Virtual Card</h3>
+                    <p style="margin:0 0 12px 0; color:#666; font-size: 14px;">
+                        Get a virtual card instantly for online payments. You will see the full card number and CVV one time.
+                    </p>
+                    <button class="btn" style="width:100%;" onclick="applyVirtualCard()">
+                        <i class="fas fa-plus"></i> Get Virtual Card Now
+                    </button>
                 </div>
 
-                <div class="form-group">
-                    <label>Delivery Address</label>
-                    <input type="text" id="deliveryAddress" placeholder="Enter delivery address" required>
-                </div>
+                <div style="background:#f5f7fa; padding: 18px; border-radius: 10px;">
+                    <h3 style="margin:0 0 8px 0; color:#1a472a;"><i class="fas fa-truck"></i> Physical Card (Delivery)</h3>
+                    <p style="margin:0 0 12px 0; color:#666; font-size: 14px;">
+                        Request a physical card. Estimated delivery is <strong>7–8 business days</strong>.
+                    </p>
 
-                <div class="form-group">
-                    <label>Card PIN (4 digits)</label>
-                    <input type="password" id="cardPin" placeholder="Enter 4-digit PIN" maxlength="4" required>
-                </div>
+                    <form onsubmit="applyPhysicalCard(event)">
+                        <div class="form-group">
+                            <label>Delivery Address</label>
+                            <input type="text" id="deliveryAddress" placeholder="Enter delivery address" required>
+                        </div>
 
-                <div class="form-group">
-                    <label>Preferred Name on Card</label>
-                    <input type="text" id="cardholderName" placeholder="As you want it on the card" required>
-                </div>
+                        <div class="form-group">
+                            <label>Card PIN (4 digits)</label>
+                            <input type="password" id="cardPin" placeholder="Enter 4-digit PIN" maxlength="4" required>
+                        </div>
 
-                <button type="submit" style="padding: 12px; background: #d4af37; color: #1a472a; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%;">
-                    <i class="fas fa-plus"></i> Request New Card
-                </button>
-            </form>
+                        <div class="form-group">
+                            <label>Name on Card</label>
+                            <input type="text" id="cardholderName" placeholder="Optional (defaults to your profile name)">
+                        </div>
+
+                        <button type="submit" style="padding: 12px; background: #d4af37; color: #1a472a; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%;">
+                            <i class="fas fa-paper-plane"></i> Request Physical Card
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -270,19 +278,19 @@
 
         // Load user's cards on page load
         async function loadUserCards() {
-            if (!userId) return;
-            
             try {
-                const res = await fetch(`${API_URL}/api/cards/${userId}`, {
+                const res = await fetch(`${API_URL}/api/cards?ts=${Date.now()}`, {
+                    cache: 'no-store',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                
                 const data = await res.json();
-                if (data.success && data.count > 0) {
-                    displayCards(data.cards);
+                if (data.success) {
+                    displayCards(Array.isArray(data.cards) ? data.cards : []);
+                } else {
+                    displayCards([]);
                 }
             } catch (err) {
-                console.log('Cards not loaded yet');
+                displayCards([]);
             }
         }
 
@@ -292,22 +300,31 @@
             
             container.innerHTML = '';
             userCards.forEach(card => {
-                const statusClass = card.status === 'active' ? 'status-active' : card.status === 'frozen' ? 'status-frozen' : 'status-blocked';
-                const statusIcon = card.status === 'active' ? 'fa-check-circle' : card.status === 'frozen' ? 'fa-snowflake' : 'fa-ban';
+                const status = String(card.status || '').toLowerCase();
+                const statusClass = status === 'active' ? 'status-active' : status === 'frozen' ? 'status-frozen' : status === 'paused' ? 'status-frozen' : 'status-blocked';
+                const statusIcon = status === 'active' ? 'fa-check-circle' : status === 'frozen' ? 'fa-snowflake' : status === 'paused' ? 'fa-pause-circle' : 'fa-ban';
+
+                const masked = card.cardNumberMasked || '****-****-****-****';
+                const last4 = masked.slice(-4);
+                const expiry = card.expirationDate || '-';
+                const kindLabel = String(card.cardType || '').toLowerCase() === 'virtual' ? 'Virtual' : 'Physical';
+                const deliveryNote = (String(card.cardType || '').toLowerCase() !== 'virtual')
+                    ? ` • Delivery: ${card.deliveryEtaText || '7–8 business days'}`
+                    : '';
                 
                 const cardEl = document.createElement('div');
                 cardEl.className = 'card-item';
                 cardEl.innerHTML = `
                     <div class="card-name">
-                        <h3><i class="fas fa-credit-card"></i> ${card.cardType.toUpperCase()} Card</h3>
-                        <p>****  ****  ****  ${card.lastFour}</p>
-                        <p style="font-size: 11px; color: #666;">Expires: ${card.expiryDate}</p>
+                        <h3><i class="fas fa-credit-card"></i> ${kindLabel} Card</h3>
+                        <p>${masked.replace(/-/g, '  ')}</p>
+                        <p style="font-size: 11px; color: #666;">Expires: ${expiry}${deliveryNote}</p>
                     </div>
                     <div class="card-status ${statusClass}">
-                        <i class="fas ${statusIcon}"></i> ${card.status.toUpperCase()}
+                        <i class="fas ${statusIcon}"></i> ${status ? status.toUpperCase() : 'UNKNOWN'}
                     </div>
                     <div>
-                        <button class="btn btn-small" onclick="showCardMenu(${card.id}, '${card.cardType}', '${card.status}')">
+                        <button class="btn btn-small" onclick="showCardMenu(${card.id}, '${kindLabel.toLowerCase()}', '${status}')">
                             <i class="fas fa-cog"></i> Manage
                         </button>
                     </div>
@@ -326,15 +343,21 @@
                         </div>
                         <div class="modal-body">
                             <div class="card-actions">
-                                ${status === 'active' ? `
+                                ${(status === 'active') ? `
                                     <button class="action-btn freeze-btn" onclick="freezeCard(${cardId})">
                                         <i class="fas fa-snowflake"></i> Freeze Card
                                     </button>
                                 ` : ''}
-                                ${status === 'frozen' ? `
+                                ${(status === 'frozen') ? `
                                     <button class="action-btn unfreeze-btn" onclick="unfreezeCard(${cardId})">
                                         <i class="fas fa-fire"></i> Unfreeze Card
                                     </button>
+                                ` : ''}
+                                ${(status === 'paused') ? `
+                                    <div style="padding:12px;border:1px solid #eee;border-radius:8px;color:#666;">
+                                        <i class="fas fa-pause-circle"></i>
+                                        This card is paused by an administrator. Please contact support to reactivate.
+                                    </div>
                                 ` : ''}
                                 ${status !== 'blocked' ? `
                                     <button class="action-btn block-btn" onclick="blockCard(${cardId})">
@@ -573,25 +596,90 @@ Click 'Manage' in the mobile app or call us at 1-800-HERITAGE
             }
         }
 
-        async function requestCard(e) {
-            e.preventDefault();
+        function escapeHtml(value) {
+            const s = String(value ?? '');
+            return s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
-            if (!userId) {
-                alert('Please sign in to request a card.');
-                window.location.href = 'signin.html';
-                return;
+        async function applyVirtualCard() {
+            try {
+                const res = await fetch(`${API_URL}/api/cards/apply`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ kind: 'virtual' })
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    showNotification('Error: ' + (data.message || 'Could not issue virtual card'), 'error');
+                    return;
+                }
+
+                const c = data.card;
+                const modalHTML = `
+                    <div class="modal" id="virtualCardModal">
+                        <div class="modal-content" style="max-width: 520px;">
+                            <div class="modal-header">
+                                <h2><i class="fas fa-bolt"></i> Virtual Card Issued</h2>
+                                <button class="close-modal" onclick="closeModal('virtualCardModal')">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <p style="color:#666; font-size: 14px; margin-top:0;">
+                                    Save these details securely. They will not be shown again.
+                                </p>
+                                <div class="card-display">
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <div style="font-weight:700;">HERITAGE BANK</div>
+                                        <div style="opacity:0.9;">VIRTUAL</div>
+                                    </div>
+                                    <div class="card-number">${escapeHtml(c.cardNumber).replace(/(.{4})/g, '$1 ').trim()}</div>
+                                    <div class="card-info">
+                                        <div>
+                                            <div style="opacity:0.8;">CARDHOLDER</div>
+                                            <div style="font-weight:700;">${escapeHtml(c.cardholderName)}</div>
+                                        </div>
+                                        <div>
+                                            <div style="opacity:0.8;">EXP</div>
+                                            <div style="font-weight:700;">${escapeHtml(c.expirationDate)}</div>
+                                        </div>
+                                        <div>
+                                            <div style="opacity:0.8;">CVV</div>
+                                            <div style="font-weight:700;">${escapeHtml(c.cvv)}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn" style="width:100%;" onclick="closeModal('virtualCardModal'); loadUserCards();">
+                                    <i class="fas fa-check"></i> Done
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                showNotification('Virtual card issued instantly', 'success');
+                loadUserCards();
+            } catch (err) {
+                showNotification('Error issuing virtual card', 'error');
             }
+        }
 
-            const cardType = document.getElementById('cardType').value;
+        async function applyPhysicalCard(e) {
+            e.preventDefault();
             const address = document.getElementById('deliveryAddress').value;
             const pin = document.getElementById('cardPin').value;
-            const cardholderName = document.getElementById('cardholderName').value;
+            const name = document.getElementById('cardholderName').value;
 
-            if (!cardType || !address || !pin || !cardholderName) {
-                showNotification('Please fill all fields', 'error');
+            if (!address || !pin) {
+                showNotification('Please provide delivery address and PIN', 'error');
                 return;
             }
-
             if (pin.length !== 4 || isNaN(pin)) {
                 showNotification('PIN must be 4 digits', 'error');
                 return;
@@ -600,46 +688,32 @@ Click 'Manage' in the mobile app or call us at 1-800-HERITAGE
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
 
             try {
-                const res = await fetch(`${API_URL}/api/cards/request`, {
+                const res = await fetch(`${API_URL}/api/cards/apply`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        userId: userId,
-                        cardType: cardType
+                        kind: 'physical',
+                        deliveryAddress: address,
+                        pin: pin,
+                        cardholderName: name
                     })
                 });
-
                 const data = await res.json();
-
                 if (data.success) {
-                    const confirmMsg = `
-Card Request Confirmation
-==========================
-Card Type: ${cardType.toUpperCase()}
-Holder Name: ${cardholderName}
-Card Number: ${data.card.cardNumber}
-Expiry: ${data.card.expiryDate}
-Delivery Address: ${address}
-
-Your card request has been approved and activated!
-Card will be delivered within 7-10 business days.
-`;
-                    alert(confirmMsg);
-                    showNotification('✓ Card approved and activated!', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 2000);
+                    showNotification('Physical card requested (7–8 business days)', 'success');
+                    loadUserCards();
+                    e.target.reset();
                 } else {
-                    showNotification('Error: ' + data.message, 'error');
+                    showNotification('Error: ' + (data.message || 'Could not request physical card'), 'error');
                 }
             } catch (err) {
-                showNotification('Error: ' + err.message, 'error');
+                showNotification('Error requesting physical card', 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;

@@ -510,7 +510,7 @@ async function initializeDatabase() {
                 cardType ENUM('debit', 'credit', 'virtual') DEFAULT 'debit',
                 cardNetwork ENUM('visa', 'mastercard') DEFAULT 'visa',
                 cardholderName VARCHAR(100),
-                status ENUM('active', 'frozen', 'blocked', 'expired', 'pending') DEFAULT 'pending',
+                status ENUM('active', 'frozen', 'paused', 'blocked', 'expired', 'pending') DEFAULT 'pending',
                 pin VARCHAR(255),
                 dailyLimit DECIMAL(15,2) DEFAULT 5000.00,
                 monthlyLimit DECIMAL(15,2) DEFAULT 25000.00,
@@ -521,8 +521,12 @@ async function initializeDatabase() {
                 monthlySpent DECIMAL(15,2) DEFAULT 0.00,
                 lastUsedAt TIMESTAMP NULL,
                 frozenAt TIMESTAMP NULL,
+                pausedAt TIMESTAMP NULL,
                 blockedAt TIMESTAMP NULL,
                 blockReason VARCHAR(500),
+                deliveryAddress TEXT NULL,
+                deliveryEtaText VARCHAR(64) NULL,
+                deliveryStatus ENUM('not_applicable','processing','shipped','delivered') DEFAULT 'not_applicable',
                 issuedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 activatedAt TIMESTAMP NULL,
                 FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
@@ -531,6 +535,23 @@ async function initializeDatabase() {
                 INDEX idx_card_status (status)
             )
         `);
+
+        // Compatibility alters for existing environments (safe best-effort).
+        // Add paused status support and delivery metadata without breaking older DBs.
+        try {
+            await connection.execute(
+                "ALTER TABLE cards MODIFY COLUMN status ENUM('active','frozen','paused','blocked','expired','pending') DEFAULT 'pending'"
+            );
+        } catch (e) {}
+
+        try { await connection.execute('ALTER TABLE cards ADD COLUMN pausedAt TIMESTAMP NULL'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE cards ADD COLUMN deliveryAddress TEXT NULL'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE cards ADD COLUMN deliveryEtaText VARCHAR(64) NULL'); } catch (e) {}
+        try {
+            await connection.execute(
+                "ALTER TABLE cards ADD COLUMN deliveryStatus ENUM('not_applicable','processing','shipped','delivered') DEFAULT 'not_applicable'"
+            );
+        } catch (e) {}
 
         // Notifications table
         await connection.execute(`
@@ -1785,6 +1806,7 @@ app.get('/api/cards', async (req, res) => {
             `SELECT c.id, c.cardNumberMasked, c.expirationDate, c.cardType, c.cardNetwork, c.cardholderName,
                     c.status, c.dailyLimit, c.monthlyLimit, c.onlineEnabled, c.internationalEnabled,
                     c.contactlessEnabled, c.dailySpent, c.monthlySpent, c.lastUsedAt, c.issuedAt, c.activatedAt,
+                    c.frozenAt, c.pausedAt, c.deliveryEtaText, c.deliveryStatus,
                     ba.accountNumber as linkedAccount, ba.accountType as linkedAccountType
              FROM cards c
              JOIN bank_accounts ba ON c.accountId = ba.id
@@ -1879,6 +1901,205 @@ app.post('/api/cards/issue', async (req, res) => {
             },
             warning: 'Please save your card details securely. The full card number and CVV will not be shown again.'
         });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Apply for a card (simplified UX):
+// - virtual: issued instantly (returns full card number + CVV once)
+// - physical: request created (7–8 business days delivery), card stays pending
+app.post('/api/cards/apply', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ success: false, message: 'No token' });
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded.isImpersonation) {
+            return res.status(403).json({ success: false, message: 'Action not allowed in view-only mode' });
+        }
+
+        const {
+            kind,
+            cardKind,
+            type,
+            accountId,
+            deliveryAddress,
+            cardholderName,
+            pin
+        } = req.body || {};
+
+        const requestedKind = String(kind || cardKind || type || '').trim().toLowerCase();
+        const isVirtual = requestedKind === 'virtual';
+        const isPhysical = requestedKind === 'physical' || requestedKind === 'debit' || requestedKind === 'card';
+
+        if (!isVirtual && !isPhysical) {
+            return res.status(400).json({
+                success: false,
+                message: "Card kind must be 'virtual' or 'physical'"
+            });
+        }
+
+        // Determine the linked bank account (default to primary active account)
+        let selectedAccountId = Number(accountId);
+        if (!Number.isFinite(selectedAccountId) || selectedAccountId <= 0) {
+            const [acctRows] = await pool.execute(
+                `SELECT id FROM bank_accounts
+                 WHERE userId = ? AND status = 'active'
+                 ORDER BY isPrimary DESC, openedAt ASC
+                 LIMIT 1`,
+                [decoded.id]
+            );
+            selectedAccountId = acctRows?.[0]?.id;
+        }
+
+        if (!selectedAccountId) {
+            return res.status(400).json({ success: false, message: 'No active account available to link this card' });
+        }
+
+        // Verify account ownership
+        const [accounts] = await pool.execute(
+            'SELECT * FROM bank_accounts WHERE id = ? AND userId = ? AND status = "active"',
+            [selectedAccountId, decoded.id]
+        );
+        if (accounts.length === 0) {
+            return res.status(404).json({ success: false, message: 'Account not found or not active' });
+        }
+
+        // Physical card requires delivery address + PIN
+        if (isPhysical) {
+            const addr = String(deliveryAddress || '').trim();
+            if (!addr) {
+                return res.status(400).json({ success: false, message: 'Delivery address is required for a physical card' });
+            }
+            const pinStr = String(pin || '').trim();
+            if (!/^[0-9]{4}$/.test(pinStr)) {
+                return res.status(400).json({ success: false, message: 'PIN must be 4 digits' });
+            }
+
+            const [users] = await pool.execute('SELECT firstName, lastName FROM users WHERE id = ?', [decoded.id]);
+            const user = users[0] || { firstName: 'USER', lastName: '' };
+            const holderName = (cardholderName ? String(cardholderName) : `${user.firstName} ${user.lastName}`)
+                .trim()
+                .toUpperCase();
+
+            const cardNumber = generateCardNumber();
+            const expiryDate = generateExpiryDate();
+            const cvv = generateCVV();
+            const hashedCvv = await bcrypt.hash(cvv, 10);
+            const hashedPin = await bcrypt.hash(pinStr, 10);
+            const cardNumberMasked = `****-****-****-${cardNumber.slice(-4)}`;
+
+            // Create pending physical card request
+            const [result] = await pool.execute(
+                `INSERT INTO cards (
+                    userId, accountId,
+                    cardNumber, cardNumberMasked, expirationDate, cvv,
+                    cardType, cardholderName, status,
+                    pin,
+                    deliveryAddress, deliveryEtaText, deliveryStatus
+                ) VALUES (?, ?, ?, ?, ?, ?, 'debit', ?, 'pending', ?, ?, ?, 'processing')`,
+                [decoded.id, selectedAccountId, cardNumber, cardNumberMasked, expiryDate, hashedCvv, holderName, hashedPin, addr, '7-8 business days']
+            );
+
+            await createNotification(decoded.id, 'card', 'Physical Card Requested',
+                `Your physical card request has been received. Estimated delivery: 7–8 business days.`,
+                { cardId: result.insertId, lastFour: cardNumber.slice(-4), deliveryEta: '7-8 business days' }
+            );
+
+            try {
+                await pool.execute(
+                    'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+                    [decoded.id, 'CARD_PHYSICAL_REQUESTED', `Physical card requested (****${cardNumber.slice(-4)}). ETA: 7-8 business days.`, req.ip]
+                );
+            } catch (e) {}
+
+            await logComplianceAudit(decoded.id, decoded.id, 'card', result.insertId, 'card_physical_requested',
+                null,
+                { cardType: 'debit', lastFour: cardNumber.slice(-4), deliveryEta: '7-8 business days' },
+                'User requested physical card',
+                req
+            );
+
+            return res.json({
+                success: true,
+                message: 'Physical card request submitted. Delivery in 7–8 business days.',
+                deliveryEta: '7-8 business days',
+                card: {
+                    id: result.insertId,
+                    cardType: 'debit',
+                    status: 'pending',
+                    cardholderName: holderName,
+                    cardNumberMasked,
+                    expirationDate: expiryDate,
+                    lastFour: cardNumber.slice(-4),
+                    deliveryStatus: 'processing'
+                }
+            });
+        }
+
+        // Virtual card: issue instantly (show full details once)
+        {
+            const [users] = await pool.execute('SELECT firstName, lastName FROM users WHERE id = ?', [decoded.id]);
+            const user = users[0] || { firstName: 'USER', lastName: '' };
+            const holderName = (cardholderName ? String(cardholderName) : `${user.firstName} ${user.lastName}`)
+                .trim()
+                .toUpperCase();
+
+            const cardNumber = generateCardNumber();
+            const expiryDate = generateExpiryDate();
+            const cvv = generateCVV();
+            const hashedCvv = await bcrypt.hash(cvv, 10);
+            const cardNumberMasked = `****-****-****-${cardNumber.slice(-4)}`;
+
+            const [result] = await pool.execute(
+                `INSERT INTO cards (
+                    userId, accountId,
+                    cardNumber, cardNumberMasked, expirationDate, cvv,
+                    cardType, cardholderName, status,
+                    deliveryEtaText, deliveryStatus
+                ) VALUES (?, ?, ?, ?, ?, ?, 'virtual', ?, 'active', 'instant', 'not_applicable')`,
+                [decoded.id, selectedAccountId, cardNumber, cardNumberMasked, expiryDate, hashedCvv, holderName]
+            );
+
+            await pool.execute('UPDATE cards SET activatedAt = NOW() WHERE id = ?', [result.insertId]);
+
+            await createNotification(decoded.id, 'card', 'Virtual Card Ready',
+                `Your virtual card ending in ${cardNumber.slice(-4)} is ready to use.`,
+                { cardId: result.insertId, lastFour: cardNumber.slice(-4) }
+            );
+
+            try {
+                await pool.execute(
+                    'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+                    [decoded.id, 'CARD_VIRTUAL_ISSUED', `Virtual card issued (****${cardNumber.slice(-4)}).`, req.ip]
+                );
+            } catch (e) {}
+
+            await logComplianceAudit(decoded.id, decoded.id, 'card', result.insertId, 'card_virtual_issued',
+                null,
+                { cardType: 'virtual', lastFour: cardNumber.slice(-4) },
+                'User issued virtual card',
+                req
+            );
+
+            return res.json({
+                success: true,
+                message: 'Virtual card issued instantly',
+                card: {
+                    id: result.insertId,
+                    cardType: 'virtual',
+                    status: 'active',
+                    cardholderName: holderName,
+                    cardNumber,
+                    cardNumberMasked,
+                    expirationDate: expiryDate,
+                    cvv,
+                    lastFour: cardNumber.slice(-4)
+                },
+                warning: 'Please save your card details securely. The full card number and CVV will not be shown again.'
+            });
+        }
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -4115,16 +4336,182 @@ app.put('/api/cards/:id/freeze', async (req, res) => {
     }
 });
 
+// ==================== ADMIN CARD CONTROLS ====================
+
+// Admin: List/search cards
+app.get('/api/admin/cards', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const q = String(req.query.q || req.query.search || '').trim().toLowerCase();
+        const limit = Math.min(500, Math.max(1, parseInt(req.query.limit || '100', 10) || 100));
+
+        let sql = `
+            SELECT c.id, c.userId, c.cardType, c.cardNetwork, c.cardholderName, c.cardNumberMasked,
+                   c.expirationDate, c.status, c.issuedAt, c.activatedAt, c.frozenAt, c.pausedAt,
+                   c.deliveryEtaText, c.deliveryStatus,
+                   u.firstName, u.lastName, u.email,
+                   ba.accountNumber AS linkedAccount
+            FROM cards c
+            JOIN users u ON c.userId = u.id
+            LEFT JOIN bank_accounts ba ON c.accountId = ba.id
+        `;
+        const params = [];
+
+        if (q) {
+            sql += ` WHERE (u.email LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ? OR ba.accountNumber LIKE ? OR c.cardNumberMasked LIKE ?) `;
+            const like = `%${q}%`;
+            params.push(like, like, like, like, like);
+        }
+
+        sql += ` ORDER BY c.issuedAt DESC LIMIT ?`;
+        params.push(limit);
+
+        const [cards] = await pool.execute(sql, params);
+        res.json({ success: true, cards, count: cards.length });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+async function setCardStatusAsAdmin({ adminId, cardId, status, reason, req }) {
+    const allowed = new Set(['active', 'frozen', 'paused', 'blocked', 'pending']);
+    const next = String(status || '').trim().toLowerCase();
+    if (!allowed.has(next)) {
+        const err = new Error('Invalid status');
+        err.statusCode = 400;
+        throw err;
+    }
+
+    const [rows] = await pool.execute('SELECT * FROM cards WHERE id = ?', [cardId]);
+    const card = rows?.[0];
+    if (!card) {
+        const err = new Error('Card not found');
+        err.statusCode = 404;
+        throw err;
+    }
+
+    const now = new Date();
+    const frozenAt = next === 'frozen' ? now : null;
+    const pausedAt = next === 'paused' ? now : null;
+
+    await pool.execute(
+        'UPDATE cards SET status = ?, frozenAt = ?, pausedAt = ? WHERE id = ?',
+        [next, frozenAt, pausedAt, cardId]
+    );
+
+    // Notify the user
+    try {
+        const titleMap = {
+            active: 'Card Reactivated',
+            frozen: 'Card Frozen',
+            paused: 'Card Paused',
+            blocked: 'Card Blocked',
+            pending: 'Card Status Updated'
+        };
+        const title = titleMap[next] || 'Card Status Updated';
+        await createNotification(
+            card.userId,
+            'card',
+            title,
+            `Your card ${card.cardNumberMasked || ''} status is now: ${next.toUpperCase()}.${reason ? ` Reason: ${reason}` : ''}`.trim(),
+            { cardId, status: next }
+        );
+    } catch (e) {}
+
+    // Activity log
+    try {
+        await pool.execute(
+            'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+            [card.userId, 'CARD_STATUS_UPDATED', `Admin set card status to ${next.toUpperCase()}${reason ? ` — ${reason}` : ''}`, req?.ip]
+        );
+    } catch (e) {}
+
+    // Admin audit
+    try {
+        await logAdminAction(adminId, 'card_status_update', card.userId, null, null,
+            { cardId, from: card.status, to: next, reason },
+            `Card ${cardId} status set to ${next}`, null, req
+        );
+    } catch (e) {}
+
+    return { cardId, previousStatus: card.status, status: next };
+}
+
+app.put('/api/admin/cards/:id/freeze', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const result = await setCardStatusAsAdmin({
+            adminId: req.auth?.id,
+            cardId: req.params.id,
+            status: 'frozen',
+            reason: req.body?.reason,
+            req
+        });
+        res.json({ success: true, message: 'Card frozen', ...result });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+});
+
+app.put('/api/admin/cards/:id/unfreeze', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const result = await setCardStatusAsAdmin({
+            adminId: req.auth?.id,
+            cardId: req.params.id,
+            status: 'active',
+            reason: req.body?.reason,
+            req
+        });
+        res.json({ success: true, message: 'Card unfrozen', ...result });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+});
+
+app.put('/api/admin/cards/:id/pause', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const result = await setCardStatusAsAdmin({
+            adminId: req.auth?.id,
+            cardId: req.params.id,
+            status: 'paused',
+            reason: req.body?.reason,
+            req
+        });
+        res.json({ success: true, message: 'Card paused', ...result });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+});
+
+app.put('/api/admin/cards/:id/unpause', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const result = await setCardStatusAsAdmin({
+            adminId: req.auth?.id,
+            cardId: req.params.id,
+            status: 'active',
+            reason: req.body?.reason,
+            req
+        });
+        res.json({ success: true, message: 'Card unpaused', ...result });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+});
+
 app.put('/api/cards/:id/unfreeze', async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         const decoded = jwt.verify(token, JWT_SECRET);
         const { id } = req.params;
 
-        await pool.execute(
-            'UPDATE cards SET status = ?, frozenAt = NULL WHERE id = ? AND userId = ?',
-            ['active', id, decoded.id]
+        // Only allow user to unfreeze cards they themselves froze.
+        // If an admin paused a card, the user should not be able to reactivate it.
+        const [result] = await pool.execute(
+            'UPDATE cards SET status = ?, frozenAt = NULL WHERE id = ? AND userId = ? AND status = ?',
+            ['active', id, decoded.id, 'frozen']
         );
+
+        if (!result || result.affectedRows === 0) {
+            return res.status(400).json({ success: false, message: 'Card cannot be unfrozen (it may be paused or not frozen)' });
+        }
 
         res.json({ success: true, message: 'Card unfrozen successfully' });
     } catch (error) {
