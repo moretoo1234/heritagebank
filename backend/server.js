@@ -3266,6 +3266,23 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             [sender.id, recipientUser.id, amountValue, description || 'Transfer', reference]
         );
 
+        // Log activity for both parties (best-effort).
+        // NOTE: Keep this non-blocking so missing tables/columns don't break transfers.
+        try {
+            const senderDetails = `Sent $${amountValue.toLocaleString()} to ${recipientUser.firstName || ''} ${recipientUser.lastName || ''}`.trim();
+            await connection.execute(
+                'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+                [sender.id, 'TRANSFER_SENT', `${senderDetails}${description ? ` — ${description}` : ''}`, req.ip]
+            );
+        } catch (e) {}
+        try {
+            const recipientDetails = `Received $${amountValue.toLocaleString()} from ${sender.firstName || ''} ${sender.lastName || ''}`.trim();
+            await connection.execute(
+                'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+                [recipientUser.id, 'TRANSFER_RECEIVED', `${recipientDetails}${description ? ` — ${description}` : ''}`, req.ip]
+            );
+        } catch (e) {}
+
         await connection.commit();
 
         res.json({
@@ -3280,6 +3297,57 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
         connection.release();
     }
 });
+
+function formatMoneyForActivity(amount) {
+    const n = Number(amount);
+    if (!Number.isFinite(n)) return '$0.00';
+    return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function activityLabelForTransaction(tx, viewerUserId) {
+    const me = Number(viewerUserId);
+    const fromId = Number(tx?.fromUserId);
+    const toId = Number(tx?.toUserId);
+    const amountLabel = formatMoneyForActivity(tx?.amount);
+
+    const fromName = [tx?.fromFirstName, tx?.fromLastName].filter(Boolean).join(' ').trim();
+    const toName = [tx?.toFirstName, tx?.toLastName].filter(Boolean).join(' ').trim();
+
+    const t = String(tx?.type || '').toLowerCase();
+    const incomingTypeLabel = {
+        direct_deposit: 'Direct deposit',
+        ach: 'ACH credit',
+        wire: 'Wire transfer',
+        income: 'Income',
+        salary: 'Salary payment',
+        admin_transfer: 'Incoming transfer'
+    };
+
+    const isIncoming = Number.isFinite(me) && Number.isFinite(toId) && toId === me;
+    const isOutgoing = Number.isFinite(me) && Number.isFinite(fromId) && fromId === me;
+
+    if (isIncoming) {
+        const label = incomingTypeLabel[t] || (t ? (t === 'transfer' ? 'Incoming transfer' : t.replace(/_/g, ' ')) : 'Incoming transaction');
+        return {
+            action: `${label} received (${amountLabel})`,
+            description: tx?.description || (fromName ? `From ${fromName}` : undefined)
+        };
+    }
+
+    if (isOutgoing) {
+        const base = (t === 'transfer') ? 'Transfer sent' : (t ? t.replace(/_/g, ' ') : 'Transaction sent');
+        return {
+            action: `${base} (${amountLabel})`,
+            description: tx?.description || (toName ? `To ${toName}` : undefined)
+        };
+    }
+
+    // Fallback for non-standard rows.
+    return {
+        action: `Transaction (${amountLabel})`,
+        description: tx?.description || undefined
+    };
+}
 
 // User: Transaction history (latest 100)
 // Compatible with the root server route used by the frontend.
@@ -3446,6 +3514,7 @@ app.get('/api/user/:userId/activity', async (req, res) => {
             return res.status(403).json({ success: false, message: 'Forbidden' });
         }
 
+        // 1) Activity logs (security/account events)
         let logs = [];
         try {
             const [rows] = await pool.execute(
@@ -3454,19 +3523,146 @@ app.get('/api/user/:userId/activity', async (req, res) => {
             );
             logs = rows;
         } catch (e) {
-            // activity_logs may not exist on some older DBs; return empty list
+            // activity_logs may not exist on some older DBs; ignore.
             logs = [];
         }
 
-        const activities = logs.map((l) => ({
-            id: l.id,
+        const logActivities = (logs || []).map((l) => ({
+            id: `log_${l.id}`,
             action: l.action_type,
             description: l.action_details,
             ipAddress: l.ip_address,
             timestamp: l.created_at
         }));
 
-        res.json({ success: true, activities });
+        // 2) Transactions (money movement)
+        // Use the same schema-resilient approach as /transactions, but cap to 50.
+        let txRows = [];
+        try {
+            const cols = await getTransactionsTableColumns();
+            const colSet = new Set((cols || []).map(c => c.toLowerCase()));
+            const hasCol = (name) => colSet.has(String(name).toLowerCase());
+
+            const hasFrom = hasCol('fromUserId') || hasCol('from_user_id');
+            const hasTo = hasCol('toUserId') || hasCol('to_user_id');
+            const hasUser = hasCol('userId') || hasCol('user_id');
+            const hasAccount = hasCol('accountId') || hasCol('account_id');
+
+            const fromExpr = (hasCol('fromUserId') && hasCol('from_user_id'))
+                ? 'COALESCE(t.fromUserId, t.from_user_id)'
+                : (hasCol('fromUserId') ? 't.fromUserId' : (hasCol('from_user_id') ? 't.from_user_id' : null));
+            const toExpr = (hasCol('toUserId') && hasCol('to_user_id'))
+                ? 'COALESCE(t.toUserId, t.to_user_id)'
+                : (hasCol('toUserId') ? 't.toUserId' : (hasCol('to_user_id') ? 't.to_user_id' : null));
+            const createdExpr = (hasCol('createdAt') && hasCol('created_at'))
+                ? 'COALESCE(t.createdAt, t.created_at)'
+                : (hasCol('createdAt') ? 't.createdAt' : (hasCol('created_at') ? 't.created_at' : 'NOW()'));
+
+            const badField = (e) => {
+                const msg = String(e && e.message ? e.message : '');
+                return e && (e.code === 'ER_BAD_FIELD_ERROR' || msg.includes('Unknown column'));
+            };
+
+            // (1) Preferred: explicit from/to columns
+            if (hasFrom && hasTo && fromExpr && toExpr) {
+                try {
+                    const [r] = await pool.execute(
+                        `SELECT t.*,
+                                ${createdExpr} AS createdAt,
+                                uf.firstName AS fromFirstName, uf.lastName AS fromLastName,
+                                ut.firstName AS toFirstName, ut.lastName AS toLastName
+                         FROM transactions t
+                         LEFT JOIN users uf ON ${fromExpr} = uf.id
+                         LEFT JOIN users ut ON ${toExpr} = ut.id
+                         WHERE ${fromExpr} = ? OR ${toExpr} = ?
+                         ORDER BY ${createdExpr} DESC
+                         LIMIT 50`,
+                        [requestedUserId, requestedUserId]
+                    );
+                    txRows = r;
+                } catch (e) {
+                    if (!badField(e)) throw e;
+                    txRows = [];
+                }
+            }
+
+            // (2) Legacy: a single userId column
+            if ((!txRows || txRows.length === 0) && hasUser) {
+                const userCol = hasCol('userId') ? 't.userId' : 't.user_id';
+                try {
+                    const [r] = await pool.execute(
+                        `SELECT t.*, ${createdExpr} AS createdAt
+                         FROM transactions t
+                         WHERE ${userCol} = ?
+                         ORDER BY ${createdExpr} DESC
+                         LIMIT 50`,
+                        [requestedUserId]
+                    );
+                    txRows = r;
+                } catch (e) {
+                    if (!badField(e)) throw e;
+                    txRows = [];
+                }
+            }
+
+            // (3) Account-ledger schema
+            if ((!txRows || txRows.length === 0) && hasAccount) {
+                const accountCol = hasCol('accountId') ? 't.accountId' : 't.account_id';
+                let accountIds = [];
+                try {
+                    const [acctRows] = await pool.execute('SELECT id FROM bank_accounts WHERE userId = ? AND status != "closed"', [requestedUserId]);
+                    accountIds = (acctRows || []).map(a => a.id).filter(id => Number.isFinite(Number(id)));
+                } catch (e) {
+                    try {
+                        const [acctRows2] = await pool.execute('SELECT id FROM accounts WHERE user_id = ? AND status != "closed"', [requestedUserId]);
+                        accountIds = (acctRows2 || []).map(a => a.id).filter(id => Number.isFinite(Number(id)));
+                    } catch (e2) {
+                        accountIds = [];
+                    }
+                }
+
+                if (accountIds.length > 0) {
+                    const placeholders = accountIds.map(() => '?').join(',');
+                    try {
+                        const [r] = await pool.execute(
+                            `SELECT t.*, ${createdExpr} AS createdAt
+                             FROM transactions t
+                             WHERE ${accountCol} IN (${placeholders})
+                             ORDER BY ${createdExpr} DESC
+                             LIMIT 50`,
+                            accountIds
+                        );
+                        txRows = r;
+                    } catch (e) {
+                        if (!badField(e)) throw e;
+                        txRows = [];
+                    }
+                }
+            }
+        } catch (e) {
+            txRows = [];
+        }
+
+        const txActivities = (txRows || [])
+            .map(normalizeTransactionRow)
+            .map((tx) => {
+                const label = activityLabelForTransaction(tx, requestedUserId);
+                return {
+                    id: `tx_${tx.id || tx.reference || Math.random().toString(36).slice(2)}`,
+                    action: label.action,
+                    description: label.description,
+                    timestamp: tx.createdAt || tx.created_at || tx.date || null,
+                    transactionId: tx.id,
+                    reference: tx.reference || tx.referenceId || tx.reference_id || null
+                };
+            });
+
+        const combined = [...logActivities, ...txActivities]
+            .filter(a => a && a.timestamp)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 50);
+
+        res.json({ success: true, activities: combined });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

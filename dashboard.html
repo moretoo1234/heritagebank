@@ -641,32 +641,56 @@
             if (!userId) return;
             
             try {
-                const res = await fetch(`${API_URL}/api/user/${userId}/activity`, {
+                const res = await fetch(`${API_URL}/api/user/${userId}/activity?ts=${Date.now()}`, {
+                    cache: 'no-store',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
                 
-                if (data.success && data.activities && data.activities.length > 0) {
+                if (data.success && Array.isArray(data.activities)) {
                     displayActivity(data.activities.slice(0, 5));
+                    return;
                 }
+                displayActivity([]);
             } catch (e) {
                 console.error('Activity load error:', e);
+                displayActivity([]);
             }
         }
         
         function displayActivity(activities) {
             const container = document.getElementById('activityList');
+
+            if (!activities || activities.length === 0) {
+                container.innerHTML = `
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div class="activity-content">
+                            <p>No recent activity yet</p>
+                            <span>New logins and transactions will appear here</span>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
             
             container.innerHTML = activities.map(activity => {
                 const date = new Date(activity.timestamp || activity.createdAt);
-                const timeAgo = getTimeAgo(date);
+                const timeAgo = (!isNaN(date.getTime())) ? getTimeAgo(date) : '-';
+
+                const actionText = activity.action || activity.title || activity.description || 'Activity';
+                const descText = (activity.action && activity.description)
+                    ? String(activity.description)
+                    : '';
+
+                const meta = [descText, timeAgo].filter(Boolean).join(' • ');
                 
                 return `
                     <div class="activity-item">
                         <div class="activity-dot"></div>
                         <div class="activity-content">
-                            <p>${activity.action || activity.description}</p>
-                            <span>${timeAgo}</span>
+                            <p>${escapeHtml(actionText)}</p>
+                            <span>${escapeHtml(meta || timeAgo)}</span>
                         </div>
                     </div>
                 `;
