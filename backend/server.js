@@ -825,6 +825,44 @@ function generateReferenceId(prefix = 'TXN') {
     return `${prefix}-${timestamp}-${random}`;
 }
 
+// Schema compatibility helpers (some deployments may have older/snake_case schemas)
+let _txColumnsCache = null;
+let _txColumnsCacheAt = 0;
+async function getTransactionsTableColumns() {
+    const now = Date.now();
+    if (_txColumnsCache && (now - _txColumnsCacheAt) < 5 * 60 * 1000) {
+        return _txColumnsCache;
+    }
+    try {
+        const [rows] = await pool.execute('SHOW COLUMNS FROM transactions');
+        const cols = Array.isArray(rows) ? rows.map(r => String(r.Field || '')).filter(Boolean) : [];
+        _txColumnsCache = cols;
+        _txColumnsCacheAt = now;
+        return cols;
+    } catch (e) {
+        // If the table doesn't exist or DB doesn't support SHOW COLUMNS, return null and let callers fall back.
+        return null;
+    }
+}
+
+function normalizeTransactionRow(row) {
+    const r = row || {};
+    const fromUserId = r.fromUserId ?? r.from_user_id ?? r.from_userId ?? r.fromuserid ?? null;
+    const toUserId = r.toUserId ?? r.to_user_id ?? r.to_userId ?? r.touserid ?? null;
+    const createdAt = r.createdAt ?? r.created_at ?? r.date ?? r.timestamp ?? r.created ?? null;
+    const reference = r.reference ?? r.reference_id ?? r.referenceId ?? r.ref ?? null;
+    const description = r.description ?? r.details ?? r.memo ?? r.note ?? null;
+
+    return {
+        ...r,
+        fromUserId,
+        toUserId,
+        createdAt,
+        reference,
+        description
+    };
+}
+
 // Calculate available balance (ledger - holds)
 async function getAvailableBalance(userId) {
     const [users] = await pool.execute('SELECT balance FROM users WHERE id = ?', [userId]);
@@ -3166,6 +3204,9 @@ app.get('/api/user/:userId/transactions', async (req, res) => {
 
         const decoded = jwt.verify(token, JWT_SECRET);
         const requestedUserId = parseInt(req.params.userId, 10);
+        if (!Number.isFinite(requestedUserId)) {
+            return res.status(400).json({ success: false, message: 'Invalid userId' });
+        }
 
         const [requesterRows] = await pool.execute('SELECT id, isAdmin FROM users WHERE id = ?', [decoded.id]);
         const requester = requesterRows[0];
@@ -3175,44 +3216,120 @@ app.get('/api/user/:userId/transactions', async (req, res) => {
             return res.status(403).json({ success: false, message: 'Forbidden' });
         }
 
-        let transactions = [];
-        try {
-            const [rows] = await pool.execute(
-                `SELECT t.*,
-                        uf.firstName AS fromFirstName, uf.lastName AS fromLastName,
-                        ut.firstName AS toFirstName, ut.lastName AS toLastName
-                 FROM transactions t
-                 LEFT JOIN users uf ON t.fromUserId = uf.id
-                 LEFT JOIN users ut ON t.toUserId = ut.id
-                 WHERE t.fromUserId = ? OR t.toUserId = ?
-                 ORDER BY t.createdAt DESC
-                 LIMIT 100`,
-                [requestedUserId, requestedUserId]
-            );
-            transactions = rows;
-        } catch (e) {
-            // Older schemas may use created_at instead of createdAt.
+        // Try to be resilient across schema versions.
+        // Supported patterns:
+        //  - fromUserId/toUserId (+ createdAt or created_at)
+        //  - from_user_id/to_user_id (+ created_at)
+        //  - userId/user_id
+        //  - accountId/account_id (joined via bank_accounts/accounts to user)
+        const cols = await getTransactionsTableColumns();
+        const colSet = new Set((cols || []).map(c => c.toLowerCase()));
+        const hasCol = (name) => colSet.has(String(name).toLowerCase());
+
+        const hasFrom = hasCol('fromUserId') || hasCol('from_user_id');
+        const hasTo = hasCol('toUserId') || hasCol('to_user_id');
+        const hasUser = hasCol('userId') || hasCol('user_id');
+        const hasAccount = hasCol('accountId') || hasCol('account_id');
+        const hasCreatedAt = hasCol('createdAt') || hasCol('created_at');
+
+        const fromExpr = (hasCol('fromUserId') && hasCol('from_user_id'))
+            ? 'COALESCE(t.fromUserId, t.from_user_id)'
+            : (hasCol('fromUserId') ? 't.fromUserId' : (hasCol('from_user_id') ? 't.from_user_id' : null));
+        const toExpr = (hasCol('toUserId') && hasCol('to_user_id'))
+            ? 'COALESCE(t.toUserId, t.to_user_id)'
+            : (hasCol('toUserId') ? 't.toUserId' : (hasCol('to_user_id') ? 't.to_user_id' : null));
+        const createdExpr = (hasCol('createdAt') && hasCol('created_at'))
+            ? 'COALESCE(t.createdAt, t.created_at)'
+            : (hasCol('createdAt') ? 't.createdAt' : (hasCol('created_at') ? 't.created_at' : 'NOW()'));
+
+        let rows = [];
+        const badField = (e) => {
             const msg = String(e && e.message ? e.message : '');
-            if (e && (e.code === 'ER_BAD_FIELD_ERROR' || msg.includes('createdAt'))) {
-                const [rows2] = await pool.execute(
+            return e && (e.code === 'ER_BAD_FIELD_ERROR' || msg.includes('Unknown column'));
+        };
+
+        // (1) Preferred: explicit from/to columns
+        if (hasFrom && hasTo && fromExpr && toExpr) {
+            try {
+                const [r] = await pool.execute(
                     `SELECT t.*,
-                            t.created_at AS createdAt,
+                            ${createdExpr} AS createdAt,
                             uf.firstName AS fromFirstName, uf.lastName AS fromLastName,
                             ut.firstName AS toFirstName, ut.lastName AS toLastName
                      FROM transactions t
-                     LEFT JOIN users uf ON t.fromUserId = uf.id
-                     LEFT JOIN users ut ON t.toUserId = ut.id
-                     WHERE t.fromUserId = ? OR t.toUserId = ?
-                     ORDER BY t.created_at DESC
+                     LEFT JOIN users uf ON ${fromExpr} = uf.id
+                     LEFT JOIN users ut ON ${toExpr} = ut.id
+                     WHERE ${fromExpr} = ? OR ${toExpr} = ?
+                     ORDER BY ${createdExpr} DESC
                      LIMIT 100`,
                     [requestedUserId, requestedUserId]
                 );
-                transactions = rows2;
-            } else {
-                throw e;
+                rows = r;
+            } catch (e) {
+                if (!badField(e)) throw e;
+                rows = [];
             }
         }
 
+        // (2) Legacy: a single userId column on transactions
+        if ((!rows || rows.length === 0) && hasUser) {
+            const userCol = hasCol('userId') ? 't.userId' : 't.user_id';
+            try {
+                const [r] = await pool.execute(
+                    `SELECT t.*,
+                            ${createdExpr} AS createdAt
+                     FROM transactions t
+                     WHERE ${userCol} = ?
+                     ORDER BY ${createdExpr} DESC
+                     LIMIT 100`,
+                    [requestedUserId]
+                );
+                rows = r;
+            } catch (e) {
+                if (!badField(e)) throw e;
+                rows = [];
+            }
+        }
+
+        // (3) Account-ledger schema: transactions keyed by accountId/account_id
+        if ((!rows || rows.length === 0) && hasAccount) {
+            const accountCol = hasCol('accountId') ? 't.accountId' : 't.account_id';
+            let accountIds = [];
+            // Try our MySQL schema first
+            try {
+                const [acctRows] = await pool.execute('SELECT id FROM bank_accounts WHERE userId = ? AND status != "closed"', [requestedUserId]);
+                accountIds = (acctRows || []).map(a => a.id).filter(id => Number.isFinite(Number(id)));
+            } catch (e) {
+                // Fallback to a more SQL-standard schema (accounts/user_id)
+                try {
+                    const [acctRows2] = await pool.execute('SELECT id FROM accounts WHERE user_id = ? AND status != "closed"', [requestedUserId]);
+                    accountIds = (acctRows2 || []).map(a => a.id).filter(id => Number.isFinite(Number(id)));
+                } catch (e2) {
+                    accountIds = [];
+                }
+            }
+
+            if (accountIds.length > 0) {
+                const placeholders = accountIds.map(() => '?').join(',');
+                try {
+                    const [r] = await pool.execute(
+                        `SELECT t.*,
+                                ${createdExpr} AS createdAt
+                         FROM transactions t
+                         WHERE ${accountCol} IN (${placeholders})
+                         ORDER BY ${createdExpr} DESC
+                         LIMIT 100`,
+                        accountIds
+                    );
+                    rows = r;
+                } catch (e) {
+                    if (!badField(e)) throw e;
+                    rows = [];
+                }
+            }
+        }
+
+        const transactions = (rows || []).map(normalizeTransactionRow);
         res.json({ success: true, transactions, txCount: transactions.length });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

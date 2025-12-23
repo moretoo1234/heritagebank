@@ -475,15 +475,31 @@
                 });
                 const data = await res.json();
 
-                if (data.success && Array.isArray(data.transactions)) {
+                if (!res.ok || !data?.success) {
+                    const msg = data?.message || `Failed to load transactions (HTTP ${res.status})`;
+                    displayTransactionsError(msg);
+                    return;
+                }
+
+                if (Array.isArray(data.transactions)) {
                     displayTransactions(data.transactions.slice(0, 5));
                 } else {
-                    displayTransactions([]);
+                    displayTransactionsError('Transactions response was not in the expected format.');
                 }
             } catch (e) {
                 console.error('Transactions load error:', e);
-                displayTransactions([]);
+                displayTransactionsError('Could not load transactions. Please refresh and try again.');
             }
+        }
+
+        function displayTransactionsError(message) {
+            const container = document.getElementById('transactionsList');
+            container.innerHTML = `
+                <div class="no-transactions">
+                    <i class="fas fa-exclamation-triangle" style="color:#d9534f;"></i>
+                    <p style="color:#d9534f;">${escapeHtml(message)}</p>
+                </div>
+            `;
         }
 
         function escapeHtml(value) {
