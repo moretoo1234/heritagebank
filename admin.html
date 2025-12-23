@@ -1093,14 +1093,28 @@
                         description: document.getElementById('creditDescription').value || 'Admin Credit'
                     })
                 });
-                const data = await res.json();
-                if (data.success) {
+                const raw = await res.text();
+                let data = null;
+                try { data = raw ? JSON.parse(raw) : null; } catch (_) { data = null; }
+
+                if (res.ok && data && data.success) {
                     showAlert('creditAlert', `✓ Credited $${document.getElementById('creditAmount').value} successfully!`, true);
                     document.getElementById('creditAmount').value = '';
                     document.getElementById('creditDescription').value = '';
-                    loadDashboardStats();
+                    // Refresh dashboards/lists so the admin immediately sees updated balances/transactions.
+                    try {
+                        await loadAdminAccount();
+                        await loadDashboardStats();
+                        await loadAllUsers();
+                        await loadTransactions();
+                    } catch (_) {
+                        // best-effort
+                    }
                 } else {
-                    showAlert('creditAlert', '✗ ' + data.message, false);
+                    const msg = (data && data.message)
+                        ? data.message
+                        : (raw ? raw : 'Request failed');
+                    showAlert('creditAlert', `✗ (${res.status}) ${msg}`, false);
                 }
             } catch (e) {
                 showAlert('creditAlert', '✗ Error: ' + e.message, false);
@@ -1124,14 +1138,28 @@
                         description: document.getElementById('debitDescription').value || 'Admin Debit'
                     })
                 });
-                const data = await res.json();
-                if (data.success) {
+                const raw = await res.text();
+                let data = null;
+                try { data = raw ? JSON.parse(raw) : null; } catch (_) { data = null; }
+
+                if (res.ok && data && data.success) {
                     showAlert('debitAlert', `✓ Debited $${document.getElementById('debitAmount').value} successfully!`, true);
                     document.getElementById('debitAmount').value = '';
                     document.getElementById('debitDescription').value = '';
-                    loadDashboardStats();
+                    // Refresh dashboards/lists so the admin immediately sees updated balances/transactions.
+                    try {
+                        await loadAdminAccount();
+                        await loadDashboardStats();
+                        await loadAllUsers();
+                        await loadTransactions();
+                    } catch (_) {
+                        // best-effort
+                    }
                 } else {
-                    showAlert('debitAlert', '✗ ' + data.message, false);
+                    const msg = (data && data.message)
+                        ? data.message
+                        : (raw ? raw : 'Request failed');
+                    showAlert('debitAlert', `✗ (${res.status}) ${msg}`, false);
                 }
             } catch (e) {
                 showAlert('debitAlert', '✗ Error: ' + e.message, false);

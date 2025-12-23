@@ -78,8 +78,73 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Avoid stale HTML in production (e.g., admin.html cached by browser/CDN).
+// Static assets like CSS/JS can still be cached normally, but HTML should generally be revalidated.
+app.use((req, res, next) => {
+    try {
+        if (req.path && req.path.toLowerCase().endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-store, max-age=0');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+    } catch (e) {
+        // best-effort
+    }
+    next();
+});
+
 // Serve static frontend files from parent directory (for unified deployment)
-app.use(express.static(path.join(__dirname, '..')));
+// NOTE: We explicitly disable caching for HTML so that admin.html updates propagate reliably.
+app.use(express.static(path.join(__dirname, '..'), {
+    setHeaders: (res, filePath) => {
+        try {
+            if (filePath && filePath.toLowerCase().endsWith('.html')) {
+                res.setHeader('Cache-Control', 'no-store, max-age=0');
+                res.setHeader('Pragma', 'no-cache');
+                res.setHeader('Expires', '0');
+            }
+        } catch (e) {
+            // best-effort
+        }
+    }
+}));
+
+// Build/runtime diagnostics to help verify what code+assets are actually deployed.
+// NOTE: Keep this non-sensitive (no DB creds, no secrets).
+app.get('/api/build-info', async (req, res) => {
+    try {
+        const adminPath = path.join(__dirname, '..', 'admin.html');
+        let adminStat = null;
+        try {
+            const s = fs.statSync(adminPath);
+            adminStat = {
+                exists: true,
+                size: s.size,
+                mtime: s.mtime,
+            };
+        } catch (e) {
+            adminStat = { exists: false };
+        }
+
+        return res.json({
+            success: true,
+            server: 'backend/server.js',
+            serverVersion: SERVER_VERSION,
+            node: process.version,
+            env: {
+                nodeEnv: process.env.NODE_ENV || null,
+                renderGitCommit: process.env.RENDER_GIT_COMMIT || null,
+                renderServiceId: process.env.RENDER_SERVICE_ID || null,
+                renderInstanceId: process.env.RENDER_INSTANCE_ID || null,
+            },
+            staticAssets: {
+                adminHtml: adminStat,
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+});
 
 // Database Connection Pool - Uses Environment Variables
 const pool = mysql.createPool({
@@ -2172,6 +2237,17 @@ app.get('/api/health', (req, res) => {
         status: 'ok',
         server: 'backend/server.js',
         version: SERVER_VERSION,
+        build: {
+            renderService: process.env.RENDER_SERVICE_NAME || null,
+            renderCommit: process.env.RENDER_GIT_COMMIT || null,
+            gitCommit: process.env.GIT_COMMIT || null,
+            nodeEnv: process.env.NODE_ENV || null
+        },
+        features: {
+            adminCreditAccount: true,
+            adminDebitAccount: true,
+            adminTransfer: true
+        },
         database: 'Ready',
         timestamp: new Date().toISOString()
     });
@@ -2768,7 +2844,20 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
 app.post('/api/admin/credit-account', requireAuth, requireAdmin, async (req, res) => {
     const connection = await pool.getConnection();
     try {
-        const { email, accountNumber, amount, reason, notes, recipient, description } = req.body;
+        const {
+            email,
+            accountNumber,
+            // alternate field names some frontends may send
+            toEmail,
+            toAccountNumber,
+            recipientEmail,
+            recipientAccountNumber,
+            amount,
+            reason,
+            notes,
+            recipient,
+            description
+        } = req.body;
 
         const amountValue = parseFloat(amount);
         if (!Number.isFinite(amountValue) || amountValue <= 0) {
@@ -2776,9 +2865,20 @@ app.post('/api/admin/credit-account', requireAuth, requireAdmin, async (req, res
         }
 
         // Support admin.html payload: { recipient: "email-or-account", description }
+        // Support alternate shapes: { email }, { accountNumber }, { toEmail }, { toAccountNumber }, etc.
         const recipientValue = recipient ? String(recipient).trim() : '';
-        const emailValue = email ? String(email).trim().toLowerCase() : (recipientValue.includes('@') ? recipientValue.toLowerCase() : '');
-        const accountNumberValue = accountNumber ? String(accountNumber).trim() : (!recipientValue.includes('@') ? recipientValue : '');
+        const rawEmail =
+            (email ?? toEmail ?? recipientEmail ?? '').toString().trim();
+        const rawAccount =
+            (accountNumber ?? toAccountNumber ?? recipientAccountNumber ?? '').toString().trim();
+
+        const emailValue = rawEmail
+            ? rawEmail.toLowerCase()
+            : (recipientValue.includes('@') ? recipientValue.toLowerCase() : '');
+
+        // Be forgiving: strip non-digits so values like "Acct: 123-456" still work.
+        const accountCandidate = rawAccount || (!recipientValue.includes('@') ? recipientValue : '');
+        const accountNumberValue = accountCandidate ? accountCandidate.replace(/\D/g, '') : '';
 
         await connection.beginTransaction();
 
@@ -2848,7 +2948,21 @@ app.post('/api/admin/credit-account', requireAuth, requireAdmin, async (req, res
 app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res) => {
     const connection = await pool.getConnection();
     try {
-        const { email, accountNumber, amount, reason, notes, forceDebit, recipient, description } = req.body;
+        const {
+            email,
+            accountNumber,
+            // alternate field names some frontends may send
+            toEmail,
+            toAccountNumber,
+            recipientEmail,
+            recipientAccountNumber,
+            amount,
+            reason,
+            notes,
+            forceDebit,
+            recipient,
+            description
+        } = req.body;
 
         const amountValue = parseFloat(amount);
         if (!Number.isFinite(amountValue) || amountValue <= 0) {
@@ -2856,8 +2970,17 @@ app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res)
         }
 
         const recipientValue = recipient ? String(recipient).trim() : '';
-        const emailValue = email ? String(email).trim().toLowerCase() : (recipientValue.includes('@') ? recipientValue.toLowerCase() : '');
-        const accountNumberValue = accountNumber ? String(accountNumber).trim() : (!recipientValue.includes('@') ? recipientValue : '');
+        const rawEmail =
+            (email ?? toEmail ?? recipientEmail ?? '').toString().trim();
+        const rawAccount =
+            (accountNumber ?? toAccountNumber ?? recipientAccountNumber ?? '').toString().trim();
+
+        const emailValue = rawEmail
+            ? rawEmail.toLowerCase()
+            : (recipientValue.includes('@') ? recipientValue.toLowerCase() : '');
+
+        const accountCandidate = rawAccount || (!recipientValue.includes('@') ? recipientValue : '');
+        const accountNumberValue = accountCandidate ? accountCandidate.replace(/\D/g, '') : '';
 
         await connection.beginTransaction();
 
