@@ -9,6 +9,9 @@ require('dotenv').config();
 
 const app = express();
 
+// Server version for debugging
+const SERVER_VERSION = "2.0.0-" + new Date().toISOString().split('T')[0];
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -358,6 +361,8 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({ 
         status: 'ok',
         message: 'Heritage Bank Backend is running',
+        version: SERVER_VERSION,
+        server: 'root-server.js',
         database: 'Ready',
         timestamp: new Date().toISOString()
     });
