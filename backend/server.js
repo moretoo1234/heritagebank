@@ -38,6 +38,25 @@ process.on('exit', (code) => {
 
 const app = express();
 
+// Reduce 304/stale asset issues. In some CDN/browser setups, ETags can cause
+// clients to keep using an older HTML even after deploy.
+app.set('etag', false);
+
+function setNoStoreHeaders(res) {
+    try {
+        // Browser + proxy caches
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+
+        // Helpful hints for CDNs (e.g., Cloudflare) - best effort.
+        res.setHeader('Surrogate-Control', 'no-store');
+        res.setHeader('CDN-Cache-Control', 'no-store');
+    } catch (e) {
+        // best-effort
+    }
+}
+
 // Server version for debugging (matches root server convention)
 const SERVER_VERSION = "2.0.0-" + new Date().toISOString().split('T')[0];
 
@@ -80,13 +99,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Prevent stale API JSON responses (e.g., transaction history) from being cached by browsers/CDNs.
 app.use('/api', (req, res, next) => {
-    try {
-        res.setHeader('Cache-Control', 'no-store, max-age=0');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-    } catch (e) {
-        // best-effort
-    }
+    setNoStoreHeaders(res);
     next();
 });
 
@@ -95,14 +108,24 @@ app.use('/api', (req, res, next) => {
 app.use((req, res, next) => {
     try {
         if (req.path && req.path.toLowerCase().endsWith('.html')) {
-            res.setHeader('Cache-Control', 'no-store, max-age=0');
-            res.setHeader('Pragma', 'no-cache');
-            res.setHeader('Expires', '0');
+            setNoStoreHeaders(res);
         }
     } catch (e) {
         // best-effort
     }
     next();
+});
+
+// "Latest" HTML endpoints to bypass stale cached /admin.html and /dashboard.html
+// in environments where a CDN ignores querystrings and/or caches HTML too aggressively.
+app.get(['/admin-new', '/admin-latest'], (req, res) => {
+    setNoStoreHeaders(res);
+    return res.sendFile(path.join(__dirname, '..', 'admin.html'));
+});
+
+app.get(['/dashboard-new', '/dashboard-latest'], (req, res) => {
+    setNoStoreHeaders(res);
+    return res.sendFile(path.join(__dirname, '..', 'dashboard.html'));
 });
 
 // Serve static frontend files from parent directory (for unified deployment)
@@ -111,9 +134,7 @@ app.use(express.static(path.join(__dirname, '..'), {
     setHeaders: (res, filePath) => {
         try {
             if (filePath && filePath.toLowerCase().endsWith('.html')) {
-                res.setHeader('Cache-Control', 'no-store, max-age=0');
-                res.setHeader('Pragma', 'no-cache');
-                res.setHeader('Expires', '0');
+                setNoStoreHeaders(res);
             }
         } catch (e) {
             // best-effort
@@ -4114,19 +4135,45 @@ app.get('/api/login-history', async (req, res) => {
 // Get all transactions (admin only)
 app.get('/api/transactions/all', requireAuth, requireAdmin, async (req, res) => {
     try {
-        const [transactions] = await pool.execute(`
-            SELECT t.*, 
+        const cols = await getTransactionsTableColumns();
+        const colSet = new Set((cols || []).map(c => String(c).toLowerCase()));
+        const hasCol = (name) => colSet.has(String(name).toLowerCase());
+
+        const fromExpr = (hasCol('fromUserId') && hasCol('from_user_id'))
+            ? 'COALESCE(t.fromUserId, t.from_user_id)'
+            : (hasCol('fromUserId') ? 't.fromUserId' : (hasCol('from_user_id') ? 't.from_user_id' : null));
+        const toExpr = (hasCol('toUserId') && hasCol('to_user_id'))
+            ? 'COALESCE(t.toUserId, t.to_user_id)'
+            : (hasCol('toUserId') ? 't.toUserId' : (hasCol('to_user_id') ? 't.to_user_id' : null));
+        const createdExpr = (hasCol('createdAt') && hasCol('created_at'))
+            ? 'COALESCE(t.createdAt, t.created_at)'
+            : (hasCol('createdAt') ? 't.createdAt' : (hasCol('created_at') ? 't.created_at' : 'NOW()'));
+        const refExpr = (hasCol('reference') && hasCol('reference_id'))
+            ? 'COALESCE(t.reference, t.reference_id)'
+            : (hasCol('reference') ? 't.reference' : (hasCol('reference_id') ? 't.reference_id' : 'NULL'));
+        const descExpr = (hasCol('description') ? 't.description' : (hasCol('details') ? 't.details' : (hasCol('memo') ? 't.memo' : 't.description')));
+
+        // Build joins only when the linking columns exist.
+        const joinSender = fromExpr ? `LEFT JOIN users u1 ON ${fromExpr} = u1.id` : `LEFT JOIN users u1 ON 1=0`;
+        const joinRecipient = toExpr ? `LEFT JOIN users u2 ON ${toExpr} = u2.id` : `LEFT JOIN users u2 ON 1=0`;
+
+        const [rows] = await pool.execute(`
+            SELECT t.*,
+                   ${createdExpr} AS createdAt,
+                   ${refExpr} AS reference,
+                   ${descExpr} AS description,
                    u1.firstName as senderFirst, u1.lastName as senderLast,
                    u1.email as senderEmail, u1.accountNumber as senderAccountNumber,
                    u2.firstName as recipientFirst, u2.lastName as recipientLast,
                    u2.email as recipientEmail, u2.accountNumber as recipientAccountNumber
             FROM transactions t
-            LEFT JOIN users u1 ON t.fromUserId = u1.id
-            LEFT JOIN users u2 ON t.toUserId = u2.id
-            ORDER BY t.createdAt DESC
+            ${joinSender}
+            ${joinRecipient}
+            ORDER BY ${createdExpr} DESC
             LIMIT 100
         `);
-        
+
+        const transactions = (rows || []).map(normalizeTransactionRow);
         res.json({ success: true, transactions });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -4213,6 +4260,13 @@ app.post('/api/auth/reset-password', async (req, res) => {
 // Get dashboard statistics
 app.get('/api/admin/dashboard-stats', requireAuth, requireAdmin, async (req, res) => {
     try {
+        const cols = await getTransactionsTableColumns();
+        const colSet = new Set((cols || []).map(c => String(c).toLowerCase()));
+        const hasCol = (name) => colSet.has(String(name).toLowerCase());
+        const createdExpr = (hasCol('createdAt') && hasCol('created_at'))
+            ? 'COALESCE(createdAt, created_at)'
+            : (hasCol('createdAt') ? 'createdAt' : (hasCol('created_at') ? 'created_at' : null));
+
         // Total users
         const [userCount] = await pool.execute('SELECT COUNT(*) as count FROM users WHERE accountStatus != "deleted"');
         
@@ -4220,11 +4274,9 @@ app.get('/api/admin/dashboard-stats', requireAuth, requireAdmin, async (req, res
         const [totalBalance] = await pool.execute('SELECT SUM(balance) as total FROM users WHERE accountStatus != "deleted"');
         
         // Today's transactions
-        const [todayTxns] = await pool.execute(`
-            SELECT COUNT(*) as count 
-            FROM transactions 
-            WHERE DATE(createdAt) = CURDATE()
-        `);
+        const [todayTxns] = createdExpr
+            ? await pool.execute(`SELECT COUNT(*) as count FROM transactions WHERE DATE(${createdExpr}) = CURDATE()`)
+            : [[{ count: 0 }]];
         
         // Pending loans
         const [pendingLoans] = await pool.execute(`
@@ -4234,11 +4286,13 @@ app.get('/api/admin/dashboard-stats', requireAuth, requireAdmin, async (req, res
         `);
         
         // Total transactions this month
-        const [monthlyTxns] = await pool.execute(`
-            SELECT COUNT(*) as count, SUM(amount) as volume
-            FROM transactions 
-            WHERE MONTH(createdAt) = MONTH(CURDATE()) AND YEAR(createdAt) = YEAR(CURDATE())
-        `);
+        const [monthlyTxns] = createdExpr
+            ? await pool.execute(
+                `SELECT COUNT(*) as count, SUM(amount) as volume
+                 FROM transactions
+                 WHERE MONTH(${createdExpr}) = MONTH(CURDATE()) AND YEAR(${createdExpr}) = YEAR(CURDATE())`
+              )
+            : [[{ count: 0, volume: 0 }]];
         
         // Active users (logged in last 30 days)
         const [activeUsers] = await pool.execute(`
@@ -4332,16 +4386,40 @@ app.get('/api/admin/search-users', requireAuth, requireAdmin, async (req, res) =
 app.get('/api/admin/search-transactions', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { query: searchQuery, accountNumber, startDate, endDate, minAmount, maxAmount, type } = req.query;
+
+        const cols = await getTransactionsTableColumns();
+        const colSet = new Set((cols || []).map(c => String(c).toLowerCase()));
+        const hasCol = (name) => colSet.has(String(name).toLowerCase());
+
+        const fromExpr = (hasCol('fromUserId') && hasCol('from_user_id'))
+            ? 'COALESCE(t.fromUserId, t.from_user_id)'
+            : (hasCol('fromUserId') ? 't.fromUserId' : (hasCol('from_user_id') ? 't.from_user_id' : null));
+        const toExpr = (hasCol('toUserId') && hasCol('to_user_id'))
+            ? 'COALESCE(t.toUserId, t.to_user_id)'
+            : (hasCol('toUserId') ? 't.toUserId' : (hasCol('to_user_id') ? 't.to_user_id' : null));
+        const createdExpr = (hasCol('createdAt') && hasCol('created_at'))
+            ? 'COALESCE(t.createdAt, t.created_at)'
+            : (hasCol('createdAt') ? 't.createdAt' : (hasCol('created_at') ? 't.created_at' : 'NOW()'));
+        const refExpr = (hasCol('reference') && hasCol('reference_id'))
+            ? 'COALESCE(t.reference, t.reference_id)'
+            : (hasCol('reference') ? 't.reference' : (hasCol('reference_id') ? 't.reference_id' : 'NULL'));
+        const descExpr = (hasCol('description') ? 't.description' : (hasCol('details') ? 't.details' : (hasCol('memo') ? 't.memo' : 't.description')));
+
+        const joinSender = fromExpr ? `LEFT JOIN users sender ON ${fromExpr} = sender.id` : `LEFT JOIN users sender ON 1=0`;
+        const joinRecipient = toExpr ? `LEFT JOIN users recipient ON ${toExpr} = recipient.id` : `LEFT JOIN users recipient ON 1=0`;
         
         let query = `
             SELECT t.*, 
+                   ${createdExpr} AS createdAt,
+                   ${refExpr} AS reference,
+                   ${descExpr} AS description,
                    sender.firstName as senderFirst, sender.lastName as senderLast,
                    sender.email as senderEmail, sender.accountNumber as senderAccountNumber,
                    recipient.firstName as recipientFirst, recipient.lastName as recipientLast,
                    recipient.email as recipientEmail, recipient.accountNumber as recipientAccountNumber
             FROM transactions t
-            LEFT JOIN users sender ON t.fromUserId = sender.id
-            LEFT JOIN users recipient ON t.toUserId = recipient.id
+            ${joinSender}
+            ${joinRecipient}
             WHERE 1=1
         `;
         const params = [];
@@ -4351,7 +4429,7 @@ app.get('/api/admin/search-transactions', requireAuth, requireAdmin, async (req,
             const like = `%${String(searchQuery).trim()}%`;
             query += `
                 AND (
-                    t.reference LIKE ? OR t.description LIKE ?
+                    ${refExpr} LIKE ? OR ${descExpr} LIKE ?
                     OR sender.email LIKE ? OR recipient.email LIKE ?
                     OR sender.accountNumber LIKE ? OR recipient.accountNumber LIKE ?
                     OR sender.firstName LIKE ? OR sender.lastName LIKE ?
@@ -4367,12 +4445,12 @@ app.get('/api/admin/search-transactions', requireAuth, requireAdmin, async (req,
         }
         
         if (startDate) {
-            query += ` AND DATE(t.createdAt) >= ?`;
+            query += ` AND DATE(${createdExpr}) >= ?`;
             params.push(startDate);
         }
         
         if (endDate) {
-            query += ` AND DATE(t.createdAt) <= ?`;
+            query += ` AND DATE(${createdExpr}) <= ?`;
             params.push(endDate);
         }
         
@@ -4391,9 +4469,10 @@ app.get('/api/admin/search-transactions', requireAuth, requireAdmin, async (req,
             params.push(type);
         }
 
-        query += ` ORDER BY t.createdAt DESC LIMIT 100`;
+        query += ` ORDER BY ${createdExpr} DESC LIMIT 100`;
 
-        const [transactions] = await pool.execute(query, params);
+        const [rows] = await pool.execute(query, params);
+        const transactions = (rows || []).map(normalizeTransactionRow);
         res.json({ success: true, transactions });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

@@ -550,7 +550,20 @@
             }
             
             container.innerHTML = transactions.map(tx => {
-                const isCredit = tx.type === 'credit' || tx.type === 'deposit' || tx.type === 'received';
+                const me = Number(userId);
+                const fromId = Number(tx?.fromUserId);
+                const toId = Number(tx?.toUserId);
+
+                // Prefer direction-based credit/debit for transfers.
+                let isCredit = false;
+                if (Number.isFinite(me) && Number.isFinite(toId) && toId === me) {
+                    isCredit = true;
+                } else if (Number.isFinite(me) && Number.isFinite(fromId) && fromId === me) {
+                    isCredit = false;
+                } else {
+                    const t = String(tx?.type || '').toLowerCase();
+                    isCredit = (t === 'credit' || t === 'deposit' || t === 'received' || t === 'transfer_in');
+                }
                 const icon = isCredit ? 'fa-arrow-down' : 'fa-arrow-up';
                 const amountClass = isCredit ? 'credit' : 'debit';
                 const amountPrefix = isCredit ? '+' : '-';

@@ -972,7 +972,7 @@
 
             const status = t.status || 'completed';
             const type = t.type || 'transfer';
-            const ref = t.reference || '-';
+            const ref = t.reference || t.reference_id || '-';
             const desc = t.description || '-';
 
             document.getElementById('transactionModalContent').innerHTML = `
@@ -988,12 +988,12 @@
                     <div class="detail-item"><div class="label">From (Name)</div><div class="value">${escapeHtml(fromName)}</div></div>
                     <div class="detail-item"><div class="label">From (Email)</div><div class="value">${escapeHtml(fromEmail)}</div></div>
                     <div class="detail-item"><div class="label">From (Account)</div><div class="value">${escapeHtml(fromAcct)}</div></div>
-                    <div class="detail-item"><div class="label">From User ID</div><div class="value">${escapeHtml(t.fromUserId ?? '-')}</div></div>
+                    <div class="detail-item"><div class="label">From User ID</div><div class="value">${escapeHtml((t.fromUserId ?? t.from_user_id) ?? '-')}</div></div>
 
                     <div class="detail-item"><div class="label">To (Name)</div><div class="value">${escapeHtml(toName)}</div></div>
                     <div class="detail-item"><div class="label">To (Email)</div><div class="value">${escapeHtml(toEmail)}</div></div>
                     <div class="detail-item"><div class="label">To (Account)</div><div class="value">${escapeHtml(toAcct)}</div></div>
-                    <div class="detail-item"><div class="label">To User ID</div><div class="value">${escapeHtml(t.toUserId ?? '-')}</div></div>
+                    <div class="detail-item"><div class="label">To User ID</div><div class="value">${escapeHtml((t.toUserId ?? t.to_user_id) ?? '-')}</div></div>
                 </div>
 
                 <div style="margin-top: 16px;">
