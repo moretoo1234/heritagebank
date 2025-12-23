@@ -24,19 +24,19 @@ Click **Advanced** → **Add Environment Variable** for each:
 
 | Key | Value |
 |-----|-------|
-| `DB_HOST` | `gateway02.us-east-1.prod.aws.tidbcloud.com` |
+| `DB_HOST` | `<your-db-host>` |
 | `DB_PORT` | `4000` |
-| `DB_USER` | `JFuLJ45NfRfBSN9.root` |
-| `DB_PASSWORD` | `Nt8gO8tMGu4T8mJ1ui9X` |
-| `DB_NAME` | `S7YJ2XbutEnzhih9Qut8LJ` |
-| `JWT_SECRET` | `heritage-bank-secret-2024` |
+| `DB_USER` | `<your-db-user>` |
+| `DB_PASSWORD` | `<your-db-password>` |
+| `DB_NAME` | `<your-db-name>` |
+| `JWT_SECRET` | `<long-random-secret>` |
 | `ADMIN_EMAIL` | `admin@heritagebank.com` |
-| `ADMIN_PASSWORD` | `AdminPass123456` |
+| `ADMIN_PASSWORD` | `<strong-admin-password>` |
 
 ### Step 4: Deploy
 Click **Create Web Service**
 
-Your app will be live at: `https://heritage-bank.onrender.com`
+Your app will be live at: `https://<your-service>.onrender.com`
 
 ---
 
@@ -49,4 +49,4 @@ Your app will be live at: `https://heritage-bank.onrender.com`
 
 ## Admin Access
 - **Email**: admin@heritagebank.com
-- **Password**: AdminPass123456
+- **Password**: Set via `ADMIN_PASSWORD` in your Render environment variables (do not hardcode in the repo).

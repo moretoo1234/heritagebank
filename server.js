@@ -66,7 +66,13 @@ let cardIdCounter = 1;
 const usedAccountNumbers = new Set(); // Track used account numbers for uniqueness
 
 // JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || 'heritage-bank-secret-2024';
+// - In production, JWT_SECRET must be provided via environment variables.
+// - In local/dev runs, fall back to a known dev default.
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-jwt-secret-change-me' : null);
+if (!JWT_SECRET) {
+    console.error('❌ JWT_SECRET environment variable is required');
+    process.exit(1);
+}
 
 // Banking Details
 const ROUTING_NUMBER = '091238946';
@@ -137,31 +143,34 @@ async function initializeDatabase() {
         }
 
         // Check if admin exists
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@heritagebank.com';
         const [adminCheck] = await connection.execute(
             'SELECT * FROM users WHERE email = ?',
-            ['admin@heritagebank.com']
+            [adminEmail]
         );
 
-        if (adminCheck.length === 0) {
-            const hashedPassword = await bcrypt.hash('AdminPass123456', 10);
+        // Only auto-create an admin if ADMIN_PASSWORD is explicitly provided.
+        // (Never hardcode credentials into the repo.)
+        if (adminCheck.length === 0 && process.env.ADMIN_PASSWORD) {
+            const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
             const adminAccountNumber = generateAccountNumber();
             
             await connection.execute(
                 `INSERT INTO users (firstName, lastName, email, password, phone, dob, country, accountType, address, city, state, zip, accountNumber, routingNumber, balance, isAdmin) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                ['Admin', 'User', 'admin@heritagebank.com', hashedPassword, '1-800-BANK-001', '1980-01-01', 'United States', 'admin', 'Heritage Bank HQ', 'New York', 'NY', '10001', adminAccountNumber, ROUTING_NUMBER, 100000000, true]
+                ['Admin', 'User', adminEmail, hashedPassword, '1-800-BANK-001', '1980-01-01', 'United States', 'admin', 'Heritage Bank HQ', 'New York', 'NY', '10001', adminAccountNumber, ROUTING_NUMBER, 100000000, true]
             );
 
-            console.log('✅ Default Admin Account Created');
-            console.log('📧 Email: admin@heritagebank.com');
-            console.log('🔐 Password: AdminPass123456');
+            console.log('✅ Admin account created');
+            console.log(`📧 Email: ${adminEmail}`);
+            console.log('🔐 Password: (set via ADMIN_PASSWORD env var)');
             console.log('💳 Account #: ' + adminAccountNumber);
             console.log('🏦 Routing #: ' + ROUTING_NUMBER);
         } else {
             // Ensure existing admin has isAdmin set to true
             await connection.execute(
                 'UPDATE users SET isAdmin = true WHERE email = ?',
-                ['admin@heritagebank.com']
+                [adminEmail]
             );
         }
 
@@ -4166,8 +4175,8 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`   ✓ Scheduled & Recurring Transfers`);
     console.log(`   ✓ Monthly Statements\n`);
     console.log(`🔐 ADMIN ACCESS:\n`);
-    console.log(`   Email: admin@heritagebank.com`);
-    console.log(`   Password: AdminPass123456\n`);
+    console.log(`   Email: ${process.env.ADMIN_EMAIL || 'admin@heritagebank.com'}`);
+    console.log(`   Password: (set via ADMIN_PASSWORD env var)\n`);
     console.log(`🌐 TOTAL ENDPOINTS: 50+\n`);
 });
 

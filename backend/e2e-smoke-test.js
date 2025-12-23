@@ -10,6 +10,12 @@
 
 const BASE = process.env.E2E_BASE_URL || 'http://localhost:3001';
 
+// Allow local env via backend/.env without committing secrets.
+try {
+  const path = require('path');
+  require('dotenv').config({ path: path.join(__dirname, '.env') });
+} catch {}
+
 async function j(method, path, body, token) {
   const res = await fetch(BASE + path, {
     method,
@@ -39,8 +45,11 @@ function maskedToken(t) {
 (async () => {
   const stamp = Date.now();
 
-  const adminEmail = process.env.E2E_ADMIN_EMAIL || 'admin@heritagebank.com';
-  const adminPassword = process.env.E2E_ADMIN_PASSWORD || 'AdminPass123456';
+  const adminEmail = process.env.E2E_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@heritagebank.com';
+  const adminPassword = process.env.E2E_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;
+  if (!adminPassword) {
+    throw new Error('Missing E2E_ADMIN_PASSWORD. Set it in your environment or in backend/.env');
+  }
 
   console.log('1) Admin login');
   const adminLogin = await j('POST', '/api/auth/login', { email: adminEmail, password: adminPassword });

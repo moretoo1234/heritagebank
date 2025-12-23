@@ -32,14 +32,14 @@
    In Render Dashboard → Environment:
 
    ```
-   DB_HOST=gateway02.us-east-1.prod.aws.tidbcloud.com
+   DB_HOST=<your-db-host>
    DB_PORT=4000
-   DB_USER=JFuLJ45NfRfBSN9.root
-   DB_PASSWORD=Nt8gO8tMGu4T8mJ1ui9X
-   DB_NAME=S7YJ2XbutEnzhih9Qut8LJ
-   JWT_SECRET=heritage-bank-secret-2024
+   DB_USER=<your-db-user>
+   DB_PASSWORD=<your-db-password>
+   DB_NAME=<your-db-name>
+   JWT_SECRET=<long-random-secret>
    ADMIN_EMAIL=admin@heritagebank.com
-   ADMIN_PASSWORD=AdminPass123456
+   ADMIN_PASSWORD=<strong-admin-password>
    ROUTING_NUMBER=091238946
    PORT=3001
    NODE_ENV=production
@@ -120,12 +120,14 @@ const API_URL = window.location.hostname === 'localhost'
 ## 📊 Database Connection
 
 TiDB Cloud connection details are in `.env`:
-- **Host:** gateway02.us-east-1.prod.aws.tidbcloud.com
+- **Host:** <your-db-host>
 - **Port:** 4000
-- **Database:** S7YJ2XbutEnzhih9Qut8LJ
-- **User:** JFuLJ45NfRfBSN9.root
+- **Database:** <your-db-name>
+- **User:** <your-db-user>
 
 Server automatically creates tables on first run if they don't exist.
+
+⚠️ Never commit real credentials to the repository. Use Render environment variables for production.
 
 ## 🐛 Troubleshooting
 

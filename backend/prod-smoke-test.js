@@ -19,6 +19,12 @@
 
 const BASE = process.env.E2E_BASE_URL || 'https://heritagebank-ku1y.onrender.com';
 
+// Allow local env via backend/.env without committing secrets.
+try {
+  const path = require('path');
+  require('dotenv').config({ path: path.join(__dirname, '.env') });
+} catch {}
+
 async function request(method, path, body, token) {
   const res = await fetch(BASE + path, {
     method,
@@ -50,8 +56,11 @@ function assert(cond, msg) {
   }
 
   const stamp = Date.now();
-  const adminEmail = process.env.E2E_ADMIN_EMAIL || 'admin@heritagebank.com';
-  const adminPassword = process.env.E2E_ADMIN_PASSWORD || 'AdminPass123456';
+  const adminEmail = process.env.E2E_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@heritagebank.com';
+  const adminPassword = process.env.E2E_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;
+  if (!adminPassword) {
+    throw new Error('Missing E2E_ADMIN_PASSWORD. Provide it as an environment variable (never commit it).');
+  }
 
   console.log('1) Ping system status');
   const sys = await request('GET', '/api/system/status');

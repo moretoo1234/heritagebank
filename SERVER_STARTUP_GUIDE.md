@@ -158,9 +158,11 @@ Heritage Bank/
 
 ## 💻 Admin Credentials
 
+Set these via environment variables (local: `backend/.env`, production: Render dashboard):
+
 ```
-Email:    admin@heritagebank.com
-Password: AdminPass123456
+ADMIN_EMAIL=admin@heritagebank.com
+ADMIN_PASSWORD=<strong-admin-password>
 ```
 
 ---
@@ -168,9 +170,9 @@ Password: AdminPass123456
 ## 🗄️ Database
 
 - **Type:** TiDB Cloud (MySQL-compatible)
-- **Host:** gateway02.us-east-1.prod.aws.tidbcloud.com:4000
-- **Database:** S7YJ2XbutEnzhih9Qut8LJ
-- **Status:** Configured in `.env`
+- **Host:** <your-db-host>:4000
+- **Database:** <your-db-name>
+- **Status:** Configured via environment variables (never commit credentials)
 
 ---
 
