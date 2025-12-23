@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2/promise');
@@ -40,6 +42,38 @@ const app = express();
 const SERVER_VERSION = "2.0.0-" + new Date().toISOString().split('T')[0];
 
 // Middleware
+// Render/Heroku-style deployments often sit behind a reverse proxy.
+// This helps rate limiting and IP logging use the real client IP.
+app.set('trust proxy', 1);
+
+// Security headers. We keep CSP disabled for now because many pages use
+// inline scripts and third-party CDNs; enabling CSP requires a full refactor.
+app.use(
+    helmet({
+        contentSecurityPolicy: false,
+        crossOriginEmbedderPolicy: false
+    })
+);
+
+// Basic API rate limiting (helps against brute force + abuse)
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false
+});
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+app.use('/api/', apiLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/apply', authLimiter);
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -81,11 +115,23 @@ function requireAuth(req, res, next) {
             return res.status(401).json({ success: false, message: 'Authorization token required' });
         }
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.auth = { id: decoded.id, email: decoded.email };
+        req.auth = {
+            id: decoded.id,
+            email: decoded.email,
+            isImpersonation: !!decoded.isImpersonation,
+            impersonatedBy: decoded.impersonatedBy
+        };
         return next();
     } catch (error) {
         return res.status(401).json({ success: false, message: 'Invalid or expired token' });
     }
+}
+
+function requireNotImpersonation(req, res, next) {
+    if (req.auth?.isImpersonation) {
+        return res.status(403).json({ success: false, message: 'Action not allowed in view-only mode' });
+    }
+    return next();
 }
 
 async function requireAdmin(req, res, next) {
@@ -128,7 +174,6 @@ async function initializeDatabase() {
                 password VARCHAR(255),
                 phone VARCHAR(20),
                 dateOfBirth DATE,
-                ssn VARCHAR(11),
                 address VARCHAR(255),
                 city VARCHAR(100),
                 state VARCHAR(50),
@@ -145,6 +190,29 @@ async function initializeDatabase() {
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        // Compatibility: some older deployments and/or DB-side artifacts may still expect an `ssn` column.
+        // Keep it as nullable rather than dropping to avoid runtime errors.
+        try { await connection.execute('ALTER TABLE users ADD COLUMN ssn VARCHAR(32) NULL'); } catch (e) {}
+
+        // Best-effort schema alignment for newer auth features.
+        try { await connection.execute('ALTER TABLE users ADD COLUMN forcePasswordChange BOOLEAN DEFAULT false'); } catch (e) {}
+
+        // Best-effort schema alignment for user profile fields (older DBs may be missing these columns).
+        try { await connection.execute('ALTER TABLE users ADD COLUMN phone VARCHAR(20) NULL'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN dateOfBirth DATE NULL'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN address VARCHAR(255) NULL'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN city VARCHAR(100) NULL'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN state VARCHAR(50) NULL'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN zipCode VARCHAR(10) NULL'); } catch (e) {}
+        try { await connection.execute("ALTER TABLE users ADD COLUMN country VARCHAR(100) DEFAULT 'United States'"); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN routingNumber VARCHAR(20) NULL'); } catch (e) {}
+        try { await connection.execute("ALTER TABLE users ADD COLUMN accountType VARCHAR(32) DEFAULT 'checking'"); } catch (e) {}
+        try { await connection.execute("ALTER TABLE users ADD COLUMN accountStatus VARCHAR(32) DEFAULT 'active'"); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN isAdmin BOOLEAN DEFAULT false'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN marketingConsent BOOLEAN DEFAULT false'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN lastLogin TIMESTAMP NULL'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP'); } catch (e) {}
 
         // Transactions table (core ledger for transfers/credits/debits)
         await connection.execute(`
@@ -476,7 +544,6 @@ async function initializeDatabase() {
                 password VARCHAR(255) NOT NULL,
                 phone VARCHAR(20),
                 dateOfBirth DATE,
-                ssn VARCHAR(11),
                 address VARCHAR(255),
                 city VARCHAR(100),
                 state VARCHAR(50),
@@ -501,6 +568,9 @@ async function initializeDatabase() {
                 INDEX idx_email (email)
             )
         `);
+
+        // Compatibility: keep optional `ssn` on pending_signups for older environments.
+        try { await connection.execute('ALTER TABLE pending_signups ADD COLUMN ssn VARCHAR(32) NULL'); } catch (e) {}
 
         // Bank Settings/Branding table
         await connection.execute(`
@@ -1149,7 +1219,6 @@ async function runDeletionProcessing() {
                 lastName = 'USER',
                 email = CONCAT('deleted_', id, '@deleted.local'),
                 phone = NULL,
-                ssn = NULL,
                 address = NULL,
                 city = NULL,
                 state = NULL,
@@ -1232,7 +1301,7 @@ app.post('/api/auth/apply', async (req, res) => {
     try {
         const { 
             firstName, lastName, email, password, phone,
-            dateOfBirth, ssn, address, city, state, zipCode, country,
+            dateOfBirth, address, city, state, zipCode, country,
             accountType, initialDeposit, govIdType, govIdNumber,
             termsAccepted, privacyAccepted, marketingConsent
         } = req.body;
@@ -1275,13 +1344,13 @@ app.post('/api/auth/apply', async (req, res) => {
         
         await pool.execute(
             `INSERT INTO pending_signups (
-                firstName, lastName, email, password, phone, dateOfBirth, ssn,
+                firstName, lastName, email, password, phone, dateOfBirth,
                 address, city, state, zipCode, country, accountType, initialDeposit,
                 govIdType, govIdNumber, termsAccepted, privacyAccepted, marketingConsent,
                 ipAddress, userAgent
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                firstName, lastName, email, hashedPassword, phone, dateOfBirth || null, ssn || null,
+                firstName, lastName, email, hashedPassword, phone, dateOfBirth || null,
                 address || null, city || null, state || null, zipCode || null, country || 'United States',
                 accountType || 'checking', deposit, govIdType || null, govIdNumber || null,
                 termsAccepted, privacyAccepted, marketingConsent || false,
@@ -1300,7 +1369,7 @@ app.post('/api/auth/apply', async (req, res) => {
 });
 
 // Get pending signups (Admin only)
-app.get('/api/admin/signups/pending', async (req, res) => {
+app.get('/api/admin/signups/pending', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -1325,8 +1394,7 @@ app.get('/api/admin/signups/pending', async (req, res) => {
         // Mask sensitive data
         const maskedSignups = signups.map(s => ({
             ...s,
-            password: undefined,
-            ssn: s.ssn ? `***-**-${s.ssn.slice(-4)}` : null
+            password: undefined
         }));
         
         res.json({ success: true, signups: maskedSignups });
@@ -1336,7 +1404,7 @@ app.get('/api/admin/signups/pending', async (req, res) => {
 });
 
 // Approve signup (Admin only)
-app.post('/api/admin/signups/:id/approve', async (req, res) => {
+app.post('/api/admin/signups/:id/approve', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -1359,13 +1427,13 @@ app.post('/api/admin/signups/:id/approve', async (req, res) => {
         // Create user account
         const [result] = await pool.execute(
             `INSERT INTO users (
-                firstName, lastName, email, password, phone, dateOfBirth, ssn,
+                firstName, lastName, email, password, phone, dateOfBirth,
                 address, city, state, zipCode, country, accountNumber, routingNumber,
                 balance, accountType, accountStatus, marketingConsent
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
             [
                 signup.firstName, signup.lastName, signup.email, signup.password, signup.phone,
-                signup.dateOfBirth, signup.ssn, signup.address, signup.city, signup.state,
+                signup.dateOfBirth, signup.address, signup.city, signup.state,
                 signup.zipCode, signup.country, accountNumber, ROUTING_NUMBER,
                 signup.initialDeposit, signup.accountType, signup.marketingConsent
             ]
@@ -1413,7 +1481,7 @@ app.post('/api/admin/signups/:id/approve', async (req, res) => {
 });
 
 // Reject signup (Admin only)
-app.post('/api/admin/signups/:id/reject', async (req, res) => {
+app.post('/api/admin/signups/:id/reject', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -1875,7 +1943,7 @@ app.post('/api/support/tickets/:ticketNumber/reply', async (req, res) => {
 });
 
 // Admin: Get all tickets
-app.get('/api/admin/support/tickets', async (req, res) => {
+app.get('/api/admin/support/tickets', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -1904,7 +1972,7 @@ app.get('/api/admin/support/tickets', async (req, res) => {
 });
 
 // Admin: Reply to ticket
-app.post('/api/admin/support/tickets/:ticketNumber/reply', async (req, res) => {
+app.post('/api/admin/support/tickets/:ticketNumber/reply', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -2002,7 +2070,7 @@ app.post('/api/faqs/:id/helpful', async (req, res) => {
 });
 
 // Admin: Create FAQ
-app.post('/api/admin/faqs', async (req, res) => {
+app.post('/api/admin/faqs', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -2025,7 +2093,7 @@ app.post('/api/admin/faqs', async (req, res) => {
 });
 
 // Admin: Update FAQ
-app.put('/api/admin/faqs/:id', async (req, res) => {
+app.put('/api/admin/faqs/:id', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -2073,7 +2141,7 @@ app.get('/api/settings/public', async (req, res) => {
 });
 
 // Admin: Update bank settings
-app.put('/api/admin/settings/:key', async (req, res) => {
+app.put('/api/admin/settings/:key', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -2199,7 +2267,6 @@ app.post('/api/auth/register', async (req, res) => {
             password, 
             phone, 
             dateOfBirth, 
-            ssn, 
             address, 
             city, 
             state, 
@@ -2242,13 +2309,13 @@ app.post('/api/auth/register', async (req, res) => {
         await pool.execute(
             `INSERT INTO users (
                 firstName, lastName, email, password, phone, 
-                dateOfBirth, ssn, address, city, state, zipCode, country,
+                dateOfBirth, address, city, state, zipCode, country,
                 accountNumber, routingNumber, balance, accountType, 
                 marketingConsent
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 firstName, lastName, email, hashedPassword, phone,
-                dateOfBirth || null, ssn || null, address || null, city || null, 
+                dateOfBirth || null, address || null, city || null, 
                 state || null, zipCode || null, country || 'United States',
                 accountNumber, ROUTING_NUMBER, deposit, accountType || 'checking',
                 marketingConsent || false
@@ -2351,9 +2418,11 @@ app.get('/api/auth/profile', async (req, res) => {
 });
 
 // Admin: Get all users with balances
-app.get('/api/admin/users-with-balances', async (req, res) => {
+app.get('/api/admin/users-with-balances', requireAuth, requireAdmin, async (req, res) => {
     try {
-        const [users] = await pool.execute('SELECT id, firstName, lastName, email, accountNumber, balance, isAdmin FROM users');
+        const [users] = await pool.execute(
+            'SELECT id, firstName, lastName, email, accountNumber, balance, isAdmin, accountStatus, accountType, phone FROM users'
+        );
         res.json({ success: true, users });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -2361,7 +2430,7 @@ app.get('/api/admin/users-with-balances', async (req, res) => {
 });
 
 // Admin: Fund user account
-app.post('/api/admin/fund-user', async (req, res) => {
+app.post('/api/admin/fund-user', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { toEmail, toAccountNumber, amount, description } = req.body;
         
@@ -2390,11 +2459,11 @@ app.post('/api/admin/fund-user', async (req, res) => {
 });
 
 // Admin: Create user with full details
-app.post('/api/admin/create-user', async (req, res) => {
+app.post('/api/admin/create-user', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { 
             firstName, lastName, email, password, phone, 
-            dateOfBirth, ssn, address, city, state, zipCode, country,
+            dateOfBirth, address, city, state, zipCode, country,
             accountType, initialBalance, isAdmin 
         } = req.body;
 
@@ -2419,20 +2488,19 @@ app.post('/api/admin/create-user', async (req, res) => {
 
         const phoneValue = phone || null;
         const dobValue = dateOfBirth || null;
-        const ssnValue = ssn || null;
         const addressValue = address || null;
         const cityValue = city || null;
         const stateValue = state || null;
-        const zipValue = zipCode || null;
+        const zipValue = (zipCode || req.body.zip) || null;
         const countryValue = country || 'United States';
         const accountTypeValue = accountType || 'checking';
         const isAdminValue = isAdmin ? 1 : 0;
 
         const [insertResult] = await pool.execute(
-            `INSERT INTO users (firstName, lastName, email, password, phone, dateOfBirth, ssn, 
+            `INSERT INTO users (firstName, lastName, email, password, phone, dateOfBirth,
              address, city, state, zipCode, country, accountNumber, routingNumber, balance, 
              accountType, isAdmin, accountStatus) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
             [
                 firstName,
                 lastName,
@@ -2440,7 +2508,6 @@ app.post('/api/admin/create-user', async (req, res) => {
                 hashedPassword,
                 phoneValue,
                 dobValue,
-                ssnValue,
                 addressValue,
                 cityValue,
                 stateValue,
@@ -2466,6 +2533,52 @@ app.post('/api/admin/create-user', async (req, res) => {
                 balance
             }
         });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Auth: Change password (used by settings-enhanced.js)
+app.post('/api/auth/change-password', requireAuth, requireNotImpersonation, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, message: 'Current and new password required' });
+        }
+
+        const newPasswordStr = String(newPassword);
+        if (newPasswordStr.length < 8) {
+            return res.status(400).json({ success: false, message: 'New password must be at least 8 characters' });
+        }
+
+        const [users] = await pool.execute('SELECT id, password FROM users WHERE id = ?', [req.auth.id]);
+        const user = users[0];
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const ok = await bcrypt.compare(String(currentPassword), user.password);
+        if (!ok) {
+            return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPasswordStr, 10);
+        try {
+            await pool.execute('UPDATE users SET password = ?, forcePasswordChange = 0 WHERE id = ?', [hashedPassword, req.auth.id]);
+        } catch (e) {
+            // In case the DB doesn't have forcePasswordChange yet.
+            await pool.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.auth.id]);
+        }
+
+        try {
+            await pool.execute(
+                'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+                [req.auth.id, 'PASSWORD_CHANGE', 'User changed password', req.ip]
+            );
+        } catch (e) {}
+
+        res.json({ success: true, message: 'Password changed successfully' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -2813,49 +2926,97 @@ app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res)
 });
 
 // Transfer funds
-app.post('/api/user/transfer', async (req, res) => {
+app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req, res) => {
+    const connection = await pool.getConnection();
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        const decoded = jwt.verify(token, JWT_SECRET);
-        
-        const { toEmail, toAccountNumber, amount, description } = req.body;
-        
-        const [senders] = await pool.execute('SELECT * FROM users WHERE id = ?', [decoded.id]);
+        const { toEmail, toAccountNumber, amount, description, recipient } = req.body;
+
+        const amountValue = parseFloat(amount);
+        if (!Number.isFinite(amountValue) || amountValue <= 0) {
+            return res.status(400).json({ success: false, message: 'Valid amount is required' });
+        }
+
+        // Support alternate payload shapes: { recipient: "email-or-accountNumber" }
+        const recipientValue = recipient ? String(recipient).trim() : '';
+        const toEmailValue = toEmail
+            ? String(toEmail).trim().toLowerCase()
+            : (recipientValue.includes('@') ? recipientValue.toLowerCase() : '');
+        const toAccountValue = toAccountNumber
+            ? String(toAccountNumber).trim()
+            : (!recipientValue.includes('@') ? recipientValue : '');
+
+        if (!toEmailValue && !toAccountValue) {
+            return res.status(400).json({ success: false, message: 'Recipient email or account number required' });
+        }
+
+        await connection.beginTransaction();
+
+        // Lock sender
+        const [senders] = await connection.execute('SELECT * FROM users WHERE id = ? FOR UPDATE', [req.auth.id]);
         const sender = senders[0];
-        
-        if (parseFloat(sender.balance) < parseFloat(amount)) {
+        if (!sender) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Sender not found' });
+        }
+
+        if (sender.accountStatus && sender.accountStatus !== 'active') {
+            await connection.rollback();
+            return res.status(403).json({ success: false, message: `Account is ${sender.accountStatus}. Transfers not allowed.` });
+        }
+
+        // Lock recipient
+        let recipientUser;
+        if (toEmailValue) {
+            const [rows] = await connection.execute('SELECT * FROM users WHERE email = ? FOR UPDATE', [toEmailValue]);
+            recipientUser = rows[0];
+        } else {
+            const [rows] = await connection.execute('SELECT * FROM users WHERE accountNumber = ? FOR UPDATE', [toAccountValue]);
+            recipientUser = rows[0];
+        }
+
+        if (!recipientUser) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Recipient not found' });
+        }
+
+        if (sender.id === recipientUser.id) {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'Cannot transfer to the same account' });
+        }
+
+        if (recipientUser.accountStatus && recipientUser.accountStatus !== 'active') {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'Recipient account is not active' });
+        }
+
+        const senderBalance = parseFloat(sender.balance);
+        if (senderBalance < amountValue) {
+            await connection.rollback();
             return res.status(400).json({ success: false, message: 'Insufficient funds' });
         }
 
-        let recipient;
-        if (toEmail) {
-            const [users] = await pool.execute('SELECT * FROM users WHERE email = ?', [toEmail]);
-            recipient = users[0];
-        } else if (toAccountNumber) {
-            const [users] = await pool.execute('SELECT * FROM users WHERE accountNumber = ?', [toAccountNumber]);
-            recipient = users[0];
-        }
-
-        if (!recipient) return res.status(404).json({ success: false, message: 'Recipient not found' });
-
-        await pool.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amount, sender.id]);
-        await pool.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amount, recipient.id]);
+        await connection.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amountValue, sender.id]);
+        await connection.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amountValue, recipientUser.id]);
 
         const reference = 'TRF' + Date.now().toString(36).toUpperCase();
-
-        await pool.execute(
+        await connection.execute(
             `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
              VALUES (?, ?, ?, 'transfer', 'completed', ?, ?)`,
-            [sender.id, recipient.id, amount, description || 'Transfer', reference]
+            [sender.id, recipientUser.id, amountValue, description || 'Transfer', reference]
         );
+
+        await connection.commit();
 
         res.json({
             success: true,
-            message: `$${amount} sent to ${recipient.firstName} ${recipient.lastName}`,
+            message: `$${amountValue.toLocaleString()} sent to ${recipientUser.firstName} ${recipientUser.lastName}`,
             reference
         });
     } catch (error) {
+        try { await connection.rollback(); } catch (e) {}
         res.status(500).json({ success: false, message: error.message });
+    } finally {
+        connection.release();
     }
 });
 
@@ -3585,7 +3746,7 @@ app.get('/api/documents', async (req, res) => {
 });
 
 // Admin: Review documents
-app.get('/api/admin/documents/pending', async (req, res) => {
+app.get('/api/admin/documents/pending', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -3609,7 +3770,7 @@ app.get('/api/admin/documents/pending', async (req, res) => {
     }
 });
 
-app.put('/api/admin/documents/:id/approve', async (req, res) => {
+app.put('/api/admin/documents/:id/approve', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -3631,7 +3792,7 @@ app.put('/api/admin/documents/:id/approve', async (req, res) => {
     }
 });
 
-app.put('/api/admin/documents/:id/reject', async (req, res) => {
+app.put('/api/admin/documents/:id/reject', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -3696,7 +3857,7 @@ app.get('/api/transactions/all', requireAuth, requireAdmin, async (req, res) => 
 });
 
 // Get activity logs (admin only)
-app.get('/api/admin/activity-logs', async (req, res) => {
+app.get('/api/admin/activity-logs', requireAuth, requireAdmin, async (req, res) => {
     try {
         const [logs] = await pool.execute(`
             SELECT a.*, u.firstName, u.lastName, u.email as userName
@@ -3835,7 +3996,7 @@ app.get('/api/admin/dashboard-stats', requireAuth, requireAdmin, async (req, res
 });
 
 // Update account status (freeze/unfreeze/deactivate)
-app.put('/api/admin/account-status/:userId', async (req, res) => {
+app.put('/api/admin/account-status/:userId', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
         const { status, reason } = req.body;
@@ -3963,7 +4124,7 @@ app.get('/api/admin/search-transactions', requireAuth, requireAdmin, async (req,
 });
 
 // Reverse transaction
-app.post('/api/admin/reverse-transaction/:transactionId', async (req, res) => {
+app.post('/api/admin/reverse-transaction/:transactionId', requireAuth, requireAdmin, async (req, res) => {
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
@@ -4041,22 +4202,41 @@ app.post('/api/admin/reverse-transaction/:transactionId', async (req, res) => {
 });
 
 // Force password reset for user
-app.post('/api/admin/force-password-reset/:userId', async (req, res) => {
+app.post('/api/admin/force-password-reset/:userId', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
         const { temporaryPassword } = req.body;
+
+        const temp = (temporaryPassword !== undefined && temporaryPassword !== null)
+            ? String(temporaryPassword)
+            : '';
+
+        // Allow generating a temporary password if one isn't provided.
+        const effectiveTemp = temp || (`Temp-${Math.random().toString(36).slice(2, 10)}!`);
+
+        if (effectiveTemp.length < 8) {
+            return res.status(400).json({ success: false, message: 'temporaryPassword must be at least 8 characters' });
+        }
 
         const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [userId]);
         if (users.length === 0) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+        const hashedPassword = await bcrypt.hash(effectiveTemp, 10);
         
-        await pool.execute(
-            'UPDATE users SET password = ?, forcePasswordChange = 1 WHERE id = ?',
-            [hashedPassword, userId]
-        );
+        try {
+            await pool.execute(
+                'UPDATE users SET password = ?, forcePasswordChange = 1 WHERE id = ?',
+                [hashedPassword, userId]
+            );
+        } catch (e) {
+            // In case the DB doesn't have forcePasswordChange yet.
+            await pool.execute(
+                'UPDATE users SET password = ? WHERE id = ?',
+                [hashedPassword, userId]
+            );
+        }
 
         // Log the action
         await pool.execute(
@@ -4067,7 +4247,7 @@ app.post('/api/admin/force-password-reset/:userId', async (req, res) => {
         res.json({ 
             success: true, 
             message: 'Password reset successfully',
-            temporaryPassword // Only for demo - send via secure channel in production
+            temporaryPassword: effectiveTemp // Only for demo - send via secure channel in production
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -4075,7 +4255,7 @@ app.post('/api/admin/force-password-reset/:userId', async (req, res) => {
 });
 
 // Export users to CSV
-app.get('/api/admin/export-users', async (req, res) => {
+app.get('/api/admin/export-users', requireAuth, requireAdmin, async (req, res) => {
     try {
         const [users] = await pool.execute(`
             SELECT id, firstName, lastName, email, accountNumber, balance, accountStatus, 
@@ -4100,7 +4280,7 @@ app.get('/api/admin/export-users', async (req, res) => {
 });
 
 // Export transactions to CSV
-app.get('/api/admin/export-transactions', async (req, res) => {
+app.get('/api/admin/export-transactions', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         
@@ -4144,7 +4324,7 @@ app.get('/api/admin/export-transactions', async (req, res) => {
 });
 
 // Get monthly report
-app.get('/api/admin/monthly-report', async (req, res) => {
+app.get('/api/admin/monthly-report', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { year, month } = req.query;
         
@@ -4197,7 +4377,7 @@ app.get('/api/admin/monthly-report', async (req, res) => {
 });
 
 // Update transaction limits
-app.put('/api/admin/transaction-limits/:userId', async (req, res) => {
+app.put('/api/admin/transaction-limits/:userId', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
         const { dailyLimit, singleTransactionLimit } = req.body;
@@ -4272,7 +4452,6 @@ app.get('/api/user/profile/complete', async (req, res) => {
                 email: user.email,
                 phone: user.phone,
                 dateOfBirth: user.dateOfBirth,
-                ssn: user.ssn,
                 address: user.address,
                 city: user.city,
                 state: user.state,
@@ -4941,7 +5120,7 @@ async function logComplianceAudit(userId, targetUserId, entityType, entityId, ac
 }
 
 // Get compliance audit logs (Admin only)
-app.get('/api/admin/compliance/audit-logs', async (req, res) => {
+app.get('/api/admin/compliance/audit-logs', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -4978,7 +5157,7 @@ app.get('/api/admin/compliance/audit-logs', async (req, res) => {
 });
 
 // Get admin action logs (Super Admin only)
-app.get('/api/admin/compliance/admin-actions', async (req, res) => {
+app.get('/api/admin/compliance/admin-actions', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -5012,7 +5191,7 @@ app.get('/api/admin/compliance/admin-actions', async (req, res) => {
 });
 
 // Add compliance flag to user/account
-app.post('/api/admin/compliance/flags', async (req, res) => {
+app.post('/api/admin/compliance/flags', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -5043,7 +5222,7 @@ app.post('/api/admin/compliance/flags', async (req, res) => {
 });
 
 // Resolve compliance flag
-app.put('/api/admin/compliance/flags/:flagId/resolve', async (req, res) => {
+app.put('/api/admin/compliance/flags/:flagId/resolve', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -5075,7 +5254,7 @@ app.put('/api/admin/compliance/flags/:flagId/resolve', async (req, res) => {
 });
 
 // Get compliance flags for user
-app.get('/api/admin/compliance/flags/:userId', async (req, res) => {
+app.get('/api/admin/compliance/flags/:userId', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -5219,7 +5398,7 @@ app.get('/api/user/privacy/export-data', async (req, res) => {
 });
 
 // Generate regulatory report (Admin only)
-app.post('/api/admin/compliance/reports', async (req, res) => {
+app.post('/api/admin/compliance/reports', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -5326,7 +5505,7 @@ app.post('/api/admin/compliance/reports', async (req, res) => {
 });
 
 // Get regulatory reports
-app.get('/api/admin/compliance/reports', async (req, res) => {
+app.get('/api/admin/compliance/reports', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -5353,7 +5532,7 @@ app.get('/api/admin/compliance/reports', async (req, res) => {
 });
 
 // Admin: Adjust user balance (with full audit)
-app.post('/api/admin/users/:userId/adjust-balance', async (req, res) => {
+app.post('/api/admin/users/:userId/adjust-balance', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -5420,7 +5599,7 @@ app.post('/api/admin/users/:userId/adjust-balance', async (req, res) => {
 });
 
 // Get system configuration
-app.get('/api/admin/system/config', async (req, res) => {
+app.get('/api/admin/system/config', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -5452,7 +5631,7 @@ app.get('/api/admin/system/config', async (req, res) => {
 });
 
 // Update system configuration (Admin only)
-app.put('/api/admin/system/config/:key', async (req, res) => {
+app.put('/api/admin/system/config/:key', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -5512,15 +5691,8 @@ app.get('/api/system/status', async (req, res) => {
 // ==================== ADMIN IMPERSONATION (VIEW-ONLY) ====================
 
 // Start impersonation session
-app.post('/api/admin/impersonate/:userId', async (req, res) => {
+app.post('/api/admin/impersonate/:userId', requireAuth, requireAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ success: false, message: 'No token' });
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const [admins] = await pool.execute('SELECT * FROM users WHERE id = ? AND isAdmin = true', [decoded.id]);
-        if (admins.length === 0) return res.status(403).json({ success: false, message: 'Admin access required' });
-
         const { userId } = req.params;
         const { reason } = req.body;
 
@@ -5535,18 +5707,18 @@ app.post('/api/admin/impersonate/:userId', async (req, res) => {
         const targetUser = users[0];
 
         // Log impersonation start
-        await logAdminAction(decoded.id, 'impersonate_start', userId, null, null, 
+        await logAdminAction(req.auth.id, 'impersonate_start', userId, null, null, 
             { targetEmail: targetUser.email }, reason, null, req);
 
-        await logComplianceAudit(decoded.id, userId, 'admin', null, 'impersonation_started',
-            null, { adminId: decoded.id, targetUserId: userId }, reason, req);
+        await logComplianceAudit(req.auth.id, userId, 'admin', null, 'impersonation_started',
+            null, { adminId: req.auth.id, targetUserId: userId }, reason, req);
 
         // Generate impersonation token (short-lived, read-only flag)
         const impersonationToken = jwt.sign(
             { 
                 id: targetUser.id, 
                 email: targetUser.email,
-                impersonatedBy: decoded.id,
+                impersonatedBy: req.auth.id,
                 isImpersonation: true,
                 readOnly: true
             }, 
@@ -5577,19 +5749,14 @@ app.post('/api/admin/impersonate/:userId', async (req, res) => {
 });
 
 // End impersonation session
-app.post('/api/admin/impersonate/end', async (req, res) => {
+app.post('/api/admin/impersonate/end', requireAuth, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ success: false, message: 'No token' });
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        
-        if (!decoded.isImpersonation) {
+        if (!req.auth.isImpersonation) {
             return res.status(400).json({ success: false, message: 'Not in impersonation mode' });
         }
 
         // Log impersonation end
-        await logAdminAction(decoded.impersonatedBy, 'impersonate_end', decoded.id, null, 
+        await logAdminAction(req.auth.impersonatedBy, 'impersonate_end', req.auth.id, null, 
             null, null, 'Impersonation session ended', null, req);
 
         res.json({ success: true, message: 'Impersonation session ended' });
@@ -5599,19 +5766,14 @@ app.post('/api/admin/impersonate/end', async (req, res) => {
 });
 
 // Get impersonated user view (dashboard data)
-app.get('/api/admin/impersonate/dashboard', async (req, res) => {
+app.get('/api/admin/impersonate/dashboard', requireAuth, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ success: false, message: 'No token' });
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        
-        if (!decoded.isImpersonation) {
+        if (!req.auth.isImpersonation) {
             return res.status(403).json({ success: false, message: 'Impersonation token required' });
         }
 
         // Get user data
-        const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [decoded.id]);
+        const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [req.auth.id]);
         if (users.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
 
         const user = users[0];
@@ -5619,7 +5781,7 @@ app.get('/api/admin/impersonate/dashboard', async (req, res) => {
         // Get recent transactions
         const [transactions] = await pool.execute(
             `SELECT * FROM transactions WHERE userId = ? ORDER BY createdAt DESC LIMIT 20`,
-            [decoded.id]
+            [req.auth.id]
         );
 
         // Get beneficiaries
@@ -5827,7 +5989,7 @@ app.post('/api/transfer/internal', async (req, res) => {
 // ==================== SCHEDULED JOBS API ====================
 
 // Get scheduled jobs status (Admin only)
-app.get('/api/admin/jobs', async (req, res) => {
+app.get('/api/admin/jobs', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -5844,7 +6006,7 @@ app.get('/api/admin/jobs', async (req, res) => {
 });
 
 // Manually trigger a job (Admin only)
-app.post('/api/admin/jobs/:jobType/run', async (req, res) => {
+app.post('/api/admin/jobs/:jobType/run', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
@@ -5892,7 +6054,7 @@ app.post('/api/admin/jobs/:jobType/run', async (req, res) => {
 });
 
 // Toggle job active status
-app.put('/api/admin/jobs/:jobId/toggle', async (req, res) => {
+app.put('/api/admin/jobs/:jobId/toggle', requireAuth, requireAdmin, async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'No token' });
