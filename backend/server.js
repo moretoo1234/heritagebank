@@ -13,6 +13,27 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 // - For local development, explicitly load `backend/.env` even if the process is started from repo root.
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
+// Process-level diagnostics to help catch unexpected exits during local/dev runs.
+// (Useful when the server starts and immediately quits due to missing env, port binding errors, etc.)
+process.on('unhandledRejection', (reason) => {
+    console.error('❌ Unhandled promise rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('❌ Uncaught exception:', err);
+});
+
+process.on('exit', (code) => {
+    console.error(`ℹ️ Process exiting with code ${code}`);
+});
+
+['SIGINT', 'SIGTERM'].forEach((sig) => {
+    process.on(sig, () => {
+        console.error(`ℹ️ Received ${sig}, shutting down...`);
+        process.exit(0);
+    });
+});
+
 const app = express();
 
 // Server version for debugging (matches root server convention)
@@ -43,10 +64,13 @@ const pool = mysql.createPool({
 let DB_READY = false;
 
 // JWT Secret - Must be set in environment
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-jwt-secret-change-me' : null);
 if (!JWT_SECRET) {
-    console.error('❌ JWT_SECRET environment variable is required');
+    console.error('❌ JWT_SECRET environment variable is required (set it in your environment or backend/.env)');
     process.exit(1);
+}
+if (!process.env.JWT_SECRET && process.env.NODE_ENV !== 'production') {
+    console.warn('⚠️ JWT_SECRET is not set; using an insecure development default. Set JWT_SECRET in backend/.env for proper local auth testing.');
 }
 
 // Auth helpers
@@ -3555,12 +3579,14 @@ app.get('/api/login-history', async (req, res) => {
 
 // ==================== ADMIN ENDPOINTS ====================
 // Get all transactions (admin only)
-app.get('/api/transactions/all', async (req, res) => {
+app.get('/api/transactions/all', requireAuth, requireAdmin, async (req, res) => {
     try {
         const [transactions] = await pool.execute(`
             SELECT t.*, 
                    u1.firstName as senderFirst, u1.lastName as senderLast,
-                   u2.firstName as recipientFirst, u2.lastName as recipientLast
+                   u1.email as senderEmail, u1.accountNumber as senderAccountNumber,
+                   u2.firstName as recipientFirst, u2.lastName as recipientLast,
+                   u2.email as recipientEmail, u2.accountNumber as recipientAccountNumber
             FROM transactions t
             LEFT JOIN users u1 ON t.fromUserId = u1.id
             LEFT JOIN users u2 ON t.toUserId = u2.id
@@ -3652,7 +3678,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
 // ==================== ADMIN ACCOUNT MANAGEMENT ====================
 
 // Get dashboard statistics
-app.get('/api/admin/dashboard-stats', async (req, res) => {
+app.get('/api/admin/dashboard-stats', requireAuth, requireAdmin, async (req, res) => {
     try {
         // Total users
         const [userCount] = await pool.execute('SELECT COUNT(*) as count FROM users WHERE accountStatus != "deleted"');
@@ -3664,7 +3690,7 @@ app.get('/api/admin/dashboard-stats', async (req, res) => {
         const [todayTxns] = await pool.execute(`
             SELECT COUNT(*) as count 
             FROM transactions 
-            WHERE DATE(created_at) = CURDATE()
+            WHERE DATE(createdAt) = CURDATE()
         `);
         
         // Pending loans
@@ -3678,21 +3704,21 @@ app.get('/api/admin/dashboard-stats', async (req, res) => {
         const [monthlyTxns] = await pool.execute(`
             SELECT COUNT(*) as count, SUM(amount) as volume
             FROM transactions 
-            WHERE MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())
+            WHERE MONTH(createdAt) = MONTH(CURDATE()) AND YEAR(createdAt) = YEAR(CURDATE())
         `);
         
         // Active users (logged in last 30 days)
         const [activeUsers] = await pool.execute(`
             SELECT COUNT(DISTINCT userId) as count 
             FROM login_history 
-            WHERE loginStatus = 'success' AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            WHERE loginStatus = 'success' AND loginAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         `);
         
         // Failed login attempts today
         const [failedLogins] = await pool.execute(`
             SELECT COUNT(*) as count 
             FROM login_history 
-            WHERE loginStatus = 'failed' AND DATE(created_at) = CURDATE()
+            WHERE loginStatus = 'failed' AND DATE(loginAt) = CURDATE()
         `);
 
         res.json({ 
@@ -3746,7 +3772,7 @@ app.put('/api/admin/account-status/:userId', async (req, res) => {
 });
 
 // Search users
-app.get('/api/admin/search-users', async (req, res) => {
+app.get('/api/admin/search-users', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { query } = req.query;
         
@@ -3770,20 +3796,37 @@ app.get('/api/admin/search-users', async (req, res) => {
 });
 
 // Search transactions
-app.get('/api/admin/search-transactions', async (req, res) => {
+app.get('/api/admin/search-transactions', requireAuth, requireAdmin, async (req, res) => {
     try {
-        const { accountNumber, startDate, endDate, minAmount, maxAmount, type } = req.query;
+        const { query: searchQuery, accountNumber, startDate, endDate, minAmount, maxAmount, type } = req.query;
         
         let query = `
             SELECT t.*, 
                    sender.firstName as senderFirst, sender.lastName as senderLast,
-                   recipient.firstName as recipientFirst, recipient.lastName as recipientLast
+                   sender.email as senderEmail, sender.accountNumber as senderAccountNumber,
+                   recipient.firstName as recipientFirst, recipient.lastName as recipientLast,
+                   recipient.email as recipientEmail, recipient.accountNumber as recipientAccountNumber
             FROM transactions t
             LEFT JOIN users sender ON t.fromUserId = sender.id
             LEFT JOIN users recipient ON t.toUserId = recipient.id
             WHERE 1=1
         `;
         const params = [];
+
+        // Generic query search used by the admin UI (e.g. account number, email, reference, description)
+        if (searchQuery) {
+            const like = `%${String(searchQuery).trim()}%`;
+            query += `
+                AND (
+                    t.reference LIKE ? OR t.description LIKE ?
+                    OR sender.email LIKE ? OR recipient.email LIKE ?
+                    OR sender.accountNumber LIKE ? OR recipient.accountNumber LIKE ?
+                    OR sender.firstName LIKE ? OR sender.lastName LIKE ?
+                    OR recipient.firstName LIKE ? OR recipient.lastName LIKE ?
+                )
+            `;
+            params.push(like, like, like, like, like, like, like, like, like, like);
+        }
 
         if (accountNumber) {
             query += ` AND (sender.accountNumber = ? OR recipient.accountNumber = ?)`;

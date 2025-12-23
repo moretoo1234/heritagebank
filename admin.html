@@ -681,12 +681,13 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    document.getElementById('statTotalUsers').textContent = data.totalUsers || 0;
-                    document.getElementById('statTotalBalance').textContent = '$' + parseFloat(data.totalBalance || 0).toLocaleString();
-                    document.getElementById('statTodayTxns').textContent = data.todayTransactions || 0;
-                    document.getElementById('statPendingLoans').textContent = data.pendingLoans || 0;
-                    document.getElementById('statMonthlyVolume').textContent = '$' + parseFloat(data.monthlyVolume || 0).toLocaleString();
-                    document.getElementById('statActiveUsers').textContent = data.activeUsers || 0;
+                    const s = data.stats || data;
+                    document.getElementById('statTotalUsers').textContent = s.totalUsers || 0;
+                    document.getElementById('statTotalBalance').textContent = '$' + parseFloat(s.totalBalance || 0).toLocaleString();
+                    document.getElementById('statTodayTxns').textContent = s.todayTransactions || 0;
+                    document.getElementById('statPendingLoans').textContent = s.pendingLoans || 0;
+                    document.getElementById('statMonthlyVolume').textContent = '$' + parseFloat(s.monthlyVolume || 0).toLocaleString();
+                    document.getElementById('statActiveUsers').textContent = s.activeUsers || 0;
                 }
             } catch (e) {
                 console.error('Error loading stats:', e);
@@ -809,6 +810,37 @@
             btn.innerHTML = '<i class="fas fa-user-plus"></i> Create User Account';
         }
 
+        function formatTxnDate(t) {
+            const raw = t.createdAt || t.created_at || t.created || t.timestamp;
+            if (!raw) return '-';
+            const d = new Date(raw);
+            return isNaN(d.getTime()) ? '-' : d.toLocaleString();
+        }
+
+        function formatTxnFrom(t) {
+            return (
+                t.fromAccount ||
+                t.fromAccountNumber ||
+                t.senderAccountNumber ||
+                t.senderEmail ||
+                (t.senderFirst ? `${t.senderFirst} ${t.senderLast || ''}`.trim() : '') ||
+                (t.fromUserId ? `User #${t.fromUserId}` : '') ||
+                'System'
+            );
+        }
+
+        function formatTxnTo(t) {
+            return (
+                t.toAccount ||
+                t.toAccountNumber ||
+                t.recipientAccountNumber ||
+                t.recipientEmail ||
+                (t.recipientFirst ? `${t.recipientFirst} ${t.recipientLast || ''}`.trim() : '') ||
+                (t.toUserId ? `User #${t.toUserId}` : '') ||
+                'N/A'
+            );
+        }
+
         // Load Transactions
         async function loadTransactions() {
             const tbody = document.getElementById('transactionsTableBody');
@@ -826,9 +858,9 @@
                     }
                     const rows = data.transactions.map(t => `
                         <tr>
-                            <td>${new Date(t.created_at).toLocaleString()}</td>
-                            <td>${t.fromAccount || 'System'}</td>
-                            <td>${t.toAccount || t.recipientEmail || 'N/A'}</td>
+                            <td>${formatTxnDate(t)}</td>
+                            <td>${formatTxnFrom(t)}</td>
+                            <td>${formatTxnTo(t)}</td>
                             <td>$${parseFloat(t.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                             <td><span class="badge badge-info">${t.type || 'transfer'}</span></td>
                             <td>${t.description || '-'}</td>
@@ -840,9 +872,9 @@
                     // Update recent transactions on dashboard
                     document.getElementById('recentTransactionsBody').innerHTML = data.transactions.slice(0, 5).map(t => `
                         <tr>
-                            <td>${new Date(t.created_at).toLocaleString()}</td>
-                            <td>${t.fromAccount || 'System'}</td>
-                            <td>${t.toAccount || t.recipientEmail || 'N/A'}</td>
+                            <td>${formatTxnDate(t)}</td>
+                            <td>${formatTxnFrom(t)}</td>
+                            <td>${formatTxnTo(t)}</td>
                             <td>$${parseFloat(t.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                             <td><span class="badge badge-info">${t.type || 'transfer'}</span></td>
                             <td><span class="badge ${t.status === 'completed' ? 'badge-success' : 'badge-warning'}">${t.status || 'completed'}</span></td>
@@ -874,9 +906,9 @@
                     }
                     tbody.innerHTML = data.transactions.map(t => `
                         <tr>
-                            <td>${new Date(t.created_at).toLocaleString()}</td>
-                            <td>${t.fromAccount || 'System'}</td>
-                            <td>${t.toAccount || t.recipientEmail || 'N/A'}</td>
+                            <td>${formatTxnDate(t)}</td>
+                            <td>${formatTxnFrom(t)}</td>
+                            <td>${formatTxnTo(t)}</td>
                             <td>$${parseFloat(t.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                             <td><span class="badge badge-info">${t.type || 'transfer'}</span></td>
                             <td>${t.description || '-'}</td>
