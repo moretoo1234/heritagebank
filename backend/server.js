@@ -15,6 +15,9 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 
+// Server version for debugging (matches root server convention)
+const SERVER_VERSION = "2.0.0-" + new Date().toISOString().split('T')[0];
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -1957,7 +1960,13 @@ app.put('/api/admin/settings/:key', async (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', database: 'Ready', timestamp: new Date().toISOString() });
+    res.json({
+        status: 'ok',
+        server: 'backend/server.js',
+        version: SERVER_VERSION,
+        database: 'Ready',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Login
