@@ -312,6 +312,12 @@
                 <div class="nav-item" onclick="showSection('transfer-approvals')">
                     <i class="fas fa-clock"></i> Transfer Approvals
                 </div>
+                <div class="nav-item" onclick="showSection('support-tickets')">
+                    <i class="fas fa-headset"></i> Support Tickets
+                </div>
+                <div class="nav-item" onclick="showSection('user-messages')">
+                    <i class="fas fa-envelope"></i> User Messages
+                </div>
                 <div class="nav-item" onclick="showSection('loans')">
                     <i class="fas fa-hand-holding-usd"></i> Loan Applications
                 </div>
@@ -685,6 +691,106 @@
                     </div>
                 </div>
 
+                <!-- Support Tickets Section -->
+                <div id="support-tickets" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-headset"></i> Support Tickets</h2>
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <button class="btn btn-info" onclick="loadSupportTickets()"><i class="fas fa-sync"></i> Refresh</button>
+                            <select id="ticketStatusFilter" onchange="loadSupportTickets()" style="padding: 10px; border-radius: 5px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2);">
+                                <option value="">All Status</option>
+                                <option value="open">Open</option>
+                                <option value="pending">Pending</option>
+                                <option value="resolved">Resolved</option>
+                            </select>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Category</th>
+                                        <th>Subject</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="supportTicketsTableBody">
+                                    <tr><td colspan="8" style="text-align: center; color: #888;">Loading tickets...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Ticket Response Modal -->
+                    <div id="ticketResponseCard" class="card" style="display: none;">
+                        <h3><i class="fas fa-reply"></i> Respond to Ticket #<span id="respondTicketId"></span></h3>
+                        <div id="ticketDetails" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <p><strong>Subject:</strong> <span id="ticketSubjectDisplay"></span></p>
+                            <p><strong>Message:</strong></p>
+                            <p id="ticketMessageDisplay" style="color: #ccc; margin-top: 5px;"></p>
+                        </div>
+                        <div class="form-group">
+                            <label>Your Response</label>
+                            <textarea id="ticketResponse" rows="4" placeholder="Enter your response to the user..." style="width: 100%;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Update Status</label>
+                            <select id="ticketNewStatus" style="width: 100%; padding: 10px;">
+                                <option value="pending">Pending</option>
+                                <option value="resolved">Resolved</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-success" onclick="submitTicketResponse()"><i class="fas fa-paper-plane"></i> Send Response</button>
+                        <button class="btn btn-secondary" onclick="hideTicketResponse()" style="margin-left: 10px;">Cancel</button>
+                    </div>
+                </div>
+                
+                <!-- User Messages Section -->
+                <div id="user-messages" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-envelope"></i> User Messages</h2>
+                        <button class="btn btn-info" onclick="loadUserMessages()" style="margin-bottom: 20px;"><i class="fas fa-sync"></i> Refresh</button>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Subject</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userMessagesTableBody">
+                                    <tr><td colspan="6" style="text-align: center; color: #888;">Loading messages...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Message Response Card -->
+                    <div id="messageResponseCard" class="card" style="display: none;">
+                        <h3><i class="fas fa-reply"></i> Reply to Message #<span id="respondMessageId"></span></h3>
+                        <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <p><strong>Subject:</strong> <span id="messageSubjectDisplay"></span></p>
+                            <p><strong>From:</strong> <span id="messageFromDisplay"></span></p>
+                            <p><strong>Message:</strong></p>
+                            <p id="messageBodyDisplay" style="color: #ccc; margin-top: 5px;"></p>
+                        </div>
+                        <div class="form-group">
+                            <label>Your Reply</label>
+                            <textarea id="messageReply" rows="4" placeholder="Enter your reply..." style="width: 100%;"></textarea>
+                        </div>
+                        <button class="btn btn-success" onclick="submitMessageReply()"><i class="fas fa-paper-plane"></i> Send Reply</button>
+                        <button class="btn btn-secondary" onclick="hideMessageResponse()" style="margin-left: 10px;">Cancel</button>
+                    </div>
+                </div>
+
                 <!-- Activity Logs Section -->
                 <div id="activity" class="section">
                     <div class="card">
@@ -817,6 +923,8 @@
             if (sectionId === 'cards') loadCards();
             if (sectionId === 'loans') loadLoans();
             if (sectionId === 'activity') loadActivityLogs();
+            if (sectionId === 'support-tickets') loadSupportTickets();
+            if (sectionId === 'user-messages') loadUserMessages();
         }
 
         function fmtDate(value) {
@@ -824,6 +932,10 @@
             const d = new Date(value);
             if (isNaN(d.getTime())) return '-';
             return d.toLocaleString();
+        }
+
+        function formatDateTime(value) {
+            return fmtDate(value);
         }
 
         function escapeHtml(value) {
@@ -1883,6 +1995,206 @@
                 }
             }
             return true;
+        }
+        
+        // =====================
+        // Support Tickets Functions
+        // =====================
+        
+        async function loadSupportTickets() {
+            const tbody = document.getElementById('supportTicketsTableBody');
+            const status = document.getElementById('ticketStatusFilter')?.value || '';
+            tbody.innerHTML = '<tr><td colspan="8" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            
+            try {
+                let url = `${API_BASE}/api/admin/support-tickets`;
+                if (status) url += `?status=${status}`;
+                
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                
+                if (data.success && data.tickets?.length > 0) {
+                    tbody.innerHTML = data.tickets.map(t => `
+                        <tr>
+                            <td>#${t.id}</td>
+                            <td>${t.userEmail || 'Unknown'}</td>
+                            <td>${t.category || 'General'}</td>
+                            <td>${escapeHtml(t.subject)}</td>
+                            <td><span class="status-badge status-${t.priority || 'low'}">${t.priority || 'low'}</span></td>
+                            <td><span class="status-badge status-${t.status}">${t.status}</span></td>
+                            <td>${formatDateTime(t.createdAt)}</td>
+                            <td>
+                                <button class="btn btn-small btn-success" onclick="showTicketResponse(${t.id}, '${escapeHtml(t.subject)}', '${escapeHtml(t.description)}')"><i class="fas fa-reply"></i></button>
+                                ${t.status !== 'resolved' ? `<button class="btn btn-small btn-info" onclick="resolveTicket(${t.id})"><i class="fas fa-check"></i></button>` : ''}
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #888;">No tickets found</td></tr>';
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #e74c3c;">Error loading tickets</td></tr>';
+            }
+        }
+        
+        function showTicketResponse(id, subject, message) {
+            document.getElementById('respondTicketId').textContent = id;
+            document.getElementById('ticketSubjectDisplay').textContent = subject;
+            document.getElementById('ticketMessageDisplay').textContent = message;
+            document.getElementById('ticketResponse').value = '';
+            document.getElementById('ticketResponseCard').style.display = 'block';
+            document.getElementById('ticketResponseCard').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function hideTicketResponse() {
+            document.getElementById('ticketResponseCard').style.display = 'none';
+        }
+        
+        async function submitTicketResponse() {
+            const id = document.getElementById('respondTicketId').textContent;
+            const response = document.getElementById('ticketResponse').value.trim();
+            const status = document.getElementById('ticketNewStatus').value;
+            
+            if (!response) {
+                alert('Please enter a response');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/support-tickets/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ adminReply: response, status })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    alert('Response sent successfully');
+                    hideTicketResponse();
+                    loadSupportTickets();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        async function resolveTicket(id) {
+            if (!confirm('Mark this ticket as resolved?')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/support-tickets/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ status: 'resolved' })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    loadSupportTickets();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        // =====================
+        // User Messages Functions
+        // =====================
+        
+        async function loadUserMessages() {
+            const tbody = document.getElementById('userMessagesTableBody');
+            tbody.innerHTML = '<tr><td colspan="6" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/messages`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                
+                if (data.success && data.messages?.length > 0) {
+                    tbody.innerHTML = data.messages.map(m => `
+                        <tr>
+                            <td>#${m.id}</td>
+                            <td>${m.userEmail || 'Unknown'}</td>
+                            <td>${escapeHtml(m.subject)}</td>
+                            <td><span class="status-badge ${m.adminReply ? 'status-success' : 'status-pending'}">${m.adminReply ? 'Replied' : 'Pending'}</span></td>
+                            <td>${formatDateTime(m.createdAt)}</td>
+                            <td>
+                                <button class="btn btn-small btn-success" onclick="showMessageResponse(${m.id}, '${escapeHtml(m.subject)}', '${m.userEmail || ''}', '${escapeHtml(m.body)}')"><i class="fas fa-reply"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">No messages found</td></tr>';
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #e74c3c;">Error loading messages</td></tr>';
+            }
+        }
+        
+        function showMessageResponse(id, subject, from, body) {
+            document.getElementById('respondMessageId').textContent = id;
+            document.getElementById('messageSubjectDisplay').textContent = subject;
+            document.getElementById('messageFromDisplay').textContent = from;
+            document.getElementById('messageBodyDisplay').textContent = body;
+            document.getElementById('messageReply').value = '';
+            document.getElementById('messageResponseCard').style.display = 'block';
+            document.getElementById('messageResponseCard').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function hideMessageResponse() {
+            document.getElementById('messageResponseCard').style.display = 'none';
+        }
+        
+        async function submitMessageReply() {
+            const id = document.getElementById('respondMessageId').textContent;
+            const reply = document.getElementById('messageReply').value.trim();
+            
+            if (!reply) {
+                alert('Please enter a reply');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/messages/${id}/reply`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ adminReply: reply })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    alert('Reply sent successfully');
+                    hideMessageResponse();
+                    loadUserMessages();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[m]);
         }
 
         // Initialize

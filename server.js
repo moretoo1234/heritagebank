@@ -36,19 +36,137 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Serve static frontend files from same directory (for unified deployment)
 app.use(express.static(__dirname));
 
-// TiDB Cloud Database Connection Pool
+// Database Connection Pool
+//
+// Supported env var formats:
+// 1) Generic (Render/TiDB/etc): DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
+// 2) Railway MySQL plugin:      MYSQLHOST, MYSQLPORT, MYSQLUSER, MYSQLPASSWORD, MYSQLDATABASE
+function getMySqlEnv(name, fallback = null) {
+    const v = process.env[name];
+    if (v === undefined || v === null) return fallback;
+    const s = String(v).trim();
+    return s.length ? s : fallback;
+}
+
+function getBoolEnv(name, fallback = null) {
+    const raw = process.env[name];
+    if (raw === undefined || raw === null) return fallback;
+    const v = String(raw).trim().toLowerCase();
+    if (!v.length) return fallback;
+    if (['1', 'true', 'yes', 'y', 'on'].includes(v)) return true;
+    if (['0', 'false', 'no', 'n', 'off'].includes(v)) return false;
+    return fallback;
+}
+
+function decodeMaybe(s) {
+    try {
+        return decodeURIComponent(String(s || ''));
+    } catch {
+        return String(s || '');
+    }
+}
+
+function parseMySqlUrl(urlString) {
+    const raw = String(urlString || '').trim();
+    if (!raw) return null;
+
+    let u;
+    try {
+        u = new URL(raw);
+    } catch {
+        return null;
+    }
+
+    const protocol = String(u.protocol || '').toLowerCase();
+    if (protocol !== 'mysql:' && protocol !== 'mysql2:') return null;
+
+    const host = u.hostname || null;
+    const port = u.port ? Number(u.port) : null;
+    const user = u.username ? decodeMaybe(u.username) : null;
+    const password = u.password ? decodeMaybe(u.password) : null;
+    const database = u.pathname ? decodeMaybe(u.pathname.replace(/^\//, '')) : null;
+
+    let ssl = null;
+    const sslParam = u.searchParams.get('ssl');
+    if (sslParam) {
+        const s = decodeMaybe(sslParam).trim();
+        if (s === 'true' || s === '1') {
+            ssl = { rejectUnauthorized: true };
+        } else if (s === 'false' || s === '0') {
+            ssl = false;
+        } else {
+            try {
+                const parsed = JSON.parse(s);
+                ssl = parsed;
+            } catch {
+                // ignore
+            }
+        }
+    }
+
+    return { host, port, user, password, database, ssl };
+}
+
+function resolveDbConfig() {
+    const isProd = String(process.env.NODE_ENV || '').toLowerCase() === 'production';
+
+    const urlCfg = parseMySqlUrl(
+        getMySqlEnv('DB_URL', getMySqlEnv('DATABASE_URL', getMySqlEnv('MYSQL_URL')))
+    );
+
+    const host = (urlCfg?.host) || getMySqlEnv('DB_HOST', getMySqlEnv('MYSQLHOST'));
+    const portRaw = (urlCfg?.port != null ? String(urlCfg.port) : null) || getMySqlEnv('DB_PORT', getMySqlEnv('MYSQLPORT', isProd ? '3306' : '4000'));
+    const user = (urlCfg?.user) || getMySqlEnv('DB_USER', getMySqlEnv('MYSQLUSER'));
+    const password = (urlCfg?.password) || getMySqlEnv('DB_PASSWORD', getMySqlEnv('MYSQLPASSWORD'));
+    const database = (urlCfg?.database) || getMySqlEnv('DB_NAME', getMySqlEnv('MYSQLDATABASE'));
+
+    const port = portRaw ? Number(portRaw) : undefined;
+
+    const looksLikeTiDb = !!(host && String(host).toLowerCase().includes('tidbcloud.com'));
+    const envRejectUnauthorized = getBoolEnv('DB_SSL_REJECT_UNAUTHORIZED', null);
+    const defaultRejectUnauthorized = looksLikeTiDb ? true : false;
+
+    let ssl = { rejectUnauthorized: envRejectUnauthorized ?? defaultRejectUnauthorized };
+    if (urlCfg?.ssl === false) {
+        ssl = null;
+    } else if (urlCfg?.ssl && typeof urlCfg.ssl === 'object') {
+        ssl = {
+            ...urlCfg.ssl,
+            rejectUnauthorized: envRejectUnauthorized ?? urlCfg.ssl.rejectUnauthorized ?? defaultRejectUnauthorized
+        };
+    }
+
+    const caB64 = getMySqlEnv('DB_SSL_CA_B64');
+    const ca = getMySqlEnv('DB_SSL_CA');
+    if (ssl && (caB64 || ca)) {
+        try {
+            ssl.ca = caB64 ? Buffer.from(caB64, 'base64').toString('utf8') : ca;
+        } catch {
+            // ignore
+        }
+    }
+
+    return {
+        host,
+        port,
+        user,
+        password,
+        database,
+        ssl
+    };
+}
+
+const dbCfg = resolveDbConfig();
 const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT || 4000,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host: dbCfg.host,
+    port: dbCfg.port,
+    user: dbCfg.user,
+    password: dbCfg.password,
+    database: dbCfg.database,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    ssl: {
-        rejectUnauthorized: false
-    }
+    ...(dbCfg.ssl ? { ssl: dbCfg.ssl } : {})
 });
 
 // In-memory fallback storage (for testing when DB unavailable)

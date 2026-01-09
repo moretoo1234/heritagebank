@@ -7,7 +7,52 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; transition: background 0.3s, color 0.3s; }
+        
+        /* Dark Mode Styles */
+        body.dark-mode { background: #1a1a2e; color: #eee; }
+        body.dark-mode .sidebar { background: #0d2818; }
+        body.dark-mode .main-content { background: #16213e; }
+        body.dark-mode .balance-card { background: #1f2b47; }
+        body.dark-mode .balance-card.primary { background: linear-gradient(135deg, #0d2818, #1a472a); }
+        body.dark-mode .account-info, body.dark-mode .transactions-card, body.dark-mode .activity-card { background: #1f2b47; }
+        body.dark-mode .action-card { background: #1f2b47; }
+        body.dark-mode .action-card:hover { background: #2a3a5c; }
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4 { color: #eee; }
+        body.dark-mode .transaction-details h4 { color: #eee; }
+        body.dark-mode .transaction-item { border-color: #333; }
+        body.dark-mode .info-item label { color: #aaa; }
+        body.dark-mode .info-item strong { color: #eee; }
+        body.dark-mode .section-title { color: #d4af37; }
+        
+        /* Session Timeout Warning */
+        .session-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        .session-warning.active { display: flex; }
+        .session-warning-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 400px;
+        }
+        body.dark-mode .session-warning-content { background: #1f2b47; }
+        .session-warning-content i { font-size: 3rem; color: #ffc107; margin-bottom: 15px; }
+        .session-warning-content h3 { color: #1a472a; margin-bottom: 10px; }
+        body.dark-mode .session-warning-content h3 { color: #d4af37; }
+        .session-warning-content p { color: #666; margin-bottom: 20px; }
+        body.dark-mode .session-warning-content p { color: #aaa; }
+        .session-timer { font-size: 2rem; font-weight: bold; color: #dc3545; margin-bottom: 20px; }
         
         .dashboard { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
         
@@ -268,6 +313,14 @@
                 <li onclick="location.href='cards.html'"><i class="fas fa-credit-card"></i> Cards</li>
                 <li onclick="location.href='investment.html'"><i class="fas fa-chart-line"></i> Investments</li>
                 <li onclick="location.href='request-loan.html'"><i class="fas fa-hand-holding-usd"></i> Loans</li>
+                <li onclick="location.href='savings-goals.html'"><i class="fas fa-piggy-bank"></i> Savings Goals</li>
+            </ul>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">Tools</div>
+            <ul class="sidebar-menu">
+                <li onclick="location.href='analytics.html'"><i class="fas fa-chart-pie"></i> Analytics</li>
+                <li onclick="location.href='messages.html'"><i class="fas fa-envelope"></i> Messages</li>
+                <li onclick="location.href='support.html'"><i class="fas fa-headset"></i> Support</li>
             </ul>
             <div class="sidebar-divider"></div>
             <div class="sidebar-section">Account</div>
@@ -347,17 +400,21 @@
                     <i class="fas fa-file-invoice-dollar"></i>
                     <h4>Pay Bills</h4>
                 </div>
-                <div class="action-card" onclick="location.href='request-loan.html'">
-                    <i class="fas fa-hand-holding-usd"></i>
-                    <h4>Request Loan</h4>
+                <div class="action-card" onclick="location.href='savings-goals.html'">
+                    <i class="fas fa-piggy-bank"></i>
+                    <h4>Savings Goals</h4>
                 </div>
-                <div class="action-card" onclick="location.href='investment.html'">
-                    <i class="fas fa-chart-line"></i>
-                    <h4>Investments</h4>
+                <div class="action-card" onclick="location.href='analytics.html'">
+                    <i class="fas fa-chart-pie"></i>
+                    <h4>Analytics</h4>
                 </div>
-                <div class="action-card" onclick="location.href='cards.html'">
-                    <i class="fas fa-credit-card"></i>
-                    <h4>My Cards</h4>
+                <div class="action-card" onclick="location.href='messages.html'">
+                    <i class="fas fa-envelope"></i>
+                    <h4>Messages</h4>
+                </div>
+                <div class="action-card" onclick="location.href='support.html'">
+                    <i class="fas fa-headset"></i>
+                    <h4>Support</h4>
                 </div>
                 <div class="action-card" onclick="location.href='statements.html'">
                     <i class="fas fa-file-invoice"></i>
@@ -401,11 +458,88 @@
         </main>
     </div>
     
+    <!-- Session Timeout Warning Modal -->
+    <div class="session-warning" id="sessionWarning">
+        <div class="session-warning-content">
+            <i class="fas fa-clock"></i>
+            <h3>Session Expiring Soon</h3>
+            <p>Your session will expire due to inactivity.</p>
+            <div class="session-timer" id="sessionTimer">2:00</div>
+            <button class="btn btn-primary" onclick="extendSession()" style="padding: 12px 30px; background: #1a472a; color: white; border: none; border-radius: 8px; cursor: pointer; margin-right: 10px;">
+                <i class="fas fa-redo"></i> Stay Logged In
+            </button>
+            <button class="btn btn-secondary" onclick="logout()" style="padding: 12px 30px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+    
     <script>
         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:3001' 
             : '';
         let userId = null;
+        
+        // Session timeout variables (15 minutes idle = warning, 2 more minutes = logout)
+        const IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+        const WARNING_DURATION = 2 * 60 * 1000; // 2 minutes warning
+        let idleTimer = null;
+        let warningTimer = null;
+        let countdownInterval = null;
+        
+        // Initialize dark mode
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+        
+        // Session management
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            clearTimeout(warningTimer);
+            clearInterval(countdownInterval);
+            document.getElementById('sessionWarning').classList.remove('active');
+            
+            idleTimer = setTimeout(showSessionWarning, IDLE_TIMEOUT);
+        }
+        
+        function showSessionWarning() {
+            const warning = document.getElementById('sessionWarning');
+            warning.classList.add('active');
+            
+            let timeLeft = WARNING_DURATION / 1000;
+            updateTimerDisplay(timeLeft);
+            
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay(timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    logout();
+                }
+            }, 1000);
+            
+            warningTimer = setTimeout(logout, WARNING_DURATION);
+        }
+        
+        function updateTimerDisplay(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            document.getElementById('sessionTimer').textContent = 
+                `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function extendSession() {
+            resetIdleTimer();
+            // Optionally refresh token here
+        }
+        
+        // Track user activity
+        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
+            document.addEventListener(event, resetIdleTimer, { passive: true });
+        });
+        
+        // Start idle timer on page load
+        resetIdleTimer();
         
         async function loadDashboard() {
             const token = localStorage.getItem('token');

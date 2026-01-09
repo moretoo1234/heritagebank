@@ -961,6 +961,90 @@ async function initializeDatabase() {
             )
         `);
 
+        // ==================== NEW FEATURE TABLES ====================
+
+        // Transaction PIN for security (4-digit PIN for high-value transfers)
+        try { await connection.execute('ALTER TABLE users ADD COLUMN transactionPin VARCHAR(255) NULL'); } catch (e) {}
+        
+        // User preferences table (dark mode, etc.)
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS user_preferences (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                userId INT NOT NULL UNIQUE,
+                darkMode BOOLEAN DEFAULT FALSE,
+                language VARCHAR(10) DEFAULT 'en',
+                currency VARCHAR(10) DEFAULT 'USD',
+                sessionTimeout INT DEFAULT 15,
+                autoLogout BOOLEAN DEFAULT TRUE,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+
+        // Savings goals table
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS savings_goals (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                userId INT NOT NULL,
+                name VARCHAR(100) NOT NULL,
+                targetAmount DECIMAL(15,2) NOT NULL,
+                currentAmount DECIMAL(15,2) DEFAULT 0.00,
+                targetDate DATE,
+                category VARCHAR(50) DEFAULT 'general',
+                icon VARCHAR(50) DEFAULT 'piggy-bank',
+                color VARCHAR(20) DEFAULT '#1a472a',
+                status ENUM('active', 'completed', 'cancelled') DEFAULT 'active',
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                completedAt TIMESTAMP NULL,
+                FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+                INDEX idx_user_goals (userId),
+                INDEX idx_goal_status (status)
+            )
+        `);
+
+        // Internal messages table (between admin and users)
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS internal_messages (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                fromUserId INT NOT NULL,
+                toUserId INT NOT NULL,
+                subject VARCHAR(255) NOT NULL,
+                message TEXT NOT NULL,
+                isRead BOOLEAN DEFAULT FALSE,
+                readAt TIMESTAMP NULL,
+                isArchived BOOLEAN DEFAULT FALSE,
+                isDeleted BOOLEAN DEFAULT FALSE,
+                parentMessageId INT NULL,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (fromUserId) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (toUserId) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (parentMessageId) REFERENCES internal_messages(id) ON DELETE SET NULL,
+                INDEX idx_to_user (toUserId, isRead),
+                INDEX idx_from_user (fromUserId)
+            )
+        `);
+
+        // Transaction categories table
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS transaction_categories (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                userId INT NOT NULL,
+                transactionId INT NOT NULL,
+                category VARCHAR(50) NOT NULL,
+                notes VARCHAR(255),
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (transactionId) REFERENCES transactions(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_tx_category (transactionId),
+                INDEX idx_user_categories (userId, category)
+            )
+        `);
+
+        // Add transaction category column to transactions table
+        try { await connection.execute('ALTER TABLE transactions ADD COLUMN category VARCHAR(50) DEFAULT NULL'); } catch (e) {}
+
         // Check if admin exists
         const [adminCheck] = await connection.execute(
             'SELECT * FROM users WHERE email = ?',
@@ -7866,6 +7950,947 @@ app.put('/api/cards/:cardId/settings', async (req, res) => {
             'User updated card settings', req);
 
         res.json({ success: true, message: 'Card settings updated' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ==================== NEW FEATURE ENDPOINTS ====================
+
+// ==================== 1. SESSION SECURITY & LOGIN HISTORY ====================
+
+// Get login history
+app.get('/api/user/login-history', requireAuth, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(`
+            SELECT id, ipAddress, userAgent, device, location, city, country, 
+                   loginStatus, failureReason, isSuspicious, loginAt
+            FROM login_history 
+            WHERE userId = ?
+            ORDER BY loginAt DESC
+            LIMIT 50
+        `, [req.auth.id]);
+        res.json({ success: true, loginHistory: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Get session settings (for auto-logout)
+app.get('/api/user/session-settings', requireAuth, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(
+            'SELECT sessionTimeout, autoLogout FROM user_preferences WHERE userId = ?',
+            [req.auth.id]
+        );
+        const settings = rows[0] || { sessionTimeout: 15, autoLogout: true };
+        res.json({ success: true, settings });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Update session settings
+app.put('/api/user/session-settings', requireAuth, async (req, res) => {
+    try {
+        const { sessionTimeout, autoLogout } = req.body;
+        await pool.execute(`
+            INSERT INTO user_preferences (userId, sessionTimeout, autoLogout)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE sessionTimeout = VALUES(sessionTimeout), autoLogout = VALUES(autoLogout)
+        `, [req.auth.id, sessionTimeout || 15, autoLogout !== false]);
+        res.json({ success: true, message: 'Session settings updated' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ==================== 2. TRANSACTION PIN ====================
+
+// Set/Update transaction PIN
+app.post('/api/user/transaction-pin', requireAuth, async (req, res) => {
+    try {
+        const { pin, currentPin } = req.body;
+        
+        if (!pin || !/^\d{4}$/.test(pin)) {
+            return res.status(400).json({ success: false, message: 'PIN must be exactly 4 digits' });
+        }
+
+        // Check if user already has a PIN
+        const [users] = await pool.execute('SELECT transactionPin FROM users WHERE id = ?', [req.auth.id]);
+        const user = users[0];
+
+        if (user.transactionPin) {
+            // Verify current PIN
+            if (!currentPin) {
+                return res.status(400).json({ success: false, message: 'Current PIN required' });
+            }
+            const isValid = await bcrypt.compare(currentPin, user.transactionPin);
+            if (!isValid) {
+                return res.status(400).json({ success: false, message: 'Current PIN is incorrect' });
+            }
+        }
+
+        const hashedPin = await bcrypt.hash(pin, 10);
+        await pool.execute('UPDATE users SET transactionPin = ? WHERE id = ?', [hashedPin, req.auth.id]);
+        
+        res.json({ success: true, message: 'Transaction PIN updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Verify transaction PIN (for high-value transfers)
+app.post('/api/user/verify-transaction-pin', requireAuth, async (req, res) => {
+    try {
+        const { pin } = req.body;
+        
+        const [users] = await pool.execute('SELECT transactionPin FROM users WHERE id = ?', [req.auth.id]);
+        const user = users[0];
+
+        if (!user.transactionPin) {
+            return res.json({ success: true, message: 'No PIN set', pinRequired: false });
+        }
+
+        const isValid = await bcrypt.compare(pin, user.transactionPin);
+        if (!isValid) {
+            return res.status(400).json({ success: false, message: 'Invalid PIN' });
+        }
+
+        res.json({ success: true, message: 'PIN verified' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Check if user has transaction PIN set
+app.get('/api/user/has-transaction-pin', requireAuth, async (req, res) => {
+    try {
+        const [users] = await pool.execute('SELECT transactionPin FROM users WHERE id = ?', [req.auth.id]);
+        const hasPin = !!(users[0]?.transactionPin);
+        res.json({ success: true, hasPin });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ==================== 3. USER ACCOUNT FREEZE ====================
+
+// User freezes their own account
+app.post('/api/user/freeze-account', requireAuth, async (req, res) => {
+    try {
+        const { reason } = req.body;
+        
+        await pool.execute(
+            "UPDATE users SET accountStatus = 'frozen' WHERE id = ?",
+            [req.auth.id]
+        );
+
+        // Log activity
+        try {
+            await pool.execute(
+                'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+                [req.auth.id, 'ACCOUNT_SELF_FROZEN', reason || 'User froze their own account', req.ip]
+            );
+        } catch (e) {}
+
+        res.json({ success: true, message: 'Your account has been frozen. Contact support to unfreeze.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ==================== 4. DARK MODE & USER PREFERENCES ====================
+
+// Get user preferences
+app.get('/api/user/preferences', requireAuth, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(
+            'SELECT * FROM user_preferences WHERE userId = ?',
+            [req.auth.id]
+        );
+        const preferences = rows[0] || {
+            darkMode: false,
+            language: 'en',
+            currency: 'USD',
+            sessionTimeout: 15,
+            autoLogout: true
+        };
+        res.json({ success: true, preferences });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Update user preferences
+app.put('/api/user/preferences', requireAuth, async (req, res) => {
+    try {
+        const { darkMode, language, currency, sessionTimeout, autoLogout } = req.body;
+        
+        await pool.execute(`
+            INSERT INTO user_preferences (userId, darkMode, language, currency, sessionTimeout, autoLogout)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE 
+                darkMode = VALUES(darkMode),
+                language = VALUES(language),
+                currency = VALUES(currency),
+                sessionTimeout = VALUES(sessionTimeout),
+                autoLogout = VALUES(autoLogout)
+        `, [req.auth.id, darkMode || false, language || 'en', currency || 'USD', sessionTimeout || 15, autoLogout !== false]);
+        
+        res.json({ success: true, message: 'Preferences updated' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ==================== 5. CURRENCY CONVERTER ====================
+
+// Simple currency converter (using fixed rates - in production use an API)
+const exchangeRates = {
+    USD: 1,
+    EUR: 0.92,
+    GBP: 0.79,
+    CAD: 1.36,
+    AUD: 1.53,
+    JPY: 149.50,
+    CHF: 0.88,
+    CNY: 7.24,
+    INR: 83.12,
+    MXN: 17.15,
+    NGN: 1550.00,
+    ZAR: 18.75
+};
+
+app.get('/api/currency/rates', async (req, res) => {
+    res.json({ 
+        success: true, 
+        rates: exchangeRates,
+        baseCurrency: 'USD',
+        lastUpdated: new Date().toISOString()
+    });
+});
+
+app.post('/api/currency/convert', async (req, res) => {
+    try {
+        const { amount, from, to } = req.body;
+        
+        if (!amount || !from || !to) {
+            return res.status(400).json({ success: false, message: 'Amount, from, and to currencies required' });
+        }
+
+        const fromRate = exchangeRates[from.toUpperCase()];
+        const toRate = exchangeRates[to.toUpperCase()];
+
+        if (!fromRate || !toRate) {
+            return res.status(400).json({ success: false, message: 'Invalid currency code' });
+        }
+
+        const usdAmount = amount / fromRate;
+        const convertedAmount = usdAmount * toRate;
+
+        res.json({
+            success: true,
+            originalAmount: amount,
+            fromCurrency: from.toUpperCase(),
+            toCurrency: to.toUpperCase(),
+            convertedAmount: Math.round(convertedAmount * 100) / 100,
+            rate: toRate / fromRate
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ==================== 6. SAVINGS GOALS ====================
+
+// Get all savings goals
+app.get('/api/user/savings-goals', requireAuth, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(`
+            SELECT * FROM savings_goals WHERE userId = ? ORDER BY createdAt DESC
+        `, [req.auth.id]);
+        res.json({ success: true, goals: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Create savings goal
+app.post('/api/user/savings-goals', requireAuth, async (req, res) => {
+    try {
+        const { name, targetAmount, targetDate, category, icon, color } = req.body;
+        
+        if (!name || !targetAmount) {
+            return res.status(400).json({ success: false, message: 'Name and target amount required' });
+        }
+
+        const [result] = await pool.execute(`
+            INSERT INTO savings_goals (userId, name, targetAmount, targetDate, category, icon, color)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [req.auth.id, name, targetAmount, targetDate || null, category || 'general', icon || 'piggy-bank', color || '#1a472a']);
+
+        res.json({ success: true, message: 'Savings goal created', goalId: result.insertId });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Update savings goal (add/withdraw funds)
+app.put('/api/user/savings-goals/:goalId', requireAuth, async (req, res) => {
+    try {
+        const { goalId } = req.params;
+        const { addAmount, withdrawAmount, name, targetAmount, targetDate, status } = req.body;
+
+        // Verify ownership
+        const [goals] = await pool.execute('SELECT * FROM savings_goals WHERE id = ? AND userId = ?', [goalId, req.auth.id]);
+        if (goals.length === 0) {
+            return res.status(404).json({ success: false, message: 'Goal not found' });
+        }
+
+        const goal = goals[0];
+        let newCurrentAmount = parseFloat(goal.currentAmount);
+
+        if (addAmount) {
+            newCurrentAmount += parseFloat(addAmount);
+        }
+        if (withdrawAmount) {
+            newCurrentAmount -= parseFloat(withdrawAmount);
+            if (newCurrentAmount < 0) newCurrentAmount = 0;
+        }
+
+        const updates = ['currentAmount = ?'];
+        const params = [newCurrentAmount];
+
+        if (name) { updates.push('name = ?'); params.push(name); }
+        if (targetAmount) { updates.push('targetAmount = ?'); params.push(targetAmount); }
+        if (targetDate !== undefined) { updates.push('targetDate = ?'); params.push(targetDate || null); }
+        if (status) { updates.push('status = ?'); params.push(status); }
+
+        // Check if goal is completed
+        if (newCurrentAmount >= parseFloat(goal.targetAmount)) {
+            updates.push("status = 'completed'");
+            updates.push('completedAt = NOW()');
+        }
+
+        params.push(goalId);
+        await pool.execute(`UPDATE savings_goals SET ${updates.join(', ')} WHERE id = ?`, params);
+
+        res.json({ success: true, message: 'Savings goal updated', newAmount: newCurrentAmount });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Delete savings goal
+app.delete('/api/user/savings-goals/:goalId', requireAuth, async (req, res) => {
+    try {
+        const { goalId } = req.params;
+        await pool.execute('DELETE FROM savings_goals WHERE id = ? AND userId = ?', [goalId, req.auth.id]);
+        res.json({ success: true, message: 'Savings goal deleted' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ==================== 7. INTERNAL MESSAGING ====================
+
+// Get inbox messages
+app.get('/api/messages/inbox', requireAuth, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(`
+            SELECT m.*, 
+                   u.firstName AS senderFirstName, u.lastName AS senderLastName, u.email AS senderEmail, u.isAdmin AS senderIsAdmin
+            FROM internal_messages m
+            LEFT JOIN users u ON m.fromUserId = u.id
+            WHERE m.toUserId = ? AND m.isDeleted = FALSE
+            ORDER BY m.createdAt DESC
+            LIMIT 100
+        `, [req.auth.id]);
+        res.json({ success: true, messages: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Get sent messages
+app.get('/api/messages/sent', requireAuth, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(`
+            SELECT m.*, 
+                   u.firstName AS recipientFirstName, u.lastName AS recipientLastName, u.email AS recipientEmail
+            FROM internal_messages m
+            LEFT JOIN users u ON m.toUserId = u.id
+            WHERE m.fromUserId = ? AND m.isDeleted = FALSE
+            ORDER BY m.createdAt DESC
+            LIMIT 100
+        `, [req.auth.id]);
+        res.json({ success: true, messages: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Get unread message count
+app.get('/api/messages/unread-count', requireAuth, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(
+            'SELECT COUNT(*) as count FROM internal_messages WHERE toUserId = ? AND isRead = FALSE AND isDeleted = FALSE',
+            [req.auth.id]
+        );
+        res.json({ success: true, count: rows[0].count });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Send message
+app.post('/api/messages/send', requireAuth, async (req, res) => {
+    try {
+        const { toUserId, subject, message, parentMessageId } = req.body;
+        
+        if (!subject || !message) {
+            return res.status(400).json({ success: false, message: 'Subject and message required' });
+        }
+
+        // If no toUserId specified, send to admin
+        let recipientId = toUserId;
+        if (!recipientId) {
+            const [admins] = await pool.execute('SELECT id FROM users WHERE isAdmin = TRUE LIMIT 1');
+            if (admins.length === 0) {
+                return res.status(400).json({ success: false, message: 'No admin available' });
+            }
+            recipientId = admins[0].id;
+        }
+
+        const [result] = await pool.execute(`
+            INSERT INTO internal_messages (fromUserId, toUserId, subject, message, parentMessageId)
+            VALUES (?, ?, ?, ?, ?)
+        `, [req.auth.id, recipientId, subject, message, parentMessageId || null]);
+
+        res.json({ success: true, message: 'Message sent', messageId: result.insertId });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Mark message as read
+app.put('/api/messages/:messageId/read', requireAuth, async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        await pool.execute(
+            'UPDATE internal_messages SET isRead = TRUE, readAt = NOW() WHERE id = ? AND toUserId = ?',
+            [messageId, req.auth.id]
+        );
+        res.json({ success: true, message: 'Message marked as read' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Delete message
+app.delete('/api/messages/:messageId', requireAuth, async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        await pool.execute(
+            'UPDATE internal_messages SET isDeleted = TRUE WHERE id = ? AND (toUserId = ? OR fromUserId = ?)',
+            [messageId, req.auth.id, req.auth.id]
+        );
+        res.json({ success: true, message: 'Message deleted' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Admin: Get all messages (for admin panel)
+app.get('/api/admin/messages', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(`
+            SELECT m.id, m.subject, m.message AS body, m.isRead, m.createdAt,
+                   m.fromUserId, m.toUserId,
+                   sender.email AS userEmail,
+                   sender.firstName AS senderFirstName, sender.lastName AS senderLastName,
+                   (SELECT COUNT(*) FROM internal_messages r WHERE r.parentMessageId = m.id AND r.fromUserId != m.fromUserId) > 0 AS adminReply
+            FROM internal_messages m
+            LEFT JOIN users sender ON m.fromUserId = sender.id
+            WHERE m.isDeleted = FALSE 
+            AND m.toUserId IN (SELECT id FROM users WHERE isAdmin = TRUE)
+            ORDER BY m.createdAt DESC
+            LIMIT 200
+        `);
+        res.json({ success: true, messages: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Admin: Send message to user
+app.post('/api/admin/messages/send', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { toUserId, toEmail, subject, message } = req.body;
+        
+        if (!subject || !message) {
+            return res.status(400).json({ success: false, message: 'Subject and message required' });
+        }
+
+        let recipientId = toUserId;
+        if (!recipientId && toEmail) {
+            const [users] = await pool.execute('SELECT id FROM users WHERE email = ?', [toEmail.toLowerCase()]);
+            if (users.length === 0) {
+                return res.status(404).json({ success: false, message: 'User not found' });
+            }
+            recipientId = users[0].id;
+        }
+
+        if (!recipientId) {
+            return res.status(400).json({ success: false, message: 'Recipient required' });
+        }
+
+        const [result] = await pool.execute(`
+            INSERT INTO internal_messages (fromUserId, toUserId, subject, message)
+            VALUES (?, ?, ?, ?)
+        `, [req.auth.id, recipientId, subject, message]);
+
+        res.json({ success: true, message: 'Message sent', messageId: result.insertId });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Admin: Reply to a message
+app.put('/api/admin/messages/:id/reply', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { adminReply, reply, subject } = req.body;
+        const replyText = adminReply || reply;
+
+        if (!replyText) {
+            return res.status(400).json({ success: false, message: 'Reply is required' });
+        }
+
+        // Get the original message to find the user
+        const [messages] = await pool.execute(
+            'SELECT * FROM internal_messages WHERE id = ?',
+            [id]
+        );
+
+        if (messages.length === 0) {
+            return res.status(404).json({ success: false, message: 'Message not found' });
+        }
+
+        const originalMessage = messages[0];
+        const toUserId = originalMessage.fromUserId;
+
+        // Create a reply message
+        const [result] = await pool.execute(`
+            INSERT INTO internal_messages (fromUserId, toUserId, subject, message, parentMessageId)
+            VALUES (?, ?, ?, ?, ?)
+        `, [req.auth.id, toUserId, subject || `Re: ${originalMessage.subject}`, replyText, id]);
+
+        // Mark original as replied (you could add an adminReply column if needed)
+        await pool.execute(
+            'UPDATE internal_messages SET isRead = TRUE WHERE id = ?',
+            [id]
+        );
+
+        res.json({ success: true, message: 'Reply sent', messageId: result.insertId });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ==================== ADMIN SUPPORT TICKETS (ALTERNATE ROUTES) ====================
+
+// Admin: Get support tickets (alternate route for admin panel)
+app.get('/api/admin/support-tickets', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { status, priority, limit = 50 } = req.query;
+        
+        let query = `SELECT st.id, st.ticketNumber, st.subject, st.description, st.category, 
+                            st.priority, st.status, st.adminReply, st.createdAt, st.updatedAt,
+                            u.firstName, u.lastName, u.email as userEmail
+                     FROM support_tickets st
+                     JOIN users u ON st.userId = u.id WHERE 1=1`;
+        const params = [];
+        
+        if (status && status !== 'all') { 
+            query += ' AND st.status = ?'; 
+            params.push(status); 
+        }
+        if (priority) { 
+            query += ' AND st.priority = ?'; 
+            params.push(priority); 
+        }
+        query += ' ORDER BY st.createdAt DESC LIMIT ?';
+        params.push(parseInt(limit));
+        
+        const [tickets] = await pool.execute(query, params);
+        res.json({ success: true, tickets });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Admin: Update support ticket (reply/status)
+app.put('/api/admin/support-tickets/:id', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { adminReply, status } = req.body;
+
+        // Check ticket exists
+        const [tickets] = await pool.execute('SELECT * FROM support_tickets WHERE id = ?', [id]);
+        if (tickets.length === 0) {
+            return res.status(404).json({ success: false, message: 'Ticket not found' });
+        }
+
+        const ticket = tickets[0];
+        let updateFields = [];
+        let updateParams = [];
+
+        if (adminReply) {
+            updateFields.push('adminReply = ?');
+            updateParams.push(adminReply);
+        }
+
+        if (status) {
+            updateFields.push('status = ?');
+            updateParams.push(status);
+            
+            if (status === 'resolved') {
+                updateFields.push('resolvedBy = ?');
+                updateFields.push('resolvedAt = NOW()');
+                updateParams.push(req.auth.id);
+            }
+        }
+
+        if (updateFields.length > 0) {
+            updateFields.push('updatedAt = NOW()');
+            updateParams.push(id);
+            
+            await pool.execute(
+                `UPDATE support_tickets SET ${updateFields.join(', ')} WHERE id = ?`,
+                updateParams
+            );
+        }
+
+        // Send notification to user
+        try {
+            await pool.execute(
+                `INSERT INTO notifications (userId, type, title, message, data) 
+                 VALUES (?, 'system', 'Support Ticket Update', ?, ?)`,
+                [ticket.userId, `Your support ticket has been updated.`, JSON.stringify({ ticketId: id })]
+            );
+        } catch (notifError) {
+            console.log('Notification error (non-critical):', notifError.message);
+        }
+
+        res.json({ success: true, message: 'Ticket updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ==================== 8. TRANSACTION CATEGORIES ====================
+
+// Get spending by category
+app.get('/api/user/spending-analytics', requireAuth, async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        
+        let dateFilter = '';
+        const params = [req.auth.id];
+        
+        if (startDate && endDate) {
+            dateFilter = 'AND t.createdAt BETWEEN ? AND ?';
+            params.push(startDate, endDate);
+        } else {
+            // Default to last 30 days
+            dateFilter = 'AND t.createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
+        }
+
+        // Get spending by category
+        const [categories] = await pool.execute(`
+            SELECT 
+                COALESCE(t.category, 'uncategorized') as category,
+                COUNT(*) as transactionCount,
+                SUM(t.amount) as totalAmount
+            FROM transactions t
+            WHERE t.fromUserId = ? ${dateFilter}
+            GROUP BY COALESCE(t.category, 'uncategorized')
+            ORDER BY totalAmount DESC
+        `, params);
+
+        // Get daily spending trend
+        const [daily] = await pool.execute(`
+            SELECT 
+                DATE(t.createdAt) as date,
+                SUM(t.amount) as totalAmount,
+                COUNT(*) as transactionCount
+            FROM transactions t
+            WHERE t.fromUserId = ? ${dateFilter}
+            GROUP BY DATE(t.createdAt)
+            ORDER BY date ASC
+        `, params);
+
+        // Get total in/out
+        const [totals] = await pool.execute(`
+            SELECT 
+                SUM(CASE WHEN fromUserId = ? THEN amount ELSE 0 END) as totalOut,
+                SUM(CASE WHEN toUserId = ? THEN amount ELSE 0 END) as totalIn
+            FROM transactions
+            WHERE (fromUserId = ? OR toUserId = ?) ${dateFilter.replace(/t\./g, '')}
+        `, [req.auth.id, req.auth.id, req.auth.id, req.auth.id, ...(startDate && endDate ? [startDate, endDate] : [])]);
+
+        res.json({
+            success: true,
+            analytics: {
+                byCategory: categories,
+                dailyTrend: daily,
+                totals: totals[0]
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Set transaction category
+app.post('/api/transactions/:transactionId/category', requireAuth, async (req, res) => {
+    try {
+        const { transactionId } = req.params;
+        const { category, notes } = req.body;
+
+        if (!category) {
+            return res.status(400).json({ success: false, message: 'Category required' });
+        }
+
+        // Verify user owns this transaction
+        const [txns] = await pool.execute(
+            'SELECT * FROM transactions WHERE id = ? AND (fromUserId = ? OR toUserId = ?)',
+            [transactionId, req.auth.id, req.auth.id]
+        );
+
+        if (txns.length === 0) {
+            return res.status(404).json({ success: false, message: 'Transaction not found' });
+        }
+
+        // Update transaction category
+        await pool.execute(
+            'UPDATE transactions SET category = ? WHERE id = ?',
+            [category, transactionId]
+        );
+
+        // Also store in transaction_categories for more details
+        await pool.execute(`
+            INSERT INTO transaction_categories (userId, transactionId, category, notes)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE category = VALUES(category), notes = VALUES(notes)
+        `, [req.auth.id, transactionId, category, notes || null]);
+
+        res.json({ success: true, message: 'Category set' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Get available categories
+app.get('/api/transaction-categories', async (req, res) => {
+    const categories = [
+        { id: 'food', name: 'Food & Dining', icon: 'utensils', color: '#e74c3c' },
+        { id: 'shopping', name: 'Shopping', icon: 'shopping-bag', color: '#9b59b6' },
+        { id: 'transport', name: 'Transportation', icon: 'car', color: '#3498db' },
+        { id: 'bills', name: 'Bills & Utilities', icon: 'file-invoice-dollar', color: '#f39c12' },
+        { id: 'entertainment', name: 'Entertainment', icon: 'film', color: '#e91e63' },
+        { id: 'health', name: 'Health & Fitness', icon: 'heartbeat', color: '#2ecc71' },
+        { id: 'education', name: 'Education', icon: 'graduation-cap', color: '#00bcd4' },
+        { id: 'travel', name: 'Travel', icon: 'plane', color: '#ff5722' },
+        { id: 'income', name: 'Income', icon: 'dollar-sign', color: '#27ae60' },
+        { id: 'savings', name: 'Savings', icon: 'piggy-bank', color: '#1a472a' },
+        { id: 'investment', name: 'Investment', icon: 'chart-line', color: '#673ab7' },
+        { id: 'other', name: 'Other', icon: 'ellipsis-h', color: '#95a5a6' }
+    ];
+    res.json({ success: true, categories });
+});
+
+// ==================== 9. SUPPORT TICKET ENHANCEMENTS ====================
+
+// User: Create support ticket
+app.post('/api/support/tickets', requireAuth, async (req, res) => {
+    try {
+        const { category, subject, description, priority } = req.body;
+        
+        if (!category || !subject || !description) {
+            return res.status(400).json({ success: false, message: 'Category, subject, and description required' });
+        }
+
+        const ticketNumber = 'TKT' + Date.now().toString(36).toUpperCase();
+
+        const [result] = await pool.execute(`
+            INSERT INTO support_tickets (ticketNumber, userId, category, subject, description, priority)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, [ticketNumber, req.auth.id, category, subject, description, priority || 'normal']);
+
+        res.json({ success: true, message: 'Ticket created', ticketNumber, ticketId: result.insertId });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// User: Get my tickets
+app.get('/api/support/tickets', requireAuth, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(`
+            SELECT * FROM support_tickets WHERE userId = ? ORDER BY createdAt DESC
+        `, [req.auth.id]);
+        res.json({ success: true, tickets: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// User: Get ticket details with replies
+app.get('/api/support/tickets/:ticketId', requireAuth, async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+        
+        const [tickets] = await pool.execute(
+            'SELECT * FROM support_tickets WHERE id = ? AND userId = ?',
+            [ticketId, req.auth.id]
+        );
+
+        if (tickets.length === 0) {
+            return res.status(404).json({ success: false, message: 'Ticket not found' });
+        }
+
+        const [replies] = await pool.execute(`
+            SELECT r.*, u.firstName, u.lastName, u.isAdmin
+            FROM ticket_replies r
+            LEFT JOIN users u ON r.userId = u.id
+            WHERE r.ticketId = ?
+            ORDER BY r.createdAt ASC
+        `, [ticketId]);
+
+        res.json({ success: true, ticket: tickets[0], replies });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// User: Reply to ticket
+app.post('/api/support/tickets/:ticketId/reply', requireAuth, async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const { message } = req.body;
+
+        if (!message) {
+            return res.status(400).json({ success: false, message: 'Message required' });
+        }
+
+        // Verify ticket ownership
+        const [tickets] = await pool.execute(
+            'SELECT * FROM support_tickets WHERE id = ? AND userId = ?',
+            [ticketId, req.auth.id]
+        );
+
+        if (tickets.length === 0) {
+            return res.status(404).json({ success: false, message: 'Ticket not found' });
+        }
+
+        await pool.execute(`
+            INSERT INTO ticket_replies (ticketId, userId, message, isStaff)
+            VALUES (?, ?, ?, FALSE)
+        `, [ticketId, req.auth.id, message]);
+
+        // Update ticket status
+        await pool.execute(
+            "UPDATE support_tickets SET status = 'open', updatedAt = NOW() WHERE id = ?",
+            [ticketId]
+        );
+
+        res.json({ success: true, message: 'Reply added' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Admin: Get all tickets
+app.get('/api/admin/support/tickets', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { status } = req.query;
+        let query = `
+            SELECT t.*, u.firstName, u.lastName, u.email
+            FROM support_tickets t
+            LEFT JOIN users u ON t.userId = u.id
+        `;
+        const params = [];
+
+        if (status) {
+            query += ' WHERE t.status = ?';
+            params.push(status);
+        }
+
+        query += ' ORDER BY t.createdAt DESC';
+
+        const [rows] = await pool.execute(query, params);
+        res.json({ success: true, tickets: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Admin: Reply to ticket
+app.post('/api/admin/support/tickets/:ticketId/reply', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const { message, status } = req.body;
+
+        if (!message) {
+            return res.status(400).json({ success: false, message: 'Message required' });
+        }
+
+        await pool.execute(`
+            INSERT INTO ticket_replies (ticketId, userId, message, isStaff)
+            VALUES (?, ?, ?, TRUE)
+        `, [ticketId, req.auth.id, message]);
+
+        // Update ticket status
+        const newStatus = status || 'in_progress';
+        await pool.execute(
+            'UPDATE support_tickets SET status = ?, assignedTo = ?, updatedAt = NOW() WHERE id = ?',
+            [newStatus, req.auth.id, ticketId]
+        );
+
+        res.json({ success: true, message: 'Reply added' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Admin: Update ticket status
+app.put('/api/admin/support/tickets/:ticketId/status', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const { status, resolution } = req.body;
+
+        const updates = ['status = ?', 'updatedAt = NOW()'];
+        const params = [status];
+
+        if (status === 'resolved' || status === 'closed') {
+            updates.push('resolvedBy = ?', 'resolvedAt = NOW()');
+            params.push(req.auth.id);
+            if (resolution) {
+                updates.push('resolution = ?');
+                params.push(resolution);
+            }
+        }
+        if (status === 'closed') {
+            updates.push('closedAt = NOW()');
+        }
+
+        params.push(ticketId);
+        await pool.execute(`UPDATE support_tickets SET ${updates.join(', ')} WHERE id = ?`, params);
+
+        res.json({ success: true, message: 'Ticket updated' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

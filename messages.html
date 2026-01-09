@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - Heritage Bank</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; }
+        body.dark-mode { background: #1a1a2e; color: #eee; }
+        
+        .dashboard { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
+        
+        .sidebar { background: #1a472a; color: white; padding: 30px 0; }
+        body.dark-mode .sidebar { background: #0d2818; }
+        .sidebar-logo { padding: 0 20px 30px; font-size: 1.3rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .sidebar-menu { list-style: none; }
+        .sidebar-menu li { padding: 15px 20px; cursor: pointer; transition: background 0.3s; display: flex; align-items: center; gap: 10px; }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background: rgba(212,175,55,0.2); }
+        .sidebar-menu li i { width: 20px; }
+        
+        .main-content { padding: 30px; }
+        body.dark-mode .main-content { background: #16213e; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { color: #1a472a; }
+        body.dark-mode .header h1 { color: #d4af37; }
+        
+        .back-link { color: #d4af37; text-decoration: none; cursor: pointer; font-size: 14px; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .messages-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            height: calc(100vh - 150px);
+        }
+        
+        .messages-sidebar {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        body.dark-mode .messages-sidebar { background: #1f2b47; }
+        
+        .messages-tabs {
+            display: flex;
+            border-bottom: 1px solid #eee;
+        }
+        body.dark-mode .messages-tabs { border-color: #333; }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            transition: all 0.3s;
+        }
+        body.dark-mode .tab-btn { color: #aaa; }
+        .tab-btn.active {
+            color: #1a472a;
+            border-bottom: 2px solid #1a472a;
+            font-weight: 600;
+        }
+        body.dark-mode .tab-btn.active { color: #d4af37; border-color: #d4af37; }
+        
+        .messages-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .message-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        body.dark-mode .message-item { border-color: #333; }
+        .message-item:hover { background: #f9f9f9; }
+        body.dark-mode .message-item:hover { background: #2a3a5c; }
+        .message-item.active { background: #f0f7f2; border-left: 3px solid #1a472a; }
+        body.dark-mode .message-item.active { background: #2a3a5c; border-color: #d4af37; }
+        .message-item.unread { background: #fffbe6; }
+        body.dark-mode .message-item.unread { background: #3a3a2c; }
+        
+        .message-item h4 { color: #333; font-size: 14px; margin-bottom: 5px; }
+        body.dark-mode .message-item h4 { color: #eee; }
+        .message-item p { color: #666; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        body.dark-mode .message-item p { color: #aaa; }
+        .message-item .time { font-size: 11px; color: #999; margin-top: 5px; }
+        
+        .message-view {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        body.dark-mode .message-view { background: #1f2b47; }
+        
+        .message-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        body.dark-mode .message-header { border-color: #333; }
+        .message-header h3 { color: #1a472a; margin-bottom: 5px; }
+        body.dark-mode .message-header h3 { color: #d4af37; }
+        .message-header span { color: #666; font-size: 13px; }
+        body.dark-mode .message-header span { color: #aaa; }
+        
+        .message-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .message-body p { line-height: 1.8; color: #333; }
+        body.dark-mode .message-body p { color: #ddd; }
+        
+        .message-reply {
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+        body.dark-mode .message-reply { border-color: #333; }
+        
+        .reply-form {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .reply-form textarea {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: none;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        body.dark-mode .reply-form textarea { background: #2a3a5c; border-color: #444; color: #eee; }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #1a472a;
+            color: white;
+        }
+        .btn-primary:hover { background: #2d5f3f; }
+        body.dark-mode .btn-primary { background: #d4af37; color: #1a472a; }
+        
+        .compose-btn {
+            margin: 15px;
+            padding: 12px;
+            background: #d4af37;
+            color: #1a472a;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .compose-btn:hover { background: #c9a431; }
+        
+        .compose-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .compose-modal.active { display: flex; }
+        
+        .compose-form {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+        }
+        body.dark-mode .compose-form { background: #1f2b47; }
+        
+        .compose-form h3 { color: #1a472a; margin-bottom: 20px; }
+        body.dark-mode .compose-form h3 { color: #d4af37; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+        body.dark-mode .form-group label { color: #ddd; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        body.dark-mode .form-group input, body.dark-mode .form-group select, body.dark-mode .form-group textarea {
+            background: #2a3a5c; border-color: #444; color: #eee;
+        }
+        
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+        }
+        .empty-state i { font-size: 4rem; margin-bottom: 20px; opacity: 0.3; }
+        
+        .logout-btn {
+            background: #d4af37;
+            color: #1a472a;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .unread-badge {
+            background: #dc3545;
+            color: white;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: auto;
+        }
+        
+        @media (max-width: 900px) {
+            .messages-container { grid-template-columns: 1fr; height: auto; }
+            .messages-sidebar { max-height: 300px; }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="sidebar">
+            <div class="sidebar-logo"><i class="fas fa-landmark"></i> Heritage Bank</div>
+            <ul class="sidebar-menu">
+                <li onclick="location.href='dashboard.html'"><i class="fas fa-home"></i> Dashboard</li>
+                <li onclick="location.href='transfer.html'"><i class="fas fa-exchange-alt"></i> Transfer</li>
+                <li onclick="location.href='pay-bills.html'"><i class="fas fa-file-invoice-dollar"></i> Pay Bills</li>
+                <li onclick="location.href='savings-goals.html'"><i class="fas fa-piggy-bank"></i> Savings Goals</li>
+                <li onclick="location.href='analytics.html'"><i class="fas fa-chart-pie"></i> Analytics</li>
+                <li class="active"><i class="fas fa-envelope"></i> Messages</li>
+                <li onclick="location.href='support.html'"><i class="fas fa-headset"></i> Support</li>
+                <li onclick="location.href='settings.html'"><i class="fas fa-cog"></i> Settings</li>
+            </ul>
+        </nav>
+        
+        <main class="main-content">
+            <div class="header">
+                <div>
+                    <a href="dashboard.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+                    <h1><i class="fas fa-envelope"></i> Messages</h1>
+                </div>
+                <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+            
+            <div class="messages-container">
+                <div class="messages-sidebar">
+                    <button class="compose-btn" onclick="showCompose()">
+                        <i class="fas fa-plus"></i> New Message
+                    </button>
+                    <div class="messages-tabs">
+                        <button class="tab-btn active" onclick="switchTab('inbox')">
+                            <i class="fas fa-inbox"></i> Inbox
+                        </button>
+                        <button class="tab-btn" onclick="switchTab('sent')">
+                            <i class="fas fa-paper-plane"></i> Sent
+                        </button>
+                    </div>
+                    <div class="messages-list" id="messagesList">
+                        <div class="empty-state">
+                            <i class="fas fa-envelope-open"></i>
+                            <p>No messages yet</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="message-view" id="messageView">
+                    <div class="empty-state">
+                        <i class="fas fa-envelope"></i>
+                        <p>Select a message to read</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Compose Modal -->
+    <div class="compose-modal" id="composeModal">
+        <div class="compose-form">
+            <h3><i class="fas fa-pen"></i> New Message</h3>
+            <form onsubmit="sendMessage(event)">
+                <div class="form-group">
+                    <label>Subject</label>
+                    <input type="text" id="msgSubject" placeholder="Enter subject" required>
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea id="msgBody" rows="6" placeholder="Type your message here..." required></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn" style="background: #6c757d; color: white;" onclick="hideCompose()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3001' 
+            : '';
+        
+        let currentTab = 'inbox';
+        let messages = [];
+        let selectedMessage = null;
+        
+        // Check dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'signin.html';
+                return;
+            }
+            loadMessages();
+        });
+        
+        async function loadMessages() {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/messages?type=${currentTab}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    messages = data.messages || [];
+                    renderMessages();
+                }
+            } catch (e) {
+                console.error('Error loading messages:', e);
+            }
+        }
+        
+        function renderMessages() {
+            const container = document.getElementById('messagesList');
+            
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-envelope-open"></i>
+                        <p>No messages in ${currentTab}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = messages.map(msg => `
+                <div class="message-item ${msg.isRead ? '' : 'unread'} ${selectedMessage?.id === msg.id ? 'active' : ''}" 
+                     onclick="viewMessage(${msg.id})">
+                    <h4>${escapeHtml(msg.subject)}</h4>
+                    <p>${escapeHtml(msg.body?.substring(0, 50))}...</p>
+                    <span class="time">${formatDate(msg.createdAt)}</span>
+                </div>
+            `).join('');
+        }
+        
+        async function viewMessage(id) {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/messages/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    selectedMessage = data.message;
+                    renderMessageView();
+                    
+                    // Mark as read
+                    if (!selectedMessage.isRead) {
+                        await fetch(`${API_URL}/api/messages/${id}/read`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        loadMessages();
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading message:', e);
+            }
+        }
+        
+        function renderMessageView() {
+            const container = document.getElementById('messageView');
+            
+            if (!selectedMessage) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-envelope"></i>
+                        <p>Select a message to read</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="message-header">
+                    <h3>${escapeHtml(selectedMessage.subject)}</h3>
+                    <span>${currentTab === 'inbox' ? 'From: Bank Support' : 'To: Bank Support'} • ${formatDate(selectedMessage.createdAt)}</span>
+                </div>
+                <div class="message-body">
+                    <p>${escapeHtml(selectedMessage.body).replace(/\n/g, '<br>')}</p>
+                    ${selectedMessage.adminReply ? `
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                            <strong style="color: #1a472a;"><i class="fas fa-reply"></i> Bank Response:</strong>
+                            <p style="margin-top: 10px;">${escapeHtml(selectedMessage.adminReply).replace(/\n/g, '<br>')}</p>
+                        </div>
+                    ` : ''}
+                </div>
+                ${currentTab === 'inbox' && !selectedMessage.adminReply ? `
+                    <div class="message-reply">
+                        <form class="reply-form" onsubmit="replyMessage(event)">
+                            <textarea id="replyText" rows="2" placeholder="Type your reply..."></textarea>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-reply"></i></button>
+                        </form>
+                    </div>
+                ` : ''}
+            `;
+        }
+        
+        async function replyMessage(e) {
+            e.preventDefault();
+            const reply = document.getElementById('replyText').value.trim();
+            if (!reply) return;
+            
+            // Send as a new message (reply)
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        subject: 'Re: ' + selectedMessage.subject,
+                        body: reply
+                    })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    alert('Reply sent successfully!');
+                    document.getElementById('replyText').value = '';
+                    loadMessages();
+                } else {
+                    alert(data.message || 'Failed to send reply');
+                }
+            } catch (e) {
+                alert('Error sending reply');
+            }
+        }
+        
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.tab-btn').classList.add('active');
+            selectedMessage = null;
+            renderMessageView();
+            loadMessages();
+        }
+        
+        function showCompose() {
+            document.getElementById('composeModal').classList.add('active');
+        }
+        
+        function hideCompose() {
+            document.getElementById('composeModal').classList.remove('active');
+            document.getElementById('msgSubject').value = '';
+            document.getElementById('msgBody').value = '';
+        }
+        
+        async function sendMessage(e) {
+            e.preventDefault();
+            const subject = document.getElementById('msgSubject').value.trim();
+            const body = document.getElementById('msgBody').value.trim();
+            
+            if (!subject || !body) return;
+            
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ subject, body })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    alert('Message sent successfully!');
+                    hideCompose();
+                    switchTab('sent');
+                } else {
+                    alert(data.message || 'Failed to send message');
+                }
+            } catch (e) {
+                alert('Error sending message');
+            }
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + 'd ago';
+            
+            return date.toLocaleDateString();
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'signin.html';
+        }
+    </script>
+</body>
+</html>

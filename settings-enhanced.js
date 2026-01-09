@@ -1020,12 +1020,131 @@ async function toggleInternational() {
 // ============================================================================
 
 function loadPreferences(user) {
+    // Load notification toggles
     const notificationToggles = document.querySelectorAll('[id^="notification"]');
     notificationToggles.forEach(toggle => {
         const prefKey = toggle.id;
         const pref = user.preferences?.[prefKey] ?? true;
         toggle.checked = pref;
     });
+    
+    // Load dark mode preference
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
+        const darkMode = localStorage.getItem('darkMode') === 'true';
+        darkModeToggle.checked = darkMode;
+        if (darkMode) {
+            document.body.classList.add('dark-mode');
+        }
+    }
+    
+    // Load transaction PIN status
+    const pinStatus = document.getElementById('pinStatus');
+    if (pinStatus) {
+        pinStatus.textContent = user.transactionPin ? 'Enabled' : 'Not Set';
+        pinStatus.style.color = user.transactionPin ? '#28a745' : '#dc3545';
+    }
+}
+
+// Dark Mode Toggle
+function toggleDarkMode() {
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const isDark = darkModeToggle?.checked;
+    
+    localStorage.setItem('darkMode', isDark);
+    
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+    } else {
+        document.body.classList.remove('dark-mode');
+    }
+    
+    // Also save to server
+    updatePreference('darkMode', isDark);
+}
+
+// Transaction PIN Management
+function showPinSetup() {
+    const modal = document.getElementById('pinModal');
+    if (modal) modal.classList.add('active');
+}
+
+function hidePinModal() {
+    const modal = document.getElementById('pinModal');
+    if (modal) modal.classList.remove('active');
+    // Clear inputs
+    document.querySelectorAll('#pinModal input').forEach(input => input.value = '');
+}
+
+async function saveTransactionPin(e) {
+    e.preventDefault();
+    
+    const currentPin = document.getElementById('currentPin')?.value || '';
+    const newPin = document.getElementById('newPin').value;
+    const confirmPin = document.getElementById('confirmPin').value;
+    
+    if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+        showAlert('PIN must be exactly 4 digits', 'error');
+        return;
+    }
+    
+    if (newPin !== confirmPin) {
+        showAlert('PINs do not match', 'error');
+        return;
+    }
+    
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_URL}/api/user/transaction-pin`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ currentPin, newPin })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+            showAlert('Transaction PIN updated successfully', 'success');
+            hidePinModal();
+            const pinStatus = document.getElementById('pinStatus');
+            if (pinStatus) {
+                pinStatus.textContent = 'Enabled';
+                pinStatus.style.color = '#28a745';
+            }
+        } else {
+            showAlert(data.message || 'Failed to update PIN', 'error');
+        }
+    } catch (e) {
+        showAlert('Error updating PIN', 'error');
+    }
+}
+
+async function removeTransactionPin() {
+    if (!confirm('Are you sure you want to remove your transaction PIN?')) return;
+    
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_URL}/api/user/transaction-pin`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+            showAlert('Transaction PIN removed', 'success');
+            const pinStatus = document.getElementById('pinStatus');
+            if (pinStatus) {
+                pinStatus.textContent = 'Not Set';
+                pinStatus.style.color = '#dc3545';
+            }
+        } else {
+            showAlert(data.message || 'Failed to remove PIN', 'error');
+        }
+    } catch (e) {
+        showAlert('Error removing PIN', 'error');
+    }
 }
 
 async function updatePreference(key, value) {

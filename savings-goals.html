@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savings Goals - Heritage Bank</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; }
+        body.dark-mode { background: #1a1a2e; color: #eee; }
+        
+        .dashboard { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
+        
+        .sidebar { background: #1a472a; color: white; padding: 30px 0; }
+        body.dark-mode .sidebar { background: #0d2818; }
+        .sidebar-logo { padding: 0 20px 30px; font-size: 1.3rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .sidebar-menu { list-style: none; }
+        .sidebar-menu li { padding: 15px 20px; cursor: pointer; transition: background 0.3s; display: flex; align-items: center; gap: 10px; }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background: rgba(212,175,55,0.2); }
+        .sidebar-menu li i { width: 20px; }
+        
+        .main-content { padding: 30px; max-width: 1200px; }
+        body.dark-mode .main-content { background: #16213e; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { color: #1a472a; }
+        body.dark-mode .header h1 { color: #d4af37; }
+        
+        .back-link { color: #d4af37; text-decoration: none; cursor: pointer; font-size: 14px; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        body.dark-mode .stat-card { background: #1f2b47; }
+        .stat-card i { font-size: 2rem; color: #d4af37; margin-bottom: 10px; }
+        .stat-card h3 { font-size: 1.8rem; color: #1a472a; margin-bottom: 5px; }
+        body.dark-mode .stat-card h3 { color: #d4af37; }
+        .stat-card p { color: #666; font-size: 0.9rem; }
+        body.dark-mode .stat-card p { color: #aaa; }
+        
+        .goals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .goal-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        body.dark-mode .goal-card { background: #1f2b47; }
+        
+        .goal-header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .goal-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .goal-icon.vacation { background: #e3f2fd; color: #1976d2; }
+        .goal-icon.home { background: #fce4ec; color: #c2185b; }
+        .goal-icon.car { background: #e8f5e9; color: #388e3c; }
+        .goal-icon.emergency { background: #fff3e0; color: #f57c00; }
+        .goal-icon.other { background: #f3e5f5; color: #7b1fa2; }
+        
+        .goal-info h3 { color: #333; margin-bottom: 5px; }
+        body.dark-mode .goal-info h3 { color: #eee; }
+        .goal-info p { color: #666; font-size: 0.85rem; }
+        body.dark-mode .goal-info p { color: #aaa; }
+        
+        .goal-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .goal-actions button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            color: #666;
+            transition: color 0.3s;
+        }
+        .goal-actions button:hover { color: #1a472a; }
+        body.dark-mode .goal-actions button:hover { color: #d4af37; }
+        
+        .goal-body { padding: 0 20px 20px; }
+        
+        .goal-progress {
+            margin-bottom: 15px;
+        }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .progress-header span { font-size: 0.9rem; color: #666; }
+        body.dark-mode .progress-header span { color: #aaa; }
+        .progress-header strong { color: #1a472a; }
+        body.dark-mode .progress-header strong { color: #d4af37; }
+        
+        .progress-bar {
+            height: 12px;
+            background: #eee;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        body.dark-mode .progress-bar { background: #333; }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1a472a, #2d5f3f);
+            border-radius: 6px;
+            transition: width 0.5s ease;
+        }
+        
+        .goal-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        body.dark-mode .goal-stats { border-color: #333; }
+        .goal-stats div { text-align: center; }
+        .goal-stats span { display: block; font-size: 0.75rem; color: #999; }
+        .goal-stats strong { color: #333; }
+        body.dark-mode .goal-stats strong { color: #eee; }
+        
+        .goal-footer {
+            padding: 15px 20px;
+            background: #f9f9f9;
+            display: flex;
+            gap: 10px;
+        }
+        body.dark-mode .goal-footer { background: #16213e; }
+        
+        .goal-footer input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        body.dark-mode .goal-footer input { background: #2a3a5c; border-color: #444; color: #eee; }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-primary { background: #1a472a; color: white; }
+        .btn-primary:hover { background: #2d5f3f; }
+        body.dark-mode .btn-primary { background: #d4af37; color: #1a472a; }
+        .btn-secondary { background: #6c757d; color: white; }
+        
+        .add-goal-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            cursor: pointer;
+            border: 2px dashed #ddd;
+            transition: all 0.3s;
+        }
+        body.dark-mode .add-goal-card { background: #1f2b47; border-color: #444; }
+        .add-goal-card:hover { border-color: #1a472a; background: #f9f9f9; }
+        body.dark-mode .add-goal-card:hover { border-color: #d4af37; background: #2a3a5c; }
+        .add-goal-card i { font-size: 3rem; color: #ddd; margin-bottom: 15px; }
+        .add-goal-card p { color: #666; }
+        body.dark-mode .add-goal-card p { color: #aaa; }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        body.dark-mode .modal-content { background: #1f2b47; }
+        
+        .modal-content h3 { color: #1a472a; margin-bottom: 20px; }
+        body.dark-mode .modal-content h3 { color: #d4af37; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+        body.dark-mode .form-group label { color: #ddd; }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        body.dark-mode .form-group input, body.dark-mode .form-group select {
+            background: #2a3a5c; border-color: #444; color: #eee;
+        }
+        
+        .category-icons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .category-icon {
+            padding: 15px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        body.dark-mode .category-icon { border-color: #444; }
+        .category-icon:hover, .category-icon.active { border-color: #1a472a; background: #f0f7f2; }
+        body.dark-mode .category-icon:hover, body.dark-mode .category-icon.active { border-color: #d4af37; background: #2a3a5c; }
+        .category-icon i { font-size: 1.5rem; color: #666; }
+        .category-icon.active i { color: #1a472a; }
+        body.dark-mode .category-icon.active i { color: #d4af37; }
+        
+        .logout-btn {
+            background: #d4af37;
+            color: #1a472a;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        .empty-state i { font-size: 4rem; margin-bottom: 20px; opacity: 0.3; }
+        
+        @media (max-width: 768px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .goals-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="sidebar">
+            <div class="sidebar-logo"><i class="fas fa-landmark"></i> Heritage Bank</div>
+            <ul class="sidebar-menu">
+                <li onclick="location.href='dashboard.html'"><i class="fas fa-home"></i> Dashboard</li>
+                <li onclick="location.href='transfer.html'"><i class="fas fa-exchange-alt"></i> Transfer</li>
+                <li onclick="location.href='pay-bills.html'"><i class="fas fa-file-invoice-dollar"></i> Pay Bills</li>
+                <li class="active"><i class="fas fa-piggy-bank"></i> Savings Goals</li>
+                <li onclick="location.href='analytics.html'"><i class="fas fa-chart-pie"></i> Analytics</li>
+                <li onclick="location.href='messages.html'"><i class="fas fa-envelope"></i> Messages</li>
+                <li onclick="location.href='support.html'"><i class="fas fa-headset"></i> Support</li>
+                <li onclick="location.href='settings.html'"><i class="fas fa-cog"></i> Settings</li>
+            </ul>
+        </nav>
+        
+        <main class="main-content">
+            <div class="header">
+                <div>
+                    <a href="dashboard.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+                    <h1><i class="fas fa-piggy-bank"></i> Savings Goals</h1>
+                </div>
+                <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+            
+            <!-- Stats -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <i class="fas fa-bullseye"></i>
+                    <h3 id="totalGoals">0</h3>
+                    <p>Active Goals</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-dollar-sign"></i>
+                    <h3 id="totalSaved">$0</h3>
+                    <p>Total Saved</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-flag-checkered"></i>
+                    <h3 id="totalTarget">$0</h3>
+                    <p>Total Target</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-percentage"></i>
+                    <h3 id="avgProgress">0%</h3>
+                    <p>Avg Progress</p>
+                </div>
+            </div>
+            
+            <!-- Goals Grid -->
+            <div class="goals-grid" id="goalsGrid">
+                <div class="add-goal-card" onclick="showAddGoal()">
+                    <i class="fas fa-plus-circle"></i>
+                    <p>Create New Goal</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Add/Edit Goal Modal -->
+    <div class="modal" id="goalModal">
+        <div class="modal-content">
+            <h3 id="modalTitle"><i class="fas fa-piggy-bank"></i> Create New Goal</h3>
+            <form onsubmit="saveGoal(event)">
+                <input type="hidden" id="goalId">
+                <div class="form-group">
+                    <label>Goal Name</label>
+                    <input type="text" id="goalName" placeholder="e.g., Vacation Fund" required>
+                </div>
+                <div class="form-group">
+                    <label>Target Amount ($)</label>
+                    <input type="number" id="goalTarget" min="1" step="0.01" placeholder="5000" required>
+                </div>
+                <div class="form-group">
+                    <label>Current Amount ($)</label>
+                    <input type="number" id="goalCurrent" min="0" step="0.01" placeholder="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Target Date</label>
+                    <input type="date" id="goalDate">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <div class="category-icons">
+                        <div class="category-icon active" data-category="vacation" onclick="selectCategory(this)">
+                            <i class="fas fa-plane"></i>
+                        </div>
+                        <div class="category-icon" data-category="home" onclick="selectCategory(this)">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="category-icon" data-category="car" onclick="selectCategory(this)">
+                            <i class="fas fa-car"></i>
+                        </div>
+                        <div class="category-icon" data-category="emergency" onclick="selectCategory(this)">
+                            <i class="fas fa-first-aid"></i>
+                        </div>
+                        <div class="category-icon" data-category="other" onclick="selectCategory(this)">
+                            <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="hideModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Goal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3001' 
+            : '';
+        
+        let goals = [];
+        let selectedCategory = 'vacation';
+        
+        // Check dark mode
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'signin.html';
+                return;
+            }
+            loadGoals();
+        });
+        
+        async function loadGoals() {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/savings-goals`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    goals = data.goals || [];
+                    renderGoals();
+                    updateStats();
+                }
+            } catch (e) {
+                console.error('Error loading goals:', e);
+            }
+        }
+        
+        function renderGoals() {
+            const container = document.getElementById('goalsGrid');
+            const addCard = `
+                <div class="add-goal-card" onclick="showAddGoal()">
+                    <i class="fas fa-plus-circle"></i>
+                    <p>Create New Goal</p>
+                </div>
+            `;
+            
+            if (goals.length === 0) {
+                container.innerHTML = addCard;
+                return;
+            }
+            
+            const categoryIcons = {
+                vacation: 'fa-plane',
+                home: 'fa-home',
+                car: 'fa-car',
+                emergency: 'fa-first-aid',
+                other: 'fa-star'
+            };
+            
+            const goalsHTML = goals.map(goal => {
+                const progress = goal.targetAmount > 0 ? Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) : 0;
+                const remaining = Math.max(0, goal.targetAmount - goal.currentAmount);
+                const daysLeft = goal.targetDate ? Math.ceil((new Date(goal.targetDate) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                
+                return `
+                    <div class="goal-card">
+                        <div class="goal-header">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="goal-icon ${goal.category || 'other'}">
+                                    <i class="fas ${categoryIcons[goal.category] || 'fa-star'}"></i>
+                                </div>
+                                <div class="goal-info">
+                                    <h3>${escapeHtml(goal.name)}</h3>
+                                    <p>${goal.targetDate ? 'Target: ' + formatDate(goal.targetDate) : 'No deadline'}</p>
+                                </div>
+                            </div>
+                            <div class="goal-actions">
+                                <button onclick="editGoal(${goal.id})" title="Edit"><i class="fas fa-edit"></i></button>
+                                <button onclick="deleteGoal(${goal.id})" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="goal-body">
+                            <div class="goal-progress">
+                                <div class="progress-header">
+                                    <span>$${goal.currentAmount.toLocaleString()} saved</span>
+                                    <strong>${progress.toFixed(0)}%</strong>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${progress}%"></div>
+                                </div>
+                            </div>
+                            <div class="goal-stats">
+                                <div>
+                                    <span>Remaining</span>
+                                    <strong>$${remaining.toLocaleString()}</strong>
+                                </div>
+                                <div>
+                                    <span>${daysLeft !== null && daysLeft > 0 ? 'Days Left' : 'Status'}</span>
+                                    <strong>${daysLeft !== null ? (daysLeft > 0 ? daysLeft : 'Overdue') : 'Ongoing'}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="goal-footer">
+                            <input type="number" id="addAmount${goal.id}" placeholder="Add amount" min="1" step="0.01">
+                            <button class="btn btn-primary" onclick="addToGoal(${goal.id})"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = goalsHTML + addCard;
+        }
+        
+        function updateStats() {
+            const totalGoals = goals.length;
+            const totalSaved = goals.reduce((sum, g) => sum + g.currentAmount, 0);
+            const totalTarget = goals.reduce((sum, g) => sum + g.targetAmount, 0);
+            const avgProgress = totalGoals > 0 ? goals.reduce((sum, g) => sum + (g.targetAmount > 0 ? (g.currentAmount / g.targetAmount) * 100 : 0), 0) / totalGoals : 0;
+            
+            document.getElementById('totalGoals').textContent = totalGoals;
+            document.getElementById('totalSaved').textContent = '$' + totalSaved.toLocaleString();
+            document.getElementById('totalTarget').textContent = '$' + totalTarget.toLocaleString();
+            document.getElementById('avgProgress').textContent = avgProgress.toFixed(0) + '%';
+        }
+        
+        function showAddGoal() {
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-piggy-bank"></i> Create New Goal';
+            document.getElementById('goalId').value = '';
+            document.getElementById('goalName').value = '';
+            document.getElementById('goalTarget').value = '';
+            document.getElementById('goalCurrent').value = '0';
+            document.getElementById('goalDate').value = '';
+            selectedCategory = 'vacation';
+            document.querySelectorAll('.category-icon').forEach(el => el.classList.remove('active'));
+            document.querySelector('[data-category="vacation"]').classList.add('active');
+            document.getElementById('goalModal').classList.add('active');
+        }
+        
+        function editGoal(id) {
+            const goal = goals.find(g => g.id === id);
+            if (!goal) return;
+            
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Goal';
+            document.getElementById('goalId').value = goal.id;
+            document.getElementById('goalName').value = goal.name;
+            document.getElementById('goalTarget').value = goal.targetAmount;
+            document.getElementById('goalCurrent').value = goal.currentAmount;
+            document.getElementById('goalDate').value = goal.targetDate ? goal.targetDate.split('T')[0] : '';
+            selectedCategory = goal.category || 'other';
+            
+            document.querySelectorAll('.category-icon').forEach(el => {
+                el.classList.toggle('active', el.dataset.category === selectedCategory);
+            });
+            
+            document.getElementById('goalModal').classList.add('active');
+        }
+        
+        function hideModal() {
+            document.getElementById('goalModal').classList.remove('active');
+        }
+        
+        function selectCategory(el) {
+            document.querySelectorAll('.category-icon').forEach(icon => icon.classList.remove('active'));
+            el.classList.add('active');
+            selectedCategory = el.dataset.category;
+        }
+        
+        async function saveGoal(e) {
+            e.preventDefault();
+            
+            const token = localStorage.getItem('token');
+            const goalId = document.getElementById('goalId').value;
+            const goalData = {
+                name: document.getElementById('goalName').value,
+                targetAmount: parseFloat(document.getElementById('goalTarget').value),
+                currentAmount: parseFloat(document.getElementById('goalCurrent').value) || 0,
+                targetDate: document.getElementById('goalDate').value || null,
+                category: selectedCategory
+            };
+            
+            try {
+                const url = goalId ? `${API_URL}/api/savings-goals/${goalId}` : `${API_URL}/api/savings-goals`;
+                const method = goalId ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(goalData)
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    hideModal();
+                    loadGoals();
+                } else {
+                    alert(data.message || 'Failed to save goal');
+                }
+            } catch (e) {
+                alert('Error saving goal');
+            }
+        }
+        
+        async function deleteGoal(id) {
+            if (!confirm('Are you sure you want to delete this goal?')) return;
+            
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/savings-goals/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    loadGoals();
+                } else {
+                    alert(data.message || 'Failed to delete goal');
+                }
+            } catch (e) {
+                alert('Error deleting goal');
+            }
+        }
+        
+        async function addToGoal(id) {
+            const input = document.getElementById(`addAmount${id}`);
+            const amount = parseFloat(input.value);
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+            
+            const goal = goals.find(g => g.id === id);
+            if (!goal) return;
+            
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/savings-goals/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        ...goal,
+                        currentAmount: goal.currentAmount + amount
+                    })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    input.value = '';
+                    loadGoals();
+                } else {
+                    alert(data.message || 'Failed to add amount');
+                }
+            } catch (e) {
+                alert('Error adding amount');
+            }
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'signin.html';
+        }
+    </script>
+</body>
+</html>

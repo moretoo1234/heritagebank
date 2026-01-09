@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support - Heritage Bank</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; }
+        body.dark-mode { background: #1a1a2e; color: #eee; }
+        
+        .dashboard { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
+        
+        .sidebar { background: #1a472a; color: white; padding: 30px 0; }
+        body.dark-mode .sidebar { background: #0d2818; }
+        .sidebar-logo { padding: 0 20px 30px; font-size: 1.3rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .sidebar-menu { list-style: none; }
+        .sidebar-menu li { padding: 15px 20px; cursor: pointer; transition: background 0.3s; display: flex; align-items: center; gap: 10px; }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background: rgba(212,175,55,0.2); }
+        .sidebar-menu li i { width: 20px; }
+        
+        .main-content { padding: 30px; max-width: 1000px; }
+        body.dark-mode .main-content { background: #16213e; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { color: #1a472a; }
+        body.dark-mode .header h1 { color: #d4af37; }
+        
+        .back-link { color: #d4af37; text-decoration: none; cursor: pointer; font-size: 14px; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        body.dark-mode .tabs { border-color: #333; }
+        
+        .tab-btn {
+            padding: 12px 25px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 15px;
+            color: #666;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+        }
+        body.dark-mode .tab-btn { color: #aaa; }
+        .tab-btn.active {
+            background: #1a472a;
+            color: white;
+        }
+        body.dark-mode .tab-btn.active { background: #d4af37; color: #1a472a; }
+        .tab-btn:hover:not(.active) { background: #f0f0f0; }
+        body.dark-mode .tab-btn:hover:not(.active) { background: #2a3a5c; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        body.dark-mode .card { background: #1f2b47; }
+        
+        .card h3 { color: #1a472a; margin-bottom: 20px; }
+        body.dark-mode .card h3 { color: #d4af37; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+        body.dark-mode .form-group label { color: #ddd; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        body.dark-mode .form-group input, body.dark-mode .form-group select, body.dark-mode .form-group textarea {
+            background: #2a3a5c; border-color: #444; color: #eee;
+        }
+        .form-group textarea { resize: vertical; min-height: 120px; }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-primary { background: #1a472a; color: white; }
+        .btn-primary:hover { background: #2d5f3f; }
+        body.dark-mode .btn-primary { background: #d4af37; color: #1a472a; }
+        .btn-secondary { background: #6c757d; color: white; }
+        
+        .ticket-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .ticket-item {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #1a472a;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        body.dark-mode .ticket-item { background: #16213e; }
+        .ticket-item:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .ticket-item.status-open { border-color: #28a745; }
+        .ticket-item.status-pending { border-color: #ffc107; }
+        .ticket-item.status-resolved { border-color: #6c757d; }
+        
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        .ticket-header h4 { color: #333; margin: 0; }
+        body.dark-mode .ticket-header h4 { color: #eee; }
+        
+        .ticket-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-open { background: #d4edda; color: #28a745; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-resolved { background: #e9ecef; color: #6c757d; }
+        
+        .ticket-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: #666;
+        }
+        body.dark-mode .ticket-meta { color: #aaa; }
+        
+        .ticket-detail {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        body.dark-mode .ticket-detail { border-color: #333; }
+        .ticket-item.expanded .ticket-detail { display: block; }
+        
+        .ticket-message {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        body.dark-mode .ticket-message { background: #1f2b47; }
+        .ticket-message.admin {
+            background: #e3f2fd;
+            border-left: 3px solid #2196f3;
+        }
+        body.dark-mode .ticket-message.admin { background: #1f3a5c; }
+        .ticket-message p { margin: 0; line-height: 1.6; }
+        .ticket-message small { color: #999; display: block; margin-top: 8px; }
+        
+        .faq-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .faq-item {
+            background: #f9f9f9;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        body.dark-mode .faq-item { background: #16213e; }
+        
+        .faq-question {
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+        }
+        .faq-question:hover { background: #f0f0f0; }
+        body.dark-mode .faq-question:hover { background: #2a3a5c; }
+        .faq-question i { transition: transform 0.3s; }
+        .faq-item.expanded .faq-question i { transform: rotate(180deg); }
+        
+        .faq-answer {
+            display: none;
+            padding: 0 20px 20px;
+            color: #666;
+            line-height: 1.8;
+        }
+        body.dark-mode .faq-answer { color: #aaa; }
+        .faq-item.expanded .faq-answer { display: block; }
+        
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .contact-card {
+            background: #f9f9f9;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        body.dark-mode .contact-card { background: #16213e; }
+        .contact-card i { font-size: 2rem; color: #1a472a; margin-bottom: 15px; }
+        body.dark-mode .contact-card i { color: #d4af37; }
+        .contact-card h4 { margin-bottom: 10px; color: #333; }
+        body.dark-mode .contact-card h4 { color: #eee; }
+        .contact-card p { color: #666; font-size: 0.9rem; }
+        body.dark-mode .contact-card p { color: #aaa; }
+        .contact-card a { color: #1a472a; text-decoration: none; font-weight: 500; }
+        body.dark-mode .contact-card a { color: #d4af37; }
+        
+        .logout-btn {
+            background: #d4af37;
+            color: #1a472a;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        .empty-state i { font-size: 4rem; margin-bottom: 20px; opacity: 0.3; }
+        
+        .priority-select { display: flex; gap: 10px; margin-top: 10px; }
+        .priority-btn {
+            padding: 8px 16px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        body.dark-mode .priority-btn { background: #2a3a5c; border-color: #444; color: #eee; }
+        .priority-btn.active { border-color: #1a472a; background: #f0f7f2; }
+        body.dark-mode .priority-btn.active { border-color: #d4af37; background: #3a3a2c; }
+        .priority-btn.low.active { border-color: #28a745; background: #d4edda; }
+        .priority-btn.medium.active { border-color: #ffc107; background: #fff3cd; }
+        .priority-btn.high.active { border-color: #dc3545; background: #f8d7da; }
+        
+        @media (max-width: 768px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .tabs { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="sidebar">
+            <div class="sidebar-logo"><i class="fas fa-landmark"></i> Heritage Bank</div>
+            <ul class="sidebar-menu">
+                <li onclick="location.href='dashboard.html'"><i class="fas fa-home"></i> Dashboard</li>
+                <li onclick="location.href='transfer.html'"><i class="fas fa-exchange-alt"></i> Transfer</li>
+                <li onclick="location.href='pay-bills.html'"><i class="fas fa-file-invoice-dollar"></i> Pay Bills</li>
+                <li onclick="location.href='savings-goals.html'"><i class="fas fa-piggy-bank"></i> Savings Goals</li>
+                <li onclick="location.href='analytics.html'"><i class="fas fa-chart-pie"></i> Analytics</li>
+                <li onclick="location.href='messages.html'"><i class="fas fa-envelope"></i> Messages</li>
+                <li class="active"><i class="fas fa-headset"></i> Support</li>
+                <li onclick="location.href='settings.html'"><i class="fas fa-cog"></i> Settings</li>
+            </ul>
+        </nav>
+        
+        <main class="main-content">
+            <div class="header">
+                <div>
+                    <a href="dashboard.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+                    <h1><i class="fas fa-headset"></i> Support Center</h1>
+                </div>
+                <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('tickets')"><i class="fas fa-ticket-alt"></i> My Tickets</button>
+                <button class="tab-btn" onclick="switchTab('new')"><i class="fas fa-plus"></i> New Ticket</button>
+                <button class="tab-btn" onclick="switchTab('faq')"><i class="fas fa-question-circle"></i> FAQ</button>
+                <button class="tab-btn" onclick="switchTab('contact')"><i class="fas fa-phone"></i> Contact Us</button>
+            </div>
+            
+            <!-- My Tickets -->
+            <div class="tab-content active" id="tickets-tab">
+                <div class="card">
+                    <h3><i class="fas fa-list"></i> Your Support Tickets</h3>
+                    <div class="ticket-list" id="ticketsList">
+                        <div class="empty-state">
+                            <i class="fas fa-ticket-alt"></i>
+                            <p>No support tickets yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- New Ticket -->
+            <div class="tab-content" id="new-tab">
+                <div class="card">
+                    <h3><i class="fas fa-plus-circle"></i> Submit New Ticket</h3>
+                    <form onsubmit="submitTicket(event)">
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="ticketCategory" required>
+                                <option value="">Select a category...</option>
+                                <option value="account">Account Issues</option>
+                                <option value="transaction">Transaction Problems</option>
+                                <option value="card">Card Services</option>
+                                <option value="loan">Loan Inquiry</option>
+                                <option value="security">Security Concern</option>
+                                <option value="technical">Technical Support</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Subject</label>
+                            <input type="text" id="ticketSubject" placeholder="Brief description of your issue" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Priority</label>
+                            <div class="priority-select">
+                                <button type="button" class="priority-btn low active" onclick="selectPriority('low', this)">Low</button>
+                                <button type="button" class="priority-btn medium" onclick="selectPriority('medium', this)">Medium</button>
+                                <button type="button" class="priority-btn high" onclick="selectPriority('high', this)">High</button>
+                            </div>
+                            <input type="hidden" id="ticketPriority" value="low">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="ticketDescription" placeholder="Please describe your issue in detail..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Submit Ticket</button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- FAQ -->
+            <div class="tab-content" id="faq-tab">
+                <div class="card">
+                    <h3><i class="fas fa-question-circle"></i> Frequently Asked Questions</h3>
+                    <div class="faq-list">
+                        <div class="faq-item" onclick="toggleFaq(this)">
+                            <div class="faq-question">
+                                How do I reset my password?
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                To reset your password, click "Forgot Password" on the sign-in page. You'll receive an email with instructions to create a new password. If you don't receive the email within 5 minutes, check your spam folder or contact support.
+                            </div>
+                        </div>
+                        <div class="faq-item" onclick="toggleFaq(this)">
+                            <div class="faq-question">
+                                How long do transfers take to process?
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                Internal transfers between Heritage Bank accounts are instant. External transfers to other banks typically take 1-3 business days. International wire transfers may take 3-5 business days depending on the destination country.
+                            </div>
+                        </div>
+                        <div class="faq-item" onclick="toggleFaq(this)">
+                            <div class="faq-question">
+                                What are the daily transfer limits?
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                Default daily transfer limits are $10,000 for regular accounts and $50,000 for premium accounts. You can view your specific limits in Settings > Transaction Limits. To request a limit increase, contact our support team.
+                            </div>
+                        </div>
+                        <div class="faq-item" onclick="toggleFaq(this)">
+                            <div class="faq-question">
+                                How do I freeze my account?
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                You can temporarily freeze your account from Settings > Account Controls. This will block all outgoing transactions while still allowing deposits. To unfreeze, simply toggle the option off or contact support.
+                            </div>
+                        </div>
+                        <div class="faq-item" onclick="toggleFaq(this)">
+                            <div class="faq-question">
+                                How do I enable two-factor authentication?
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                Go to Settings > Security & Authentication and toggle on "Two-Factor Authentication". You can choose to receive codes via SMS, email, or use an authenticator app. We recommend using an authenticator app for enhanced security.
+                            </div>
+                        </div>
+                        <div class="faq-item" onclick="toggleFaq(this)">
+                            <div class="faq-question">
+                                What should I do if I notice unauthorized transactions?
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                If you notice any unauthorized transactions: 1) Immediately freeze your account from Settings. 2) Change your password. 3) Contact our support team or call our fraud hotline at 1-800-HERITAGE. 4) Submit a dispute form for the unauthorized transaction.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Us -->
+            <div class="tab-content" id="contact-tab">
+                <div class="card">
+                    <h3><i class="fas fa-phone"></i> Contact Information</h3>
+                    <div class="contact-grid">
+                        <div class="contact-card">
+                            <i class="fas fa-phone"></i>
+                            <h4>Phone Support</h4>
+                            <p>24/7 Customer Service</p>
+                            <a href="tel:1-800-HERITAGE">1-800-HERITAGE</a>
+                        </div>
+                        <div class="contact-card">
+                            <i class="fas fa-envelope"></i>
+                            <h4>Email Support</h4>
+                            <p>Response within 24 hours</p>
+                            <a href="mailto:support@heritage.bank">support@heritage.bank</a>
+                        </div>
+                        <div class="contact-card">
+                            <i class="fas fa-comments"></i>
+                            <h4>Live Chat</h4>
+                            <p>Mon-Fri, 9AM-6PM EST</p>
+                            <a href="#" onclick="alert('Live chat coming soon!')">Start Chat</a>
+                        </div>
+                        <div class="contact-card">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <h4>Branch Locator</h4>
+                            <p>Find nearest branch</p>
+                            <a href="branches.html">Find Branch</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3><i class="fas fa-clock"></i> Support Hours</h3>
+                    <div style="line-height: 2;">
+                        <p><strong>Phone Support:</strong> 24/7</p>
+                        <p><strong>Live Chat:</strong> Monday - Friday, 9:00 AM - 6:00 PM EST</p>
+                        <p><strong>Email Response:</strong> Within 24 business hours</p>
+                        <p><strong>Branch Hours:</strong> Monday - Friday, 9:00 AM - 5:00 PM (varies by location)</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3001' 
+            : '';
+        
+        let currentPriority = 'low';
+        let tickets = [];
+        
+        // Check dark mode
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'signin.html';
+                return;
+            }
+            loadTickets();
+        });
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tab}-tab`).classList.add('active');
+        }
+        
+        async function loadTickets() {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/support-tickets`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    tickets = data.tickets || [];
+                    renderTickets();
+                }
+            } catch (e) {
+                console.error('Error loading tickets:', e);
+            }
+        }
+        
+        function renderTickets() {
+            const container = document.getElementById('ticketsList');
+            
+            if (tickets.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-ticket-alt"></i>
+                        <p>No support tickets yet</p>
+                        <button class="btn btn-primary" style="margin-top: 15px;" onclick="switchTab('new')">
+                            <i class="fas fa-plus"></i> Create Ticket
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = tickets.map(ticket => `
+                <div class="ticket-item status-${ticket.status}" onclick="toggleTicket(this)">
+                    <div class="ticket-header">
+                        <h4>#${ticket.id} - ${escapeHtml(ticket.subject)}</h4>
+                        <span class="ticket-status status-${ticket.status}">${ticket.status}</span>
+                    </div>
+                    <div class="ticket-meta">
+                        <span><i class="fas fa-tag"></i> ${ticket.category || 'General'}</span>
+                        <span><i class="fas fa-clock"></i> ${formatDate(ticket.createdAt)}</span>
+                        <span><i class="fas fa-flag"></i> ${ticket.priority || 'low'} priority</span>
+                    </div>
+                    <div class="ticket-detail">
+                        <div class="ticket-message">
+                            <p>${escapeHtml(ticket.description)}</p>
+                            <small>Submitted on ${formatDate(ticket.createdAt)}</small>
+                        </div>
+                        ${ticket.adminReply ? `
+                            <div class="ticket-message admin">
+                                <strong style="color: #1976d2;"><i class="fas fa-headset"></i> Support Response:</strong>
+                                <p style="margin-top: 10px;">${escapeHtml(ticket.adminReply)}</p>
+                                <small>Responded on ${formatDate(ticket.updatedAt)}</small>
+                            </div>
+                        ` : `
+                            <p style="color: #999; font-style: italic; text-align: center;">
+                                <i class="fas fa-hourglass-half"></i> Awaiting response from support team...
+                            </p>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function toggleTicket(el) {
+            el.classList.toggle('expanded');
+        }
+        
+        function selectPriority(priority, btn) {
+            currentPriority = priority;
+            document.getElementById('ticketPriority').value = priority;
+            document.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        
+        async function submitTicket(e) {
+            e.preventDefault();
+            
+            const category = document.getElementById('ticketCategory').value;
+            const subject = document.getElementById('ticketSubject').value;
+            const priority = document.getElementById('ticketPriority').value;
+            const description = document.getElementById('ticketDescription').value;
+            
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/support-tickets`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ category, subject, priority, description })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    alert('Ticket submitted successfully! We will respond within 24 hours.');
+                    document.getElementById('ticketCategory').value = '';
+                    document.getElementById('ticketSubject').value = '';
+                    document.getElementById('ticketDescription').value = '';
+                    selectPriority('low', document.querySelector('.priority-btn.low'));
+                    
+                    // Switch to tickets tab
+                    loadTickets();
+                    document.querySelector('[onclick="switchTab(\'tickets\')"]').click();
+                } else {
+                    alert(data.message || 'Failed to submit ticket');
+                }
+            } catch (e) {
+                alert('Error submitting ticket');
+            }
+        }
+        
+        function toggleFaq(el) {
+            el.classList.toggle('expanded');
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            return new Date(dateStr).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'signin.html';
+        }
+    </script>
+</body>
+</html>
