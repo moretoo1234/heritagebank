@@ -4945,8 +4945,29 @@ app.put('/api/limits', async (req, res) => {
 app.put('/api/cards/:id/freeze', async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Authorization required' });
+        }
         const decoded = jwt.verify(token, JWT_SECRET);
         const { id } = req.params;
+
+        // Check card exists and belongs to user
+        const [cards] = await pool.execute(
+            'SELECT id, status FROM cards WHERE id = ? AND userId = ?',
+            [id, decoded.id]
+        );
+        
+        if (cards.length === 0) {
+            return res.status(404).json({ success: false, message: 'Card not found' });
+        }
+
+        if (cards[0].status === 'blocked') {
+            return res.status(400).json({ success: false, message: 'Cannot freeze a blocked card' });
+        }
+
+        if (cards[0].status === 'paused') {
+            return res.status(400).json({ success: false, message: 'Card is paused by administrator. Contact support.' });
+        }
 
         await pool.execute(
             'UPDATE cards SET status = ?, frozenAt = CURRENT_TIMESTAMP WHERE id = ? AND userId = ?',
