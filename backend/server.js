@@ -2153,6 +2153,37 @@ app.get('/api/cards', async (req, res) => {
     }
 });
 
+// Get individual card details
+app.get('/api/cards/:id', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ success: false, message: 'No token' });
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const cardId = req.params.id;
+        
+        const [cards] = await pool.execute(
+            `SELECT c.id, c.cardNumberMasked, c.expirationDate, c.cardType, c.cardNetwork, c.cardholderName,
+                    c.status, c.dailyLimit, c.monthlyLimit, c.onlineEnabled, c.internationalEnabled,
+                    c.contactlessEnabled, c.dailySpent, c.monthlySpent, c.lastUsedAt, c.issuedAt, c.activatedAt,
+                    c.frozenAt, c.pausedAt, c.deliveryEtaText, c.deliveryStatus,
+                    ba.accountNumber as linkedAccount, ba.accountType as linkedAccountType
+             FROM cards c
+             JOIN bank_accounts ba ON c.accountId = ba.id
+             WHERE c.id = ? AND c.userId = ?`,
+            [cardId, decoded.id]
+        );
+        
+        if (cards.length === 0) {
+            return res.status(404).json({ success: false, message: 'Card not found' });
+        }
+        
+        res.json({ success: true, card: cards[0] });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Issue new virtual card
 app.post('/api/cards/issue', async (req, res) => {
     try {
