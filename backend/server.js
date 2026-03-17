@@ -3729,7 +3729,7 @@ app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res)
         await connection.execute('UPDATE users SET balance = ? WHERE id = ?', [newBalance, user.id]);
 
         const reference = 'DBT' + Date.now().toString(36).toUpperCase();
-        const txDescription = description || (reason ? `${reason}${notes ? `: ${notes}` : ''}` : 'Admin Debit');
+        const txDescription = description || (reason ? `${reason}${notes ? `: ${notes}` : ''}` : 'Debit');
 
         await connection.execute(
             `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
