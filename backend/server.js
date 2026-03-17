@@ -2285,6 +2285,24 @@ app.post('/api/cards/apply', async (req, res) => {
             selectedAccountId = acctRows?.[0]?.id;
         }
 
+        // Auto-create bank account for users who don't have one (legacy accounts)
+        if (!selectedAccountId) {
+            const [userRows] = await pool.execute(
+                'SELECT id, firstName, lastName, balance, accountType FROM users WHERE id = ?',
+                [decoded.id]
+            );
+            if (userRows.length > 0) {
+                const user = userRows[0];
+                const bankAccountNumber = generateBankAccountNumber();
+                const [insertResult] = await pool.execute(
+                    `INSERT INTO bank_accounts (userId, accountNumber, accountType, accountName, ledgerBalance, availableBalance, status, isPrimary)
+                     VALUES (?, ?, ?, ?, ?, ?, 'active', TRUE)`,
+                    [user.id, bankAccountNumber, user.accountType || 'checking', `Primary ${user.accountType || 'Checking'}`, user.balance || 0, user.balance || 0]
+                );
+                selectedAccountId = insertResult.insertId;
+            }
+        }
+
         if (!selectedAccountId) {
             return res.status(400).json({ success: false, message: 'No active account available to link this card' });
         }
@@ -3041,6 +3059,14 @@ app.post('/api/auth/register', async (req, res) => {
 
         const [newUser] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
         const user = newUser[0];
+        
+        // Create bank_accounts record (required for cards and other features)
+        const bankAccountNumber = generateBankAccountNumber();
+        await pool.execute(
+            `INSERT INTO bank_accounts (userId, accountNumber, accountType, accountName, ledgerBalance, availableBalance, status, isPrimary)
+             VALUES (?, ?, ?, ?, ?, ?, 'active', TRUE)`,
+            [user.id, bankAccountNumber, accountType || 'checking', `Primary ${accountType || 'Checking'}`, deposit, deposit]
+        );
         
         // Create initial deposit transaction
         if (deposit > 0) {
