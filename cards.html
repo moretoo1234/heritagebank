@@ -268,9 +268,7 @@
 
     <script src="script.js"></script>
     <script>
-        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:3001' 
-            : '';
+        // API_URL is already defined in script.js
         let userId = null;
         const token = localStorage.getItem('token');
 
@@ -651,15 +649,18 @@ Click 'Manage' in the mobile app or call us at 1-800-HERITAGE
         }
 
         async function applyVirtualCard() {
+            console.log('applyVirtualCard called');
             try {
                 const btn = document.querySelector('button[onclick="applyVirtualCard()"]');
-                const prev = btn ? btn.innerHTML : null;
                 if (btn) {
                     btn.disabled = true;
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Issuing...';
                 }
 
-                const res = await fetch(`${API_URL}/api/cards/apply`, {
+                const url = `${API_URL}/api/cards/apply`;
+                console.log('Fetching:', url);
+                
+                const res = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -667,6 +668,8 @@ Click 'Manage' in the mobile app or call us at 1-800-HERITAGE
                     },
                     body: JSON.stringify({ kind: 'virtual' })
                 });
+
+                console.log('Response status:', res.status);
 
                 if (res.status === 401) {
                     showNotification('Session expired. Please sign in again.', 'error');
