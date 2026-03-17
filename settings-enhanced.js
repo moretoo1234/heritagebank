@@ -76,6 +76,9 @@ async function populateAllSections(user) {
     
     // Load preferences
     await loadPreferences(user);
+    
+    // Load recent activity
+    await loadActivity();
 }
 
 // ============================================================================
@@ -1305,6 +1308,94 @@ document.addEventListener('DOMContentLoaded', function() {
     checkAuth();
 });
 
+// ============================================================================
+// RECENT ACTIVITY
+// ============================================================================
+
+async function loadActivity() {
+    const token = localStorage.getItem('token');
+    if (!userId) return;
+    
+    try {
+        const res = await fetch(`${API_URL}/api/user/${userId}/activity?ts=${Date.now()}`, {
+            cache: 'no-store',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success && Array.isArray(data.activities)) {
+            displayActivity(data.activities.slice(0, 10));
+            return;
+        }
+        displayActivity([]);
+    } catch (e) {
+        console.error('Activity load error:', e);
+        displayActivity([]);
+    }
+}
+
+function displayActivity(activities) {
+    const container = document.getElementById('activityList');
+    if (!container) return;
+
+    if (!activities || activities.length === 0) {
+        container.innerHTML = `
+            <div class="activity-item">
+                <div class="activity-dot"></div>
+                <div class="activity-content">
+                    <p>No recent activity yet</p>
+                    <span>New logins and transactions will appear here</span>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = activities.map(activity => {
+        const date = new Date(activity.timestamp || activity.createdAt);
+        const timeAgo = (!isNaN(date.getTime())) ? getTimeAgo(date) : '-';
+
+        const actionText = activity.action || activity.title || activity.description || 'Activity';
+        const descText = (activity.action && activity.description)
+            ? String(activity.description)
+            : '';
+
+        const meta = [descText, timeAgo].filter(Boolean).join(' • ');
+        
+        return `
+            <div class="activity-item">
+                <div class="activity-dot"></div>
+                <div class="activity-content">
+                    <p>${escapeHtml(actionText)}</p>
+                    <span>${escapeHtml(meta || timeAgo)}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function getTimeAgo(date) {
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff / 60) + ' minutes ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' hours ago';
+    if (diff < 604800) return Math.floor(diff / 86400) + ' days ago';
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // Export for testing
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -1312,6 +1403,9 @@ if (typeof module !== 'undefined' && module.exports) {
         formatCurrency,
         maskSSN,
         maskIP,
-        formatDate
+        formatDate,
+        loadActivity,
+        displayActivity,
+        getTimeAgo
     };
 }

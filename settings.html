@@ -291,6 +291,29 @@
             cursor: pointer;
         }
         
+        /* Activity Section */
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        body.dark-mode .activity-item { border-color: #333; }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #d4af37;
+            margin-right: 15px;
+            margin-top: 5px;
+        }
+        .activity-content { flex: 1; }
+        .activity-content p { color: #333; margin-bottom: 3px; }
+        body.dark-mode .activity-content p { color: #eee; }
+        .activity-content span { color: #666; font-size: 0.85rem; }
+        body.dark-mode .activity-content span { color: #aaa; }
+        
         @media (max-width: 768px) {
             .dashboard { grid-template-columns: 1fr; }
             .sidebar { display: none; }
@@ -705,6 +728,20 @@
                         </div>
                     </div>
                     <button class="btn btn-danger" onclick="confirmCloseAccount()">Close Account</button>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="settings-card">
+                <h2><i class="fas fa-clock"></i> Recent Activity</h2>
+                <div id="activityList">
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div class="activity-content">
+                            <p>Loading activity...</p>
+                            <span>Please wait</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
