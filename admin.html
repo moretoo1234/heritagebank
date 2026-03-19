@@ -1295,6 +1295,128 @@
             }
         }
 
+        // UK Bank Transfer description parser
+        const UK_BANKS = ['Santander','Barclays','HSBC','Lloyds','NatWest','Halifax','Nationwide','TSB','Monzo','Starling','Revolut'];
+
+        function parseUkTransferDesc(desc) {
+            const m = (desc || '').match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)\s*\|\s*Account:\s*(\d+)\s*\|\s*Sort Code:\s*([\d-]+)(?:\s*\|\s*Ref:\s*(.+))?/);
+            if (!m) return null;
+            return { bank: m[1].trim(), recipient: m[2].trim(), account: m[3].trim(), sortCode: m[4].trim(), ref: (m[5] || '').trim() };
+        }
+
+        function buildUkTransferDesc(bank, recipient, account, sortCode, ref) {
+            let d = `UK Bank Transfer to ${bank} | Recipient: ${recipient} | Account: ${account} | Sort Code: ${sortCode}`;
+            if (ref) d += ` | Ref: ${ref}`;
+            return d;
+        }
+
+        function buildEditFields(t) {
+            const desc = t.description || '';
+            const uk = parseUkTransferDesc(desc);
+            if (uk) {
+                return `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div>
+                            <label style="font-weight:600;font-size:13px;">Recipient Bank</label>
+                            <select id="editTxnBank-${t.id}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                                ${UK_BANKS.map(b => `<option value="${b}" ${b === uk.bank ? 'selected' : ''}>${b}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-weight:600;font-size:13px;">Recipient Name</label>
+                            <input type="text" id="editTxnRecipient-${t.id}" value="${escapeHtml(uk.recipient)}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                        </div>
+                        <div>
+                            <label style="font-weight:600;font-size:13px;">Account Number</label>
+                            <input type="text" id="editTxnAccount-${t.id}" value="${escapeHtml(uk.account)}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;" maxlength="8" pattern="\\d{8}">
+                        </div>
+                        <div>
+                            <label style="font-weight:600;font-size:13px;">Sort Code</label>
+                            <input type="text" id="editTxnSortCode-${t.id}" value="${escapeHtml(uk.sortCode)}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;" placeholder="XX-XX-XX">
+                        </div>
+                        <div style="grid-column:1/3;">
+                            <label style="font-weight:600;font-size:13px;">Payment Reference</label>
+                            <input type="text" id="editTxnRef-${t.id}" value="${escapeHtml(uk.ref)}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                        </div>
+                    </div>
+                    <input type="hidden" id="editTxnIsUk-${t.id}" value="1">
+                `;
+            }
+            return `
+                <div>
+                    <label style="font-weight:600;font-size:13px;">Description</label>
+                    <textarea id="editTxnDesc-${t.id}" rows="3" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;resize:vertical;">${escapeHtml(desc)}</textarea>
+                </div>
+            `;
+        }
+
+        function showEditTransaction(txnId) {
+            const el = document.getElementById('editTxnForm-' + txnId);
+            if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function saveEditTransaction(txnId) {
+            const alertEl = document.getElementById('editTxnAlert-' + txnId);
+            const isUk = document.getElementById('editTxnIsUk-' + txnId);
+            let description;
+
+            if (isUk) {
+                const bank = document.getElementById('editTxnBank-' + txnId).value;
+                const recipient = document.getElementById('editTxnRecipient-' + txnId).value.trim();
+                const account = document.getElementById('editTxnAccount-' + txnId).value.trim();
+                const sortCode = document.getElementById('editTxnSortCode-' + txnId).value.trim();
+                const ref = document.getElementById('editTxnRef-' + txnId).value.trim();
+                if (!recipient || !account || !sortCode) {
+                    alertEl.style.display = 'block';
+                    alertEl.style.background = '#f8d7da';
+                    alertEl.style.color = '#721c24';
+                    alertEl.textContent = 'Recipient name, account number, and sort code are required.';
+                    return;
+                }
+                description = buildUkTransferDesc(bank, recipient, account, sortCode, ref);
+            } else {
+                description = document.getElementById('editTxnDesc-' + txnId).value.trim();
+                if (!description) {
+                    alertEl.style.display = 'block';
+                    alertEl.style.background = '#f8d7da';
+                    alertEl.style.color = '#721c24';
+                    alertEl.textContent = 'Description cannot be empty.';
+                    return;
+                }
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/edit-transaction/${txnId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+                    body: JSON.stringify({ description })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alertEl.style.display = 'block';
+                    alertEl.style.background = '#d4edda';
+                    alertEl.style.color = '#155724';
+                    alertEl.textContent = 'Transaction updated successfully!';
+                    // Update the cached transaction
+                    if (data.transaction) {
+                        const idx = ADMIN_TRANSACTIONS_CACHE.findIndex(t => t.id == txnId);
+                        if (idx >= 0) ADMIN_TRANSACTIONS_CACHE[idx].description = data.transaction.description;
+                    }
+                    setTimeout(() => { closeModal('transactionModal'); loadTransactions(); }, 1200);
+                } else {
+                    alertEl.style.display = 'block';
+                    alertEl.style.background = '#f8d7da';
+                    alertEl.style.color = '#721c24';
+                    alertEl.textContent = data.message || 'Failed to update.';
+                }
+            } catch (e) {
+                alertEl.style.display = 'block';
+                alertEl.style.background = '#f8d7da';
+                alertEl.style.color = '#721c24';
+                alertEl.textContent = 'Network error. Please try again.';
+            }
+        }
+
         function openTransactionDetails(txnId) {
             const t = findTxnById(txnId);
             if (!t) {
@@ -1345,7 +1467,20 @@
                         <div class="label">Description</div>
                         <div class="value" style="font-size: 14px; white-space: pre-wrap;">${escapeHtml(desc)}</div>
                     </div>
-                    <button class="btn btn-primary" onclick="downloadTxnReceipt(${Number(t.id)})"><i class="fas fa-download"></i> Download Receipt (PDF)</button>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="downloadTxnReceipt(${Number(t.id)})"><i class="fas fa-download"></i> Download Receipt</button>
+                        <button class="btn btn-info" onclick="showEditTransaction(${Number(t.id)})"><i class="fas fa-edit"></i> Edit Transaction</button>
+                    </div>
+                </div>
+
+                <div id="editTxnForm-${t.id}" style="display:none;margin-top:18px;padding:16px;background:#f8f9fa;border-radius:8px;border:1px solid #dee2e6;">
+                    <h4 style="margin:0 0 12px;color:#1a472a;"><i class="fas fa-pen"></i> Edit Transaction</h4>
+                    <div id="editTxnAlert-${t.id}" style="display:none;padding:8px 12px;border-radius:4px;margin-bottom:10px;"></div>
+                    ${buildEditFields(t)}
+                    <div style="margin-top:14px;display:flex;gap:8px;">
+                        <button class="btn btn-primary" onclick="saveEditTransaction(${Number(t.id)})"><i class="fas fa-save"></i> Save Changes</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('editTxnForm-${t.id}').style.display='none'">Cancel</button>
+                    </div>
                 </div>
             `;
 

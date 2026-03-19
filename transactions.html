@@ -167,23 +167,32 @@
                             const cls = credit ? 'credit' : 'debit';
                             const sign = credit ? '+' : '-';
                             const date = tx.createdAt || tx.date || tx.created_at;
-                            // Clean up description - remove "Admin" references
+                            // Clean up description - remove "Admin" references and parse UK bank transfers
                             let desc = tx.description || tx.type || 'Transaction';
                             desc = desc.replace(/Admin\s*/gi, '').trim() || tx.type || 'Transaction';
+                            // Parse UK bank transfer description for cleaner display
+                            const ukMatch = desc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
+                            let fromTo = `From: ${tx.fromFirstName || ''} ${tx.fromLastName || ''} • To: ${tx.toFirstName || ''} ${tx.toLastName || ''}`;
+                            if (ukMatch) {
+                                const bankName = ukMatch[1].trim();
+                                const recipientName = ukMatch[2].trim();
+                                desc = `UK Transfer to ${bankName}`;
+                                fromTo = `To: ${recipientName} • via ${bankName}`;
+                            }
                             return `
                                 <tr>
                                     <td>${formatDate(date)}</td>
                                     <td>
                                         <div>${desc}</div>
-                                        <div class="muted">From: ${tx.fromFirstName || ''} ${tx.fromLastName || ''} • To: ${tx.toFirstName || ''} ${tx.toLastName || ''}</div>
+                                        <div class="muted">${fromTo}</div>
                                     </td>
                                     <td>${tx.type || '-'}</td>
                                     <td>${tx.reference || '-'}</td>
                                     <td>${pill(tx.status)}</td>
-                                    <td class="amount ${cls}" style="text-align:right;">${sign}$${formatMoney(Math.abs(tx.amount))}</td>
+                                    <td class="amount ${cls}" style="text-align:right;">${sign}£${formatMoney(Math.abs(tx.amount))}</td>
                                     <td>
-                                        <button class="btn btn-secondary" style="padding:8px 10px;" onclick="downloadReceipt(${tx.id})">
-                                            <i class="fas fa-download"></i>
+                                        <button class="btn btn-secondary" style="padding:8px 10px;" onclick="downloadReceipt(${tx.id})" title="Download Receipt">
+                                            <i class="fas fa-file-invoice"></i>
                                         </button>
                                     </td>
                                 </tr>
@@ -205,7 +214,7 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `receipt_${id}.pdf`;
+            a.download = `Heritage_Bank_Receipt_${id}.pdf`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

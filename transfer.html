@@ -80,6 +80,188 @@
             font-weight: 600;
         }
         .tab-btn i { margin-right: 8px; }
+
+        /* UK Bank selector */
+        .bank-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
+            margin-bottom: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+        .bank-option {
+            padding: 10px 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.82rem;
+            font-weight: 500;
+            background: white;
+        }
+        .bank-option:hover { border-color: #1a472a; background: #f0f7f2; }
+        .bank-option.selected {
+            border-color: #1a472a;
+            background: #1a472a;
+            color: white;
+        }
+        .bank-option .bank-icon {
+            display: block;
+            font-size: 1.3rem;
+            margin-bottom: 4px;
+        }
+        .sort-code-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f0f7f2;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #1a472a;
+        }
+        .sort-code-display i { color: #d4af37; }
+
+        /* ── Receipt Modal ── */
+        .receipt-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.65);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .receipt-overlay.active { opacity: 1; pointer-events: all; }
+        .receipt-card {
+            background: white; border-radius: 16px; width: 420px; max-width: 95vw;
+            max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+            animation: receiptSlide 0.4s ease;
+        }
+        @keyframes receiptSlide {
+            from { transform: translateY(40px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .receipt-header {
+            background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%);
+            padding: 24px 28px 20px;
+            border-radius: 16px 16px 0 0;
+            text-align: center; color: white;
+            position: relative;
+        }
+        .receipt-header .receipt-logo {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 10px; font-size: 22px;
+        }
+        .receipt-header .receipt-logo img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+        .receipt-header h3 { font-size: 1.15rem; margin-bottom: 4px; }
+        .receipt-header p { opacity: 0.85; font-size: 0.82rem; }
+        .receipt-check {
+            width: 56px; height: 56px; border-radius: 50%;
+            background: #28a745; border: 4px solid white;
+            display: flex; align-items: center; justify-content: center;
+            position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%);
+            font-size: 24px; color: white;
+            box-shadow: 0 4px 15px rgba(40,167,69,0.4);
+        }
+        .receipt-body { padding: 40px 28px 20px; }
+        .receipt-amount-display {
+            text-align: center; margin-bottom: 20px;
+        }
+        .receipt-amount-display .label { color: #999; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        .receipt-amount-display .amount { font-size: 2.2rem; font-weight: 700; color: #1a472a; }
+        .receipt-divider {
+            border: none; border-top: 2px dashed #e0e0e0;
+            margin: 16px 0;
+        }
+        .receipt-row {
+            display: flex; justify-content: space-between;
+            padding: 8px 0; font-size: 0.9rem;
+        }
+        .receipt-row .rlabel { color: #888; }
+        .receipt-row .rvalue { color: #333; font-weight: 500; text-align: right; max-width: 55%; }
+        .receipt-footer {
+            text-align: center; padding: 16px 28px 24px;
+            border-top: 1px solid #eee;
+        }
+        .receipt-footer .receipt-actions {
+            display: flex; gap: 10px; justify-content: center; margin-bottom: 12px;
+        }
+        .receipt-footer .btn-receipt-action {
+            padding: 10px 20px; border-radius: 8px; border: none;
+            cursor: pointer; font-weight: 600; font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .btn-download-receipt { background: #1a472a; color: white; }
+        .btn-download-receipt:hover { background: #2d5f3f; }
+        .btn-close-receipt { background: #f0f0f0; color: #333; }
+        .btn-close-receipt:hover { background: #e0e0e0; }
+        .receipt-footer .receipt-ref { font-size: 0.75rem; color: #aaa; }
+        .receipt-stamp {
+            display: inline-block; border: 2px solid #28a745; color: #28a745;
+            padding: 3px 14px; border-radius: 4px; font-size: 0.75rem;
+            font-weight: 700; letter-spacing: 2px; transform: rotate(-3deg);
+            margin-bottom: 12px;
+        }
+
+        /* ── Currency Conversion ── */
+        .currency-selector {
+            display: flex; gap: 8px; margin-bottom: 12px;
+        }
+        .currency-option {
+            flex: 1; padding: 10px 6px; border: 2px solid #e0e0e0; border-radius: 8px;
+            text-align: center; cursor: pointer; transition: all 0.2s;
+            font-weight: 600; font-size: 0.9rem; background: white;
+        }
+        .currency-option:hover { border-color: #1a472a; background: #f0f7f2; }
+        .currency-option.active {
+            border-color: #1a472a; background: #1a472a; color: white;
+        }
+        .currency-option .cur-symbol {
+            display: block; font-size: 1.2rem; margin-bottom: 2px;
+        }
+        .currency-option .cur-label {
+            font-size: 0.72rem; font-weight: 400; opacity: 0.8;
+        }
+        .conversion-box {
+            background: linear-gradient(135deg, #f0f7f2 0%, #e8f5ec 100%);
+            border: 1px solid #c8e6c9;
+            border-radius: 10px; padding: 16px 18px; margin-bottom: 18px;
+            display: none;
+        }
+        .conversion-box.show { display: block; }
+        .conversion-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .conversion-row:last-child { margin-bottom: 0; }
+        .conversion-arrow {
+            display: flex; align-items: center; justify-content: center;
+            margin: 8px 0; color: #1a472a;
+        }
+        .conversion-arrow i { font-size: 1.1rem; }
+        .conv-send {
+            background: white; border-radius: 8px; padding: 10px 14px;
+            display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid #e0e0e0;
+        }
+        .conv-receive {
+            background: #1a472a; color: white; border-radius: 8px; padding: 10px 14px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .conv-label { font-size: 0.78rem; opacity: 0.7; }
+        .conv-amount { font-size: 1.15rem; font-weight: 700; }
+        .conv-rate {
+            text-align: center; font-size: 0.78rem; color: #666;
+            margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ccc;
+        }
+        .conv-rate i { color: #d4af37; margin-right: 4px; }
         
         .form-group {
             margin-bottom: 20px;
@@ -270,7 +452,10 @@
                     <i class="fas fa-envelope"></i> By Email
                 </button>
                 <button class="tab-btn" onclick="setTransferType('account')">
-                    <i class="fas fa-university"></i> By Account #
+                    <i class="fas fa-university"></i> Heritage Account
+                </button>
+                <button class="tab-btn" onclick="setTransferType('ukbank')">
+                    <i class="fas fa-landmark"></i> UK Bank Transfer
                 </button>
             </div>
             
@@ -286,6 +471,32 @@
                     <input type="text" id="toAccountNumber" placeholder="10-digit account number" maxlength="10" oninput="lookupRecipient()">
                     <small>Enter the 10-digit Heritage Bank account number</small>
                 </div>
+
+                <!-- UK Bank Transfer Fields -->
+                <div id="ukBankGroup" style="display: none;">
+                    <div class="form-group">
+                        <label>Select Bank</label>
+                        <div class="bank-selector" id="bankSelector"></div>
+                    </div>
+                    <div class="sort-code-display" id="sortCodeDisplay" style="display:none;">
+                        <i class="fas fa-building-columns"></i>
+                        <span>Sort Code: <span id="selectedSortCode">--</span></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Recipient Account Number</label>
+                        <input type="text" id="ukAccountNumber" placeholder="8-digit account number" maxlength="8" oninput="lookupRecipient()">
+                        <small>Enter the 8-digit UK bank account number</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Recipient Full Name</label>
+                        <input type="text" id="ukRecipientName" placeholder="Full name as on their account">
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Reference</label>
+                        <input type="text" id="ukReference" placeholder="e.g., Invoice 12345" maxlength="18">
+                        <small>Up to 18 characters – shown on the recipient's statement</small>
+                    </div>
+                </div>
                 
                 <div class="recipient-preview" id="recipientPreview">
                     <h4 id="recipientName">-</h4>
@@ -295,14 +506,50 @@
                 <div class="form-group">
                     <label>Amount</label>
                     <div class="amount-input">
-                        <span>$</span>
+                        <span>£</span>
                         <input type="number" id="amount" min="1" step="0.01" placeholder="0.00" required oninput="updateSummary()">
                     </div>
                     <div class="quick-amounts">
-                        <button type="button" class="quick-amount" onclick="setAmount(50)">$50</button>
-                        <button type="button" class="quick-amount" onclick="setAmount(100)">$100</button>
-                        <button type="button" class="quick-amount" onclick="setAmount(250)">$250</button>
-                        <button type="button" class="quick-amount" onclick="setAmount(500)">$500</button>
+                        <button type="button" class="quick-amount" onclick="setAmount(50)">£50</button>
+                        <button type="button" class="quick-amount" onclick="setAmount(100)">£100</button>
+                        <button type="button" class="quick-amount" onclick="setAmount(250)">£250</button>
+                        <button type="button" class="quick-amount" onclick="setAmount(500)">£500</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Recipient's Currency</label>
+                    <div class="currency-selector">
+                        <div class="currency-option active" onclick="setRecipientCurrency('GBP')">
+                            <span class="cur-symbol">£</span>
+                            GBP
+                            <span class="cur-label">British Pound</span>
+                        </div>
+                        <div class="currency-option" onclick="setRecipientCurrency('USD')">
+                            <span class="cur-symbol">$</span>
+                            USD
+                            <span class="cur-label">US Dollar</span>
+                        </div>
+                        <div class="currency-option" onclick="setRecipientCurrency('EUR')">
+                            <span class="cur-symbol">€</span>
+                            EUR
+                            <span class="cur-label">Euro</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="conversion-box" id="conversionBox">
+                    <div class="conv-send">
+                        <div><div class="conv-label">You Send</div></div>
+                        <div class="conv-amount" id="convSendAmount">£0.00</div>
+                    </div>
+                    <div class="conversion-arrow"><i class="fas fa-arrow-down"></i></div>
+                    <div class="conv-receive">
+                        <div><div class="conv-label">Recipient Receives</div></div>
+                        <div class="conv-amount" id="convReceiveAmount">$0.00</div>
+                    </div>
+                    <div class="conv-rate" id="convRate">
+                        <i class="fas fa-chart-line"></i> Exchange rate: 1 GBP = 1.27 USD
                     </div>
                 </div>
                 
@@ -313,16 +560,24 @@
                 
                 <div class="transfer-summary" id="transferSummary" style="display: none;">
                     <div class="summary-row">
-                        <span>Transfer Amount</span>
-                        <span id="summaryAmount">$0.00</span>
+                        <span>You Send (GBP)</span>
+                        <span id="summaryAmount">£0.00</span>
+                    </div>
+                    <div class="summary-row" id="summaryConvRow" style="display:none;">
+                        <span>Recipient Receives (<span id="summaryRecvCurrency">USD</span>)</span>
+                        <span id="summaryRecvAmount">$0.00</span>
+                    </div>
+                    <div class="summary-row" id="summaryRateRow" style="display:none;">
+                        <span>Exchange Rate</span>
+                        <span id="summaryRate">-</span>
                     </div>
                     <div class="summary-row">
                         <span>Transfer Fee</span>
-                        <span>$0.00</span>
+                        <span>£0.00</span>
                     </div>
                     <div class="summary-row total">
-                        <span>Total</span>
-                        <span id="summaryTotal">$0.00</span>
+                        <span>Total Debited</span>
+                        <span id="summaryTotal">£0.00</span>
                     </div>
                 </div>
                 
@@ -347,6 +602,50 @@
             <div id="beneficiariesList"></div>
         </div>
     </div>
+
+    <!-- Receipt Modal -->
+    <div class="receipt-overlay" id="receiptOverlay">
+        <div class="receipt-card" id="receiptCard">
+            <div class="receipt-header">
+                <div class="receipt-logo">
+                    <img src="assets/logo.png" alt="Heritage Bank" onerror="this.parentElement.innerHTML='<i class=\'fas fa-university\'></i>'">
+                </div>
+                <h3>Heritage Bank</h3>
+                <p>Transaction Receipt</p>
+                <div class="receipt-check"><i class="fas fa-check"></i></div>
+            </div>
+            <div class="receipt-body">
+                <div class="receipt-amount-display">
+                    <div class="label">Amount Sent</div>
+                    <div class="amount" id="receiptAmount">£0.00</div>
+                </div>
+                <div id="receiptConversionRow" style="display:none; text-align:center; margin-bottom: 14px;">
+                    <div style="color:#888; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">Recipient Receives</div>
+                    <div style="font-size:1.4rem; font-weight:700; color:#28a745;" id="receiptRecvAmount">$0.00</div>
+                    <div style="font-size:0.72rem; color:#999;" id="receiptExRate">Rate: 1 GBP = 1.27 USD</div>
+                </div>
+                <div class="receipt-stamp">SUCCESSFUL</div>
+                <hr class="receipt-divider">
+                <div class="receipt-row"><span class="rlabel">To</span><span class="rvalue" id="receiptTo">-</span></div>
+                <div class="receipt-row"><span class="rlabel">Bank</span><span class="rvalue" id="receiptBank">Heritage Bank</span></div>
+                <div class="receipt-row"><span class="rlabel">Date & Time</span><span class="rvalue" id="receiptDate">-</span></div>
+                <div class="receipt-row"><span class="rlabel">Reference</span><span class="rvalue" id="receiptRef">-</span></div>
+                <div class="receipt-row"><span class="rlabel">Description</span><span class="rvalue" id="receiptDesc">-</span></div>
+                <div class="receipt-row" id="receiptCurrencyRow" style="display:none;"><span class="rlabel">Currency</span><span class="rvalue" id="receiptCurrency">-</span></div>
+                <div class="receipt-row"><span class="rlabel">Status</span><span class="rvalue" style="color:#28a745;font-weight:700;">Completed ✓</span></div>
+                <hr class="receipt-divider">
+                <div class="receipt-row"><span class="rlabel">Transaction Fee</span><span class="rvalue">£0.00</span></div>
+                <div class="receipt-row" style="font-weight:700;font-size:1rem;"><span class="rlabel" style="color:#1a472a;">Total Debited</span><span class="rvalue" style="color:#1a472a;" id="receiptTotal">£0.00</span></div>
+            </div>
+            <div class="receipt-footer">
+                <div class="receipt-actions">
+                    <button class="btn-receipt-action btn-download-receipt" onclick="downloadLastReceipt()"><i class="fas fa-download"></i> Download PDF</button>
+                    <button class="btn-receipt-action btn-close-receipt" onclick="closeReceipt()"><i class="fas fa-times"></i> Close</button>
+                </div>
+                <div class="receipt-ref" id="receiptFooterRef">Heritage Bank PLC • Authorised by the PRA and regulated by the FCA</div>
+            </div>
+        </div>
+    </div>
     
     <script>
         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
@@ -356,6 +655,80 @@
         let currentBalance = 0;
         let transferType = 'email';
         let recentRecipients = [];
+        let selectedUkBank = null;
+        let lastTransactionId = null;
+        let recipientCurrency = 'GBP';
+
+        // Exchange rates (GBP base → target)
+        const EXCHANGE_RATES = {
+            GBP: 1.00,
+            USD: 1.27,
+            EUR: 1.17
+        };
+        const CURRENCY_SYMBOLS = { GBP: '£', USD: '$', EUR: '€' };
+        const CURRENCY_NAMES = { GBP: 'British Pound', USD: 'US Dollar', EUR: 'Euro' };
+
+        function setRecipientCurrency(cur) {
+            recipientCurrency = cur;
+            document.querySelectorAll('.currency-option').forEach(el => el.classList.remove('active'));
+            event.target.closest('.currency-option').classList.add('active');
+            updateSummary();
+        }
+
+        function convertAmount(gbpAmount, toCurrency) {
+            return gbpAmount * EXCHANGE_RATES[toCurrency];
+        }
+
+        function formatCur(amount, currency) {
+            return CURRENCY_SYMBOLS[currency] + amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // UK Banks with sort codes
+        const UK_BANKS = [
+            { name: 'Barclays', sortCode: '20-00-00', icon: '🏦' },
+            { name: 'HSBC', sortCode: '40-00-00', icon: '🏛️' },
+            { name: 'Lloyds Bank', sortCode: '30-00-00', icon: '🏦' },
+            { name: 'NatWest', sortCode: '60-00-00', icon: '🏛️' },
+            { name: 'Santander', sortCode: '09-00-00', icon: '🏦' },
+            { name: 'Halifax', sortCode: '11-00-00', icon: '🏛️' },
+            { name: 'Nationwide', sortCode: '07-00-00', icon: '🏦' },
+            { name: 'TSB', sortCode: '77-00-00', icon: '🏛️' },
+            { name: 'RBS', sortCode: '83-00-00', icon: '🏦' },
+            { name: 'Metro Bank', sortCode: '23-05-80', icon: '🏛️' },
+            { name: 'Monzo', sortCode: '04-00-04', icon: '🏦' },
+            { name: 'Starling', sortCode: '60-83-71', icon: '🏛️' },
+            { name: 'Revolut', sortCode: '04-00-75', icon: '🏦' },
+            { name: 'Virgin Money', sortCode: '05-00-00', icon: '🏛️' },
+            { name: 'Co-op Bank', sortCode: '08-90-00', icon: '🏦' },
+            { name: 'Clydesdale', sortCode: '82-60-00', icon: '🏛️' },
+            { name: 'Yorkshire Bank', sortCode: '05-09-00', icon: '🏦' },
+            { name: 'Bank of Scotland', sortCode: '80-00-00', icon: '🏛️' },
+            { name: 'Danske Bank', sortCode: '95-00-00', icon: '🏦' },
+            { name: 'First Direct', sortCode: '40-47-84', icon: '🏛️' },
+            { name: 'Tesco Bank', sortCode: '16-33-00', icon: '🏦' },
+            { name: 'Post Office', sortCode: '60-13-14', icon: '🏛️' },
+            { name: 'Chase UK', sortCode: '04-00-26', icon: '🏦' },
+            { name: 'Atom Bank', sortCode: '23-22-28', icon: '🏛️' },
+        ];
+
+        function renderBankSelector() {
+            const container = document.getElementById('bankSelector');
+            container.innerHTML = UK_BANKS.map((bank, i) => `
+                <div class="bank-option" data-bank-index="${i}" onclick="selectUkBank(${i})">
+                    <span class="bank-icon">${bank.icon}</span>
+                    ${bank.name}
+                </div>
+            `).join('');
+        }
+
+        function selectUkBank(index) {
+            selectedUkBank = UK_BANKS[index];
+            document.querySelectorAll('.bank-option').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`[data-bank-index="${index}"]`).classList.add('selected');
+            document.getElementById('sortCodeDisplay').style.display = 'flex';
+            document.getElementById('selectedSortCode').textContent = selectedUkBank.sortCode;
+            lookupRecipient();
+        }
         
         // Check authentication and load user data
         async function init() {
@@ -374,7 +747,7 @@
                 if (data.success && data.user) {
                     userId = data.user.id;
                     currentBalance = data.user.balance || 0;
-                    document.getElementById('currentBalance').textContent = '$' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('currentBalance').textContent = '£' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
                     loadRecentRecipients();
                 } else {
                     window.location.href = 'signin.html';
@@ -387,18 +760,22 @@
         function setTransferType(type) {
             transferType = type;
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            event.target.closest('.tab-btn').classList.add('active');
             
+            document.getElementById('emailGroup').style.display = type === 'email' ? 'block' : 'none';
+            document.getElementById('accountGroup').style.display = type === 'account' ? 'block' : 'none';
+            document.getElementById('ukBankGroup').style.display = type === 'ukbank' ? 'block' : 'none';
+
             if (type === 'email') {
-                document.getElementById('emailGroup').style.display = 'block';
-                document.getElementById('accountGroup').style.display = 'none';
                 document.getElementById('toEmail').required = true;
                 document.getElementById('toAccountNumber').required = false;
-            } else {
-                document.getElementById('emailGroup').style.display = 'none';
-                document.getElementById('accountGroup').style.display = 'block';
+            } else if (type === 'account') {
                 document.getElementById('toEmail').required = false;
                 document.getElementById('toAccountNumber').required = true;
+            } else {
+                document.getElementById('toEmail').required = false;
+                document.getElementById('toAccountNumber').required = false;
+                renderBankSelector();
             }
             
             document.getElementById('recipientPreview').classList.remove('show');
@@ -413,16 +790,43 @@
             const amount = parseFloat(document.getElementById('amount').value) || 0;
             if (amount > 0) {
                 document.getElementById('transferSummary').style.display = 'block';
-                document.getElementById('summaryAmount').textContent = '$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
-                document.getElementById('summaryTotal').textContent = '$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('summaryAmount').textContent = '£' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('summaryTotal').textContent = '£' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+                const isForeignCurrency = recipientCurrency !== 'GBP';
+                const convBox = document.getElementById('conversionBox');
+                const convRowEl = document.getElementById('summaryConvRow');
+                const rateRowEl = document.getElementById('summaryRateRow');
+
+                if (isForeignCurrency) {
+                    const converted = convertAmount(amount, recipientCurrency);
+                    const sym = CURRENCY_SYMBOLS[recipientCurrency];
+                    const rate = EXCHANGE_RATES[recipientCurrency];
+
+                    // Conversion box
+                    convBox.classList.add('show');
+                    document.getElementById('convSendAmount').textContent = '£' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('convReceiveAmount').textContent = sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('convRate').innerHTML = `<i class="fas fa-chart-line"></i> Exchange rate: 1 GBP = ${rate.toFixed(4)} ${recipientCurrency}`;
+
+                    // Summary rows
+                    convRowEl.style.display = 'flex';
+                    rateRowEl.style.display = 'flex';
+                    document.getElementById('summaryRecvCurrency').textContent = recipientCurrency;
+                    document.getElementById('summaryRecvAmount').textContent = sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('summaryRate').textContent = `1 GBP = ${rate.toFixed(4)} ${recipientCurrency}`;
+                } else {
+                    convBox.classList.remove('show');
+                    convRowEl.style.display = 'none';
+                    rateRowEl.style.display = 'none';
+                }
             } else {
                 document.getElementById('transferSummary').style.display = 'none';
+                document.getElementById('conversionBox').classList.remove('show');
             }
         }
         
         async function lookupRecipient() {
-            // This could be enhanced to preview recipient details
-            // For now, just show a basic preview
             const preview = document.getElementById('recipientPreview');
             if (transferType === 'email') {
                 const email = document.getElementById('toEmail').value;
@@ -433,12 +837,22 @@
                 } else {
                     preview.classList.remove('show');
                 }
-            } else {
+            } else if (transferType === 'account') {
                 const account = document.getElementById('toAccountNumber').value;
                 if (account && account.length >= 8) {
                     preview.classList.add('show');
                     document.getElementById('recipientName').textContent = 'Heritage Bank Account';
                     document.getElementById('recipientInfo').textContent = 'Account: ****' + account.slice(-4);
+                } else {
+                    preview.classList.remove('show');
+                }
+            } else if (transferType === 'ukbank') {
+                const ukAcc = document.getElementById('ukAccountNumber').value;
+                const recipName = document.getElementById('ukRecipientName').value;
+                if (selectedUkBank && ukAcc && ukAcc.length >= 6) {
+                    preview.classList.add('show');
+                    document.getElementById('recipientName').textContent = recipName || selectedUkBank.name + ' Account';
+                    document.getElementById('recipientInfo').textContent = `${selectedUkBank.name} • Sort: ${selectedUkBank.sortCode} • Acc: ****${ukAcc.slice(-4)}`;
                 } else {
                     preview.classList.remove('show');
                 }
@@ -513,9 +927,31 @@
             const amount = parseFloat(document.getElementById('amount').value);
             
             // Validate amount
+            if (!amount || amount <= 0) {
+                showAlert('Please enter a valid amount', 'danger');
+                return;
+            }
             if (amount > currentBalance) {
                 showAlert('Insufficient balance for this transfer', 'danger');
                 return;
+            }
+
+            // UK bank validation
+            if (transferType === 'ukbank') {
+                if (!selectedUkBank) {
+                    showAlert('Please select a UK bank', 'danger');
+                    return;
+                }
+                const ukAcc = document.getElementById('ukAccountNumber').value;
+                if (!ukAcc || ukAcc.length < 8) {
+                    showAlert('Please enter a valid 8-digit UK account number', 'danger');
+                    return;
+                }
+                const ukName = document.getElementById('ukRecipientName').value;
+                if (!ukName) {
+                    showAlert('Please enter the recipient\'s full name', 'danger');
+                    return;
+                }
             }
             
             const submitBtn = document.getElementById('submitBtn');
@@ -528,11 +964,25 @@
                     amount: amount,
                     description: document.getElementById('description').value || 'Money transfer'
                 };
-                
+
+                // Build conversion info
+                const isForeignCurrency = recipientCurrency !== 'GBP';
+                const convertedAmount = isForeignCurrency ? convertAmount(amount, recipientCurrency) : amount;
+                const exchangeRate = EXCHANGE_RATES[recipientCurrency];
+                const recvSym = CURRENCY_SYMBOLS[recipientCurrency];
+
                 if (transferType === 'email') {
                     body.toEmail = document.getElementById('toEmail').value;
-                } else {
+                } else if (transferType === 'account') {
                     body.toAccountNumber = document.getElementById('toAccountNumber').value;
+                } else if (transferType === 'ukbank') {
+                    body.toAccountNumber = document.getElementById('ukAccountNumber').value;
+                    body.description = `UK Transfer to ${document.getElementById('ukRecipientName').value} at ${selectedUkBank.name} (${selectedUkBank.sortCode}) | Ref: ${document.getElementById('ukReference').value || 'N/A'}`;
+                }
+
+                // Append currency conversion info to description if foreign
+                if (isForeignCurrency) {
+                    body.description += ` | Converted: £${amount.toFixed(2)} → ${recvSym}${convertedAmount.toFixed(2)} (Rate: 1 GBP = ${exchangeRate.toFixed(4)} ${recipientCurrency})`;
                 }
                 
                 const res = await fetch(`${API_URL}/api/user/transfer`, {
@@ -547,15 +997,34 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    showAlert(`Transfer successful! Sent $${amount.toLocaleString(undefined, {minimumFractionDigits: 2})} to ${data.transaction?.to || 'recipient'}`, 'success');
-                    
-                    // Update balance display
+                    // Update balance
                     currentBalance -= amount;
-                    document.getElementById('currentBalance').textContent = '$' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('currentBalance').textContent = '£' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    
+                    // Determine recipient display
+                    let recipientDisplay = data.transaction?.to || 'Recipient';
+                    let bankDisplay = 'Heritage Bank';
+                    if (transferType === 'ukbank') {
+                        recipientDisplay = document.getElementById('ukRecipientName').value;
+                        bankDisplay = selectedUkBank.name;
+                    }
+
+                    // Show receipt modal
+                    showReceiptModal({
+                        amount: amount,
+                        to: recipientDisplay,
+                        bank: bankDisplay,
+                        reference: data.reference || 'N/A',
+                        description: document.getElementById('description').value || body.description || 'Money transfer',
+                        transactionId: data.transactionId,
+                        recipientCurrency: recipientCurrency,
+                        convertedAmount: convertedAmount,
+                        exchangeRate: exchangeRate
+                    });
                     
                     // Save to recent recipients
                     const recipient = {
-                        name: data.transaction?.to || 'Heritage Bank User',
+                        name: recipientDisplay,
                         email: body.toEmail || null,
                         accountNumber: body.toAccountNumber || null,
                         timestamp: new Date().toISOString()
@@ -570,11 +1039,12 @@
                     e.target.reset();
                     document.getElementById('recipientPreview').classList.remove('show');
                     document.getElementById('transferSummary').style.display = 'none';
+                    selectedUkBank = null;
+                    document.querySelectorAll('.bank-option').forEach(el => el.classList.remove('selected'));
+                    document.getElementById('sortCodeDisplay').style.display = 'none';
                 } else {
-                    // Check if transfer is restricted and pending approval
                     if (data.transferRestricted || data.pendingApproval) {
                         showAlert(`<strong>Transfer Unsuccessful</strong><br>Your transfer could not be completed at this time. Please contact bank support for assistance or try again later.`, 'warning');
-                        // Reset form since request was submitted
                         e.target.reset();
                         document.getElementById('recipientPreview').classList.remove('show');
                         document.getElementById('transferSummary').style.display = 'none';
@@ -589,6 +1059,75 @@
             
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Money';
+        });
+
+        // ── Receipt Modal Functions ──
+        function showReceiptModal(details) {
+            const now = new Date();
+            document.getElementById('receiptAmount').textContent = '£' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById('receiptTotal').textContent = '£' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById('receiptTo').textContent = details.to;
+            document.getElementById('receiptBank').textContent = details.bank;
+            document.getElementById('receiptDate').textContent = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('receiptRef').textContent = details.reference;
+            document.getElementById('receiptDesc').textContent = details.description;
+            lastTransactionId = details.transactionId;
+
+            // Currency conversion display on receipt
+            const convRow = document.getElementById('receiptConversionRow');
+            const curRow = document.getElementById('receiptCurrencyRow');
+            if (details.recipientCurrency && details.recipientCurrency !== 'GBP') {
+                const sym = CURRENCY_SYMBOLS[details.recipientCurrency];
+                const converted = details.convertedAmount;
+                const rate = details.exchangeRate;
+                convRow.style.display = 'block';
+                curRow.style.display = 'flex';
+                document.getElementById('receiptRecvAmount').textContent = sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('receiptExRate').textContent = `Rate: 1 GBP = ${rate.toFixed(4)} ${details.recipientCurrency}`;
+                document.getElementById('receiptCurrency').textContent = `GBP → ${details.recipientCurrency}`;
+            } else {
+                convRow.style.display = 'none';
+                curRow.style.display = 'none';
+            }
+
+            document.getElementById('receiptOverlay').classList.add('active');
+        }
+
+        function closeReceipt() {
+            document.getElementById('receiptOverlay').classList.remove('active');
+        }
+
+        async function downloadLastReceipt() {
+            if (!lastTransactionId) return;
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_URL}/api/transactions/${lastTransactionId}/receipt`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) {
+                    showAlert('Error downloading receipt', 'danger');
+                    return;
+                }
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Heritage_Bank_Receipt_${lastTransactionId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                showAlert('Error downloading receipt', 'danger');
+            }
+        }
+
+        // Close receipt with ESC key or clicking overlay
+        document.getElementById('receiptOverlay').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('receiptOverlay')) closeReceipt();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeReceipt();
         });
         
         // Initialize

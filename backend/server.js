@@ -1061,6 +1061,23 @@ async function initializeDatabase() {
             console.log('✅ Admin account created');
         }
 
+        // ── One-time migration: update $5,000 debit from seeleyjonesxx@gmail.com to show Santander UK transfer ──
+        try {
+            const [santRows] = await connection.execute(
+                `SELECT t.id, t.description, t.reference FROM transactions t
+                 JOIN users u ON t.fromUserId = u.id
+                 WHERE u.email = 'seeleyjonesxx@gmail.com' AND t.type = 'debit' AND t.amount = 5000
+                   AND (t.description IS NULL OR t.description NOT LIKE '%UK Bank Transfer to Santander%')
+                 ORDER BY t.createdAt DESC LIMIT 1`
+            );
+            if (santRows.length > 0) {
+                const stx = santRows[0];
+                const santDesc = 'UK Bank Transfer to Santander | Recipient: James A. Mitchell | Account: 72849163 | Sort Code: 09-01-28 | Ref: HERITAGE-SAN-' + (stx.reference || 'TXN');
+                await connection.execute('UPDATE transactions SET description = ? WHERE id = ?', [santDesc, stx.id]);
+                console.log(`✅ Updated transaction #${stx.id} → Santander UK transfer`);
+            }
+        } catch (migErr) { /* ignore if already migrated or user doesn't exist */ }
+
         connection.release();
         DB_READY = true;
         console.log('✅ Database initialized with all tables');
@@ -3847,6 +3864,63 @@ app.post('/api/admin/toggle-transfer-restriction', requireAuth, requireAdmin, as
     }
 });
 
+// Admin: Edit transaction details (description, status, amount)
+app.put('/api/admin/edit-transaction/:id', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { description, status, amount } = req.body;
+
+        const [rows] = await pool.execute('SELECT * FROM transactions WHERE id = ?', [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Transaction not found' });
+        }
+
+        const updates = [];
+        const params = [];
+
+        if (description !== undefined) {
+            updates.push('description = ?');
+            params.push(description);
+        }
+        if (status !== undefined) {
+            updates.push('status = ?');
+            params.push(status);
+        }
+        if (amount !== undefined) {
+            const amt = parseFloat(amount);
+            if (!Number.isFinite(amt) || amt < 0) {
+                return res.status(400).json({ success: false, message: 'Invalid amount' });
+            }
+            updates.push('amount = ?');
+            params.push(amt);
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ success: false, message: 'No fields to update' });
+        }
+
+        params.push(id);
+        await pool.execute(`UPDATE transactions SET ${updates.join(', ')} WHERE id = ?`, params);
+
+        try {
+            await pool.execute(
+                'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+                [req.auth.id, 'TRANSACTION_EDIT', `Admin edited transaction #${id}: ${updates.map(u => u.split(' =')[0]).join(', ')}`, req.ip]
+            );
+        } catch (e) {}
+
+        const [updated] = await pool.execute('SELECT * FROM transactions WHERE id = ?', [id]);
+
+        res.json({
+            success: true,
+            message: `Transaction #${id} updated successfully`,
+            transaction: updated[0]
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Admin: Get all pending transfers
 app.get('/api/admin/pending-transfers', requireAuth, requireAdmin, async (req, res) => {
     try {
@@ -4161,11 +4235,12 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
         await connection.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amountValue, recipientUser.id]);
 
         const reference = 'TRF' + Date.now().toString(36).toUpperCase();
-        await connection.execute(
+        const [txnResult] = await connection.execute(
             `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
              VALUES (?, ?, ?, 'transfer', 'completed', ?, ?)`,
             [sender.id, recipientUser.id, amountValue, description || 'Transfer', reference]
         );
+        const transactionId = txnResult.insertId;
 
         // Log activity for both parties (best-effort).
         // NOTE: Keep this non-blocking so missing tables/columns don't break transfers.
@@ -4189,7 +4264,8 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
         res.json({
             success: true,
             message: `$${amountValue.toLocaleString()} sent to ${recipientUser.firstName} ${recipientUser.lastName}`,
-            reference
+            reference,
+            transactionId
         });
     } catch (error) {
         try { await connection.rollback(); } catch (e) {}
@@ -4751,8 +4827,8 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
 
         const [transactions] = await pool.execute(
             `SELECT t.*,
-                    uf.firstName AS fromFirstName, uf.lastName AS fromLastName,
-                    ut.firstName AS toFirstName, ut.lastName AS toLastName
+                    uf.firstName AS fromFirstName, uf.lastName AS fromLastName, uf.accountNumber AS fromAccountNumber,
+                    ut.firstName AS toFirstName, ut.lastName AS toLastName, ut.accountNumber AS toAccountNumber
              FROM transactions t
              LEFT JOIN users uf ON t.fromUserId = uf.id
              LEFT JOIN users ut ON t.toUserId = ut.id
@@ -4774,70 +4850,224 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [decoded.id]);
         const user = users[0];
 
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        // --- Professional Bank Receipt PDF ---
+        const doc = new PDFDocument({ size: 'A4', margin: 40 });
         const pdfPath = path.join(__dirname, `receipt_${id}_${Date.now()}.pdf`);
         const stream = fs.createWriteStream(pdfPath);
-
         doc.pipe(stream);
 
-        // Header with bank branding
-        doc.fontSize(28).fillColor('#2C5F7F').text('HERITAGE BANK', { align: 'center' });
-        doc.fontSize(12).fillColor('black').text('Transaction Receipt', { align: 'center' });
-        doc.moveDown(2);
+        const GREEN = '#1a472a';
+        const GOLD = '#d4af37';
+        const LIGHT_BG = '#f0f7f2';
+        const GRAY = '#666666';
+        const BLACK = '#222222';
+        const WHITE = '#ffffff';
+        const pageW = 595.28; // A4 width
+        const marginL = 40;
+        const marginR = 40;
+        const contentW = pageW - marginL - marginR;
 
-        // Receipt details box
-        doc.rect(50, doc.y, 500, 250).stroke();
-        const boxStartY = doc.y + 20;
+        // ── Top green banner ──
+        doc.rect(0, 0, pageW, 90).fill(GREEN);
 
-        doc.fontSize(10).fillColor('gray').text('TRANSACTION DETAILS', 70, boxStartY);
-        doc.moveDown(1.5);
+        // Logo (try to load)
+        const logoPath = path.join(__dirname, '..', 'assets', 'logo.png');
+        try {
+            if (fs.existsSync(logoPath)) {
+                doc.image(logoPath, marginL + 10, 15, { height: 55 });
+            }
+        } catch (e) { /* logo not available – text fallback below */ }
 
-        const detailsY = doc.y;
-        doc.fontSize(11).fillColor('black');
-        doc.text('Receipt Number:', 70, detailsY);
-        doc.text(`RCP-${String(id).padStart(8, '0')}`, 250, detailsY);
-        
-        doc.text('Date:', 70, detailsY + 20);
-        doc.text(new Date(transaction.createdAt).toLocaleString(), 250, detailsY + 20);
-        
-        doc.text('Transaction Type:', 70, detailsY + 40);
-        doc.text(transaction.type, 250, detailsY + 40);
-        
-        doc.text('Amount:', 70, detailsY + 60);
-        doc.fontSize(16).fillColor('#28a745').text(`$${parseFloat(transaction.amount).toFixed(2)}`, 250, detailsY + 60);
-        
-        doc.fontSize(11).fillColor('black');
-        doc.text('From:', 70, detailsY + 85);
-        doc.text(`${user.firstName} ${user.lastName}`, 250, detailsY + 85);
-        doc.text(`Account: ${user.accountNumber}`, 250, detailsY + 100);
+        // Bank name in banner
+        doc.fontSize(26).fillColor(GOLD).text('HERITAGE BANK', marginL + 80, 22, { width: contentW - 80 });
+        doc.fontSize(9).fillColor(WHITE).text('Your Trusted Banking Partner', marginL + 80, 52, { width: contentW - 80 });
 
-        if (transaction.toUserId) {
-            doc.text('To:', 70, detailsY + 120);
-            doc.text(`${transaction.firstName || 'N/A'} ${transaction.lastName || ''}`, 250, detailsY + 120);
+        // Receipt title on the right side of the banner
+        doc.fontSize(11).fillColor(WHITE).text('TRANSACTION RECEIPT', pageW - 200, 30, { width: 160, align: 'right' });
+        doc.fontSize(8).fillColor(GOLD).text(`Receipt #: RCP-${String(id).padStart(8, '0')}`, pageW - 200, 48, { width: 160, align: 'right' });
+
+        // ── Gold accent line ──
+        doc.rect(0, 90, pageW, 3).fill(GOLD);
+
+        // ── Date & Reference bar ──
+        let curY = 108;
+        doc.rect(marginL, curY, contentW, 32).fill('#f8f9fa');
+        doc.fontSize(9).fillColor(GRAY);
+        const txDate = transaction.createdAt ? new Date(transaction.createdAt) : new Date();
+        doc.text(`Date: ${txDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}`, marginL + 15, curY + 10);
+        doc.text(`Time: ${txDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`, marginL + 220, curY + 10);
+        doc.text(`Ref: ${transaction.reference || 'N/A'}`, pageW - marginR - 180, curY + 10, { width: 165, align: 'right' });
+
+        // ── Amount highlight box ──
+        curY += 50;
+        doc.roundedRect(marginL, curY, contentW, 70, 8).fill(GREEN);
+        doc.fontSize(11).fillColor(GOLD).text('TRANSACTION AMOUNT', marginL, curY + 12, { width: contentW, align: 'center' });
+        const amtStr = `£${parseFloat(transaction.amount).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        doc.fontSize(28).fillColor(WHITE).text(amtStr, marginL, curY + 30, { width: contentW, align: 'center' });
+
+        // ── Currency Conversion box (if present in description) ──
+        const convMatch = (transaction.description || '').match(/Converted:\s*£([\d,.]+)\s*→\s*([£$€])([\d,.]+)\s*\(Rate:\s*1 GBP\s*=\s*([\d.]+)\s*(\w+)\)/);
+        if (convMatch) {
+            curY += 78;
+            doc.roundedRect(marginL, curY, contentW, 55, 8).lineWidth(1.5).strokeColor(GOLD).stroke();
+            doc.rect(marginL + 1, curY + 1, contentW - 2, 18).fill('#fdf8e8');
+            doc.fontSize(8).fillColor(GOLD).text('CURRENCY CONVERSION', marginL, curY + 5, { width: contentW, align: 'center' });
+            const sentAmt = `£${convMatch[1]}`;
+            const recvSym = convMatch[2];
+            const recvAmt = `${recvSym}${convMatch[3]}`;
+            const exRate = convMatch[4];
+            const toCur = convMatch[5];
+            doc.fontSize(10).fillColor(BLACK);
+            doc.text(`Sent: ${sentAmt}  (GBP)`, marginL + 20, curY + 24);
+            doc.text(`→`, marginL + (contentW / 2) - 8, curY + 24);
+            doc.fontSize(10).fillColor('#28a745').text(`Received: ${recvAmt}  (${toCur})`, marginL + (contentW / 2) + 10, curY + 24);
+            doc.fontSize(8).fillColor(GRAY).text(`Exchange Rate: 1 GBP = ${exRate} ${toCur}`, marginL, curY + 42, { width: contentW, align: 'center' });
+            curY += 8;
         }
 
-        doc.text('Description:', 70, detailsY + 140);
-        doc.text(transaction.description || 'N/A', 250, detailsY + 140, { width: 250 });
+        // ── Status badge ──
+        curY += 85;
+        const status = (transaction.status || 'completed').toUpperCase();
+        const statusColor = (status === 'COMPLETED' || status === 'SUCCESS') ? '#28a745' : (status === 'PENDING' ? '#ffc107' : '#dc3545');
+        const badgeW = 130;
+        const badgeX = (pageW - badgeW) / 2;
+        doc.roundedRect(badgeX, curY, badgeW, 26, 13).fill(statusColor);
+        doc.fontSize(10).fillColor(WHITE).text(status, badgeX, curY + 7, { width: badgeW, align: 'center' });
 
-        doc.text('Status:', 70, detailsY + 180);
-        doc.fillColor('#28a745').text('COMPLETED', 250, detailsY + 180);
+        // ── Transaction Details section ──
+        curY += 48;
+        doc.fontSize(12).fillColor(GREEN).text('Transaction Details', marginL, curY);
+        curY += 5;
+        doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
+        curY += 28;
 
-        // Footer
-        doc.fontSize(8).fillColor('gray');
-        doc.text('Heritage Bank • 1-800-HERITAGE • www.heritagebank.com', 50, 750, { align: 'center' });
-        doc.text('This is a computer-generated receipt and does not require a signature.', 50, 765, { align: 'center' });
+        // Helper for detail rows
+        const labelX = marginL + 15;
+        const valueX = marginL + 180;
+        const rowH = 28;
+        let rowI = 0;
+        function detailRow(label, value) {
+            const y = curY + (rowI * rowH);
+            if (rowI % 2 === 0) {
+                doc.rect(marginL, y - 4, contentW, rowH).fill('#fafafa');
+            }
+            doc.fontSize(9.5).fillColor(GRAY).text(label, labelX, y + 4);
+            doc.fontSize(10).fillColor(BLACK).text(value || 'N/A', valueX, y + 4, { width: contentW - 200 });
+            rowI++;
+        }
+
+        // Parse UK bank transfer details from description (format: "UK Bank Transfer to BankName | Recipient: Name | Account: XXXXXXXX | Sort Code: XX-XX-XX | Ref: XXX")
+        const ukBankMatch = (transaction.description || '').match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)\s*\|\s*Account:\s*(\d+)\s*\|\s*Sort Code:\s*([\d-]+)/);
+        const UK_BANK_COLORS = {
+            'Santander':  { primary: '#ec0000', accent: '#ffffff', text: 'Santander UK' },
+            'Barclays':   { primary: '#00aeef', accent: '#ffffff', text: 'Barclays Bank' },
+            'HSBC':       { primary: '#db0011', accent: '#ffffff', text: 'HSBC UK' },
+            'Lloyds':     { primary: '#006a4d', accent: '#ffffff', text: 'Lloyds Banking Group' },
+            'NatWest':    { primary: '#42145f', accent: '#ffffff', text: 'NatWest Bank' },
+            'Halifax':    { primary: '#004b8d', accent: '#ffffff', text: 'Halifax' },
+            'Nationwide': { primary: '#004f9f', accent: '#ffffff', text: 'Nationwide Building Society' },
+            'TSB':        { primary: '#003d6a', accent: '#58b5e0', text: 'TSB Bank' },
+            'Monzo':      { primary: '#ff5a5f', accent: '#ffffff', text: 'Monzo Bank' },
+            'Starling':   { primary: '#6935D3', accent: '#ffffff', text: 'Starling Bank' },
+            'Revolut':    { primary: '#0075eb', accent: '#ffffff', text: 'Revolut' },
+        };
+        const ukBankName = ukBankMatch ? ukBankMatch[1].trim() : null;
+        const ukBankStyle = ukBankName ? (UK_BANK_COLORS[ukBankName] || { primary: '#333333', accent: '#ffffff', text: ukBankName }) : null;
+        const cleanDescription = ukBankMatch
+            ? `UK Bank Transfer to ${ukBankStyle.text}`
+            : (transaction.description || 'Fund Transfer');
+
+        detailRow('Transaction Type', ukBankMatch ? 'International / UK Bank Transfer' : ((transaction.type || 'Transfer').charAt(0).toUpperCase() + (transaction.type || 'transfer').slice(1)));
+        detailRow('Description', cleanDescription);
+        detailRow('Reference Number', transaction.reference || `TXN-${String(id).padStart(8, '0')}`);
+        detailRow('Payment Method', ukBankMatch ? 'Faster Payments (UK)' : 'Bank Transfer');
+
+        // ── Sender Details ──
+        curY = curY + (rowI * rowH) + 20;
+        rowI = 0;
+        doc.fontSize(12).fillColor(GREEN).text('Sender Details', marginL, curY);
+        doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
+        curY += 28;
+
+        detailRow('Account Holder', `${transaction.fromFirstName || user.firstName || ''} ${transaction.fromLastName || user.lastName || ''}`);
+        detailRow('Account Number', maskAccount(transaction.fromAccountNumber || user.accountNumber || ''));
+        detailRow('Bank', 'Heritage Bank');
+
+        // ── Recipient Details ──
+        if (ukBankMatch) {
+            // External UK bank recipient
+            const recipientName = ukBankMatch[2].trim();
+            const recipientAcct = ukBankMatch[3].trim();
+            const recipientSort = ukBankMatch[4].trim();
+
+            curY = curY + (rowI * rowH) + 20;
+            rowI = 0;
+
+            // Recipient bank branded header
+            doc.roundedRect(marginL, curY, contentW, 38, 6).fill(ukBankStyle.primary);
+            doc.fontSize(12).fillColor(ukBankStyle.accent).text('Recipient Details', marginL + 15, curY + 6);
+            doc.fontSize(9).fillColor(ukBankStyle.accent).text(ukBankStyle.text, pageW - marginR - 180, curY + 8, { width: 165, align: 'right' });
+            doc.fontSize(8).fillColor(ukBankStyle.accent).text('External UK Bank Account', marginL + 15, curY + 23);
+            curY += 48;
+
+            detailRow('Recipient Name', recipientName);
+            detailRow('Account Number', maskAccount(recipientAcct));
+            detailRow('Sort Code', recipientSort);
+            detailRow('Bank', ukBankStyle.text);
+            detailRow('Payment Network', 'UK Faster Payments Service (FPS)');
+        } else if (transaction.toUserId || transaction.toFirstName) {
+            curY = curY + (rowI * rowH) + 20;
+            rowI = 0;
+            doc.fontSize(12).fillColor(GREEN).text('Recipient Details', marginL, curY);
+            doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
+            curY += 28;
+
+            detailRow('Account Holder', `${transaction.toFirstName || ''} ${transaction.toLastName || ''}`);
+            detailRow('Account Number', maskAccount(transaction.toAccountNumber || ''));
+            detailRow('Bank', 'Heritage Bank');
+        }
+
+        // ── Security strip ──
+        curY = curY + (rowI * rowH) + 25;
+        doc.rect(marginL, curY, contentW, 50).fill(LIGHT_BG);
+        doc.roundedRect(marginL + 15, curY + 10, 30, 30, 4).fill(GREEN);
+        doc.fontSize(16).fillColor(WHITE).text('✓', marginL + 22, curY + 15);
+        doc.fontSize(9).fillColor(GREEN).text('Verified & Secured', marginL + 55, curY + 12);
+        doc.fontSize(8).fillColor(GRAY).text('This transaction has been verified and processed securely through Heritage Bank\'s encrypted banking system.', marginL + 55, curY + 26, { width: contentW - 80 });
+
+        // ── Footer ──
+        // Gold line above footer
+        doc.rect(0, 755, pageW, 2).fill(GOLD);
+
+        // Footer background
+        doc.rect(0, 757, pageW, 85).fill(GREEN);
+
+        doc.fontSize(8).fillColor(GOLD).text('Heritage Bank PLC', marginL, 767, { width: contentW, align: 'center' });
+        doc.fontSize(7).fillColor(WHITE);
+        doc.text('Registered in England and Wales | Company No. 09021345', marginL, 780, { width: contentW, align: 'center' });
+        doc.text('1-800-HERITAGE | support@heritagebank.com | www.heritagebank.com', marginL, 792, { width: contentW, align: 'center' });
+        doc.text('Authorised by the Prudential Regulation Authority and regulated by the Financial Conduct Authority', marginL, 804, { width: contentW, align: 'center' });
+        doc.fontSize(7).fillColor(GOLD).text('This is a computer-generated receipt and does not require a physical signature.', marginL, 818, { width: contentW, align: 'center' });
 
         doc.end();
 
         stream.on('finish', () => {
-            res.download(pdfPath, `receipt_${transaction.id}.pdf`, () => {
-                fs.unlinkSync(pdfPath);
+            res.download(pdfPath, `Heritage_Bank_Receipt_${transaction.reference || id}.pdf`, () => {
+                try { fs.unlinkSync(pdfPath); } catch (e) {}
             });
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
+// Helper: mask account number for receipts (show last 4 digits)
+function maskAccount(accNum) {
+    if (!accNum) return 'N/A';
+    const s = String(accNum);
+    if (s.length <= 4) return s;
+    return '****' + s.slice(-4);
+}
 
 // ==================== BENEFICIARY MANAGEMENT ====================
 app.get('/api/beneficiaries', async (req, res) => {
