@@ -4759,47 +4759,159 @@ app.get('/api/statements/download', async (req, res) => {
                 fs.unlinkSync(csvPath);
             });
         } else {
-            // PDF Format
-            const doc = new PDFDocument({ margin: 50 });
+            // PDF Format – Professional Heritage Bank Statement
+            const doc = new PDFDocument({ size: 'A4', margin: 40 });
             const pdfPath = path.join(__dirname, `statement_${decoded.id}_${Date.now()}.pdf`);
             const stream = fs.createWriteStream(pdfPath);
-
             doc.pipe(stream);
 
-            // Header
-            doc.fontSize(24).text('HERITAGE BANK', { align: 'center' });
-            doc.fontSize(10).text('Account Statement', { align: 'center' });
-            doc.moveDown();
+            const GREEN = '#1a472a';
+            const GOLD = '#d4af37';
+            const GRAY = '#666666';
+            const BLACK = '#222222';
+            const WHITE = '#ffffff';
+            const pageW = 595.28;
+            const mL = 40;
+            const mR = 40;
+            const cW = pageW - mL - mR;
 
-            // Account Info
-            doc.fontSize(12).text(`Account Holder: ${user.firstName} ${user.lastName}`);
-            doc.text(`Account Number: ${user.accountNumber}`);
-            doc.text(`Routing Number: ${user.routingNumber || ROUTING_NUMBER}`);
-            doc.text(`Statement Date: ${new Date().toLocaleDateString()}`);
-            doc.text(`Current Balance: $${parseFloat(user.balance).toFixed(2)}`);
-            doc.moveDown();
+            // ── Top green banner ──
+            doc.rect(0, 0, pageW, 80).fill(GREEN);
+            const logoPath = path.join(__dirname, '..', 'assets', 'logo.png');
+            try { if (fs.existsSync(logoPath)) doc.image(logoPath, mL + 10, 12, { height: 50 }); } catch (e) {}
+            doc.fontSize(22).fillColor(GOLD).text('HERITAGE BANK', mL + 75, 18, { width: cW - 75 });
+            doc.fontSize(8).fillColor(WHITE).text('Your Trusted Banking Partner', mL + 75, 44, { width: cW - 75 });
+            doc.fontSize(10).fillColor(WHITE).text('ACCOUNT STATEMENT', pageW - 195, 25, { width: 155, align: 'right' });
+            doc.fontSize(8).fillColor(GOLD).text(`Generated: ${new Date().toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}`, pageW - 195, 42, { width: 155, align: 'right' });
+            doc.rect(0, 80, pageW, 3).fill(GOLD);
 
-            // Transactions Table
-            doc.fontSize(14).text('Transaction History', { underline: true });
-            doc.moveDown();
+            // ── Account information box ──
+            let y = 96;
+            doc.roundedRect(mL, y, cW, 72, 6).lineWidth(1).strokeColor('#e0e0e0').stroke();
+            doc.rect(mL + 1, y + 1, cW - 2, 20).fill('#f8f9fa');
+            doc.fontSize(9).fillColor(GREEN).text('ACCOUNT INFORMATION', mL + 12, y + 6);
 
-            if (transactions.length === 0) {
-                doc.fontSize(10).text('No transactions found for this period.');
+            const colL = mL + 12;
+            const colR = mL + (cW / 2) + 10;
+            const infoY = y + 26;
+            doc.fontSize(8).fillColor(GRAY);
+            doc.text('Account Holder', colL, infoY);
+            doc.text('Account Number', colL, infoY + 15);
+            doc.text('Routing Number', colL, infoY + 30);
+            doc.text('Statement Period', colR, infoY);
+            doc.text('Current Balance', colR, infoY + 15);
+            doc.text('Total Transactions', colR, infoY + 30);
+
+            doc.fontSize(9).fillColor(BLACK);
+            doc.text(`${user.firstName} ${user.lastName}`, colL + 90, infoY);
+            doc.text(user.accountNumber || 'N/A', colL + 90, infoY + 15);
+            doc.text(user.routingNumber || ROUTING_NUMBER, colL + 90, infoY + 30);
+            const periodStart = startDate ? new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'All time';
+            const periodEnd = endDate ? new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Present';
+            doc.text(`${periodStart} – ${periodEnd}`, colR + 100, infoY);
+            doc.fontSize(9).fillColor('#28a745').text(`$${parseFloat(user.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, colR + 100, infoY + 15);
+            doc.fillColor(BLACK).text(String(transactions.length), colR + 100, infoY + 30);
+
+            // ── Summary bar ──
+            y += 82;
+            const totalCredits = transactions.filter(t => t.type === 'credit' || t.toUserId === decoded.id).reduce((s, t) => s + parseFloat(t.amount), 0);
+            const totalDebits = transactions.filter(t => t.type === 'debit' || (t.fromUserId === decoded.id && t.toUserId !== decoded.id)).reduce((s, t) => s + parseFloat(t.amount), 0);
+            doc.roundedRect(mL, y, cW / 2 - 5, 36, 5).fill('#e8f5e9');
+            doc.roundedRect(mL + cW / 2 + 5, y, cW / 2 - 5, 36, 5).fill('#fce4ec');
+            doc.fontSize(7).fillColor('#388e3c').text('TOTAL CREDITS', mL + 12, y + 6);
+            doc.fontSize(12).fillColor('#2e7d32').text(`+$${totalCredits.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, mL + 12, y + 18);
+            doc.fontSize(7).fillColor('#c62828').text('TOTAL DEBITS', mL + cW / 2 + 17, y + 6);
+            doc.fontSize(12).fillColor('#c62828').text(`-$${totalDebits.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, mL + cW / 2 + 17, y + 18);
+
+            // ── Transaction table header ──
+            y += 48;
+            doc.fontSize(10).fillColor(GREEN).text('Transaction History', mL, y);
+            y += 15;
+            doc.rect(mL, y, cW, 1).fill(GOLD);
+            y += 8;
+
+            // Table column headers
+            doc.rect(mL, y, cW, 20).fill(GREEN);
+            const cols = [
+                { label: 'DATE', x: mL + 8, w: 72 },
+                { label: 'TYPE', x: mL + 82, w: 60 },
+                { label: 'DESCRIPTION', x: mL + 144, w: 210 },
+                { label: 'STATUS', x: mL + 356, w: 60 },
+                { label: 'AMOUNT', x: mL + 418, w: 95 }
+            ];
+            doc.fontSize(7.5).fillColor(WHITE);
+            cols.forEach(c => doc.text(c.label, c.x, y + 6, { width: c.w }));
+            y += 22;
+
+            // ── Transaction rows (limit to fit single page) ──
+            const maxRows = 18;
+            const displayTxns = transactions.slice(0, maxRows);
+            const rowHeight = 22;
+
+            if (displayTxns.length === 0) {
+                doc.fontSize(9).fillColor(GRAY).text('No transactions found for this period.', mL, y + 10, { width: cW, align: 'center' });
+                y += 30;
             } else {
-                doc.fontSize(9);
-                const startY = doc.y;
-                transactions.forEach((t, index) => {
-                    const y = startY + (index * 20);
-                    if (y > 700) {
-                        doc.addPage();
-                        doc.y = 50;
-                    }
-                    doc.text(new Date(t.createdAt).toLocaleDateString(), 50, y, { width: 80 });
-                    doc.text(t.type, 140, y, { width: 100 });
-                    doc.text(t.description || 'N/A', 250, y, { width: 150 });
-                    doc.text(`$${parseFloat(t.amount).toFixed(2)}`, 410, y, { width: 100, align: 'right' });
+                displayTxns.forEach((t, i) => {
+                    const ry = y + (i * rowHeight);
+                    if (i % 2 === 0) doc.rect(mL, ry, cW, rowHeight).fill('#fafafa');
+
+                    const txDate = new Date(t.createdAt);
+                    const isCredit = t.type === 'credit' || t.toUserId === decoded.id;
+                    const amt = parseFloat(t.amount);
+
+                    // Clean description for UK bank transfers
+                    let desc = t.description || t.type || 'Transfer';
+                    const ukMatch = desc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
+                    if (ukMatch) desc = `Wire to ${ukMatch[1].trim()} (${ukMatch[2].trim()})`;
+                    if (desc.length > 45) desc = desc.substring(0, 42) + '...';
+
+                    doc.fontSize(7.5).fillColor(BLACK);
+                    doc.text(txDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }), cols[0].x, ry + 6, { width: cols[0].w });
+                    doc.text((t.type || 'transfer').charAt(0).toUpperCase() + (t.type || 'transfer').slice(1), cols[1].x, ry + 6, { width: cols[1].w });
+                    doc.fontSize(7).fillColor(GRAY).text(desc, cols[2].x, ry + 6, { width: cols[2].w });
+
+                    // Status badge
+                    const st = (t.status || 'completed').toLowerCase();
+                    const stColor = st === 'completed' ? '#28a745' : (st === 'pending' ? '#ffc107' : '#dc3545');
+                    doc.roundedRect(cols[3].x, ry + 4, 48, 14, 7).fill(stColor);
+                    doc.fontSize(6.5).fillColor(WHITE).text(st.toUpperCase(), cols[3].x, ry + 7, { width: 48, align: 'center' });
+
+                    // Amount
+                    const amtColor = isCredit ? '#28a745' : '#c62828';
+                    const amtPrefix = isCredit ? '+' : '-';
+                    doc.fontSize(8).fillColor(amtColor).text(`${amtPrefix}$${amt.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, cols[4].x, ry + 6, { width: cols[4].w, align: 'right' });
                 });
+                y += displayTxns.length * rowHeight;
             }
+
+            if (transactions.length > maxRows) {
+                doc.fontSize(7).fillColor(GRAY).text(`Showing ${maxRows} of ${transactions.length} transactions. Download CSV for full history.`, mL, y + 4, { width: cW, align: 'center' });
+                y += 16;
+            }
+
+            // ── Bottom gold line ──
+            y += 6;
+            doc.rect(mL, y, cW, 1).fill(GOLD);
+
+            // ── Security strip ──
+            y += 10;
+            doc.rect(mL, y, cW, 36).fill('#f0f7f2');
+            doc.roundedRect(mL + 12, y + 8, 20, 20, 3).fill(GREEN);
+            doc.fontSize(12).fillColor(WHITE).text('✓', mL + 17, y + 11);
+            doc.fontSize(8).fillColor(GREEN).text('Verified Statement', mL + 40, y + 8);
+            doc.fontSize(7).fillColor(GRAY).text('This statement has been generated securely by Heritage Bank\'s online banking system and is for informational purposes only.', mL + 40, y + 20, { width: cW - 60 });
+
+            // ── Footer ──
+            const footerTop = 750;
+            doc.rect(0, footerTop, pageW, 2).fill(GOLD);
+            doc.rect(0, footerTop + 2, pageW, 90).fill(GREEN);
+            doc.fontSize(8).fillColor(GOLD).text('Heritage Bank', mL, footerTop + 10, { width: cW, align: 'center' });
+            doc.fontSize(7).fillColor(WHITE);
+            doc.text('FDIC Insured | Equal Housing Lender | NMLS #091238946', mL, footerTop + 22, { width: cW, align: 'center' });
+            doc.text('1-800-HERITAGE | support@heritagebank.com | www.heritagebank.com', mL, footerTop + 34, { width: cW, align: 'center' });
+            doc.text('Regulated by the Office of the Comptroller of the Currency (OCC)', mL, footerTop + 46, { width: cW, align: 'center' });
+            doc.fontSize(7).fillColor(GOLD).text('This is a computer-generated statement and does not require a physical signature.', mL, footerTop + 60, { width: cW, align: 'center' });
 
             doc.end();
 
@@ -7137,7 +7249,7 @@ app.post('/api/user/privacy/delete-request', async (req, res) => {
     }
 });
 
-// Download statement
+// Download statement (current month)
 app.get('/api/user/statements/current', async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -7149,43 +7261,111 @@ app.get('/api/user/statements/current', async (req, res) => {
 
         // Get transactions for current month
         const [transactions] = await pool.execute(`
-            SELECT * FROM transactions 
-            WHERE userId = ? AND MONTH(createdAt) = MONTH(NOW()) AND YEAR(createdAt) = YEAR(NOW())
-            ORDER BY createdAt DESC
-        `, [decoded.id]);
+            SELECT t.*, 
+                   uf.firstName AS fromFirstName, uf.lastName AS fromLastName,
+                   ut.firstName AS toFirstName, ut.lastName AS toLastName
+            FROM transactions t
+            LEFT JOIN users uf ON t.fromUserId = uf.id
+            LEFT JOIN users ut ON t.toUserId = ut.id
+            WHERE (t.fromUserId = ? OR t.toUserId = ?) AND MONTH(t.createdAt) = MONTH(NOW()) AND YEAR(t.createdAt) = YEAR(NOW())
+            ORDER BY t.createdAt DESC
+        `, [decoded.id, decoded.id]);
 
-        // Create PDF
-        const doc = new PDFDocument({ margin: 50 });
+        // Create PDF – Same professional design as main statement
+        const doc = new PDFDocument({ size: 'A4', margin: 40 });
         const pdfPath = path.join(__dirname, `statement_${decoded.id}_${Date.now()}.pdf`);
         const stream = fs.createWriteStream(pdfPath);
-
         doc.pipe(stream);
 
-        doc.fontSize(24).text('HERITAGE BANK', { align: 'center' });
-        doc.fontSize(12).text('Account Statement', { align: 'center' });
-        doc.moveDown();
+        const GREEN = '#1a472a', GOLD = '#d4af37', GRAY = '#666666', BLACK = '#222222', WHITE = '#ffffff';
+        const pageW = 595.28, mL = 40, mR = 40, cW = pageW - mL - mR;
 
-        doc.fontSize(11);
-        doc.text(`Account Holder: ${user.firstName} ${user.lastName}`);
-        doc.text(`Account Number: ${user.accountNumber}`);
-        doc.text(`Routing Number: ${user.routingNumber || ROUTING_NUMBER}`);
-        doc.text(`Current Balance: $${parseFloat(user.balance).toFixed(2)}`);
-        doc.text(`Statement Date: ${new Date().toLocaleDateString()}`);
-        doc.moveDown();
+        // ── Banner ──
+        doc.rect(0, 0, pageW, 80).fill(GREEN);
+        const logoPath = path.join(__dirname, '..', 'assets', 'logo.png');
+        try { if (fs.existsSync(logoPath)) doc.image(logoPath, mL + 10, 12, { height: 50 }); } catch (e) {}
+        doc.fontSize(22).fillColor(GOLD).text('HERITAGE BANK', mL + 75, 18, { width: cW - 75 });
+        doc.fontSize(8).fillColor(WHITE).text('Your Trusted Banking Partner', mL + 75, 44, { width: cW - 75 });
+        const monthName = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        doc.fontSize(10).fillColor(WHITE).text('MONTHLY STATEMENT', pageW - 195, 25, { width: 155, align: 'right' });
+        doc.fontSize(8).fillColor(GOLD).text(monthName, pageW - 195, 42, { width: 155, align: 'right' });
+        doc.rect(0, 80, pageW, 3).fill(GOLD);
 
-        doc.fontSize(10).text('Recent Transactions:', { underline: true });
-        doc.moveDown(0.5);
+        // ── Account info box ──
+        let y = 96;
+        doc.roundedRect(mL, y, cW, 58, 6).lineWidth(1).strokeColor('#e0e0e0').stroke();
+        doc.rect(mL + 1, y + 1, cW - 2, 18).fill('#f8f9fa');
+        doc.fontSize(9).fillColor(GREEN).text('ACCOUNT INFORMATION', mL + 12, y + 5);
+        const infoY = y + 24;
+        doc.fontSize(8).fillColor(GRAY);
+        doc.text('Account Holder', mL + 12, infoY);
+        doc.text('Account Number', mL + 12, infoY + 14);
+        doc.text('Current Balance', mL + cW / 2 + 10, infoY);
+        doc.text('Statement Period', mL + cW / 2 + 10, infoY + 14);
+        doc.fontSize(9).fillColor(BLACK);
+        doc.text(`${user.firstName} ${user.lastName}`, mL + 102, infoY);
+        doc.text(user.accountNumber || 'N/A', mL + 102, infoY + 14);
+        doc.fillColor('#28a745').text(`$${parseFloat(user.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, mL + cW / 2 + 110, infoY);
+        doc.fillColor(BLACK).text(monthName, mL + cW / 2 + 110, infoY + 14);
 
-        if (transactions.length === 0) {
-            doc.text('No transactions this month.');
+        // ── Transaction table ──
+        y += 68;
+        doc.fontSize(10).fillColor(GREEN).text('Transaction History', mL, y);
+        y += 15;
+        doc.rect(mL, y, cW, 1).fill(GOLD);
+        y += 8;
+        doc.rect(mL, y, cW, 20).fill(GREEN);
+        const cols = [
+            { label: 'DATE', x: mL + 8, w: 72 },
+            { label: 'TYPE', x: mL + 82, w: 60 },
+            { label: 'DESCRIPTION', x: mL + 144, w: 210 },
+            { label: 'STATUS', x: mL + 356, w: 60 },
+            { label: 'AMOUNT', x: mL + 418, w: 95 }
+        ];
+        doc.fontSize(7.5).fillColor(WHITE);
+        cols.forEach(c => doc.text(c.label, c.x, y + 6, { width: c.w }));
+        y += 22;
+
+        const maxRows = 20;
+        const displayTxns = transactions.slice(0, maxRows);
+        if (displayTxns.length === 0) {
+            doc.fontSize(9).fillColor(GRAY).text('No transactions this month.', mL, y + 10, { width: cW, align: 'center' });
         } else {
-            transactions.forEach((t, i) => {
-                doc.text(`${new Date(t.createdAt).toLocaleDateString()} - ${t.type}: $${parseFloat(t.amount).toFixed(2)} - ${t.description || 'N/A'}`);
+            displayTxns.forEach((t, i) => {
+                const ry = y + (i * 22);
+                if (i % 2 === 0) doc.rect(mL, ry, cW, 22).fill('#fafafa');
+                const isCredit = t.type === 'credit' || t.toUserId === decoded.id;
+                const amt = parseFloat(t.amount);
+                let desc = t.description || t.type || 'Transfer';
+                const ukMatch = desc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
+                if (ukMatch) desc = `Wire to ${ukMatch[1].trim()} (${ukMatch[2].trim()})`;
+                if (desc.length > 45) desc = desc.substring(0, 42) + '...';
+
+                doc.fontSize(7.5).fillColor(BLACK);
+                doc.text(new Date(t.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }), cols[0].x, ry + 6, { width: cols[0].w });
+                doc.text((t.type || 'transfer').charAt(0).toUpperCase() + (t.type || 'transfer').slice(1), cols[1].x, ry + 6, { width: cols[1].w });
+                doc.fontSize(7).fillColor(GRAY).text(desc, cols[2].x, ry + 6, { width: cols[2].w });
+                const st = (t.status || 'completed').toLowerCase();
+                const stColor = st === 'completed' ? '#28a745' : (st === 'pending' ? '#ffc107' : '#dc3545');
+                doc.roundedRect(cols[3].x, ry + 4, 48, 14, 7).fill(stColor);
+                doc.fontSize(6.5).fillColor(WHITE).text(st.toUpperCase(), cols[3].x, ry + 7, { width: 48, align: 'center' });
+                const amtColor = isCredit ? '#28a745' : '#c62828';
+                doc.fontSize(8).fillColor(amtColor).text(`${isCredit ? '+' : '-'}$${amt.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, cols[4].x, ry + 6, { width: cols[4].w, align: 'right' });
             });
         }
 
-        doc.end();
+        // ── Footer ──
+        const footerTop = 750;
+        doc.rect(0, footerTop, pageW, 2).fill(GOLD);
+        doc.rect(0, footerTop + 2, pageW, 90).fill(GREEN);
+        doc.fontSize(8).fillColor(GOLD).text('Heritage Bank', mL, footerTop + 10, { width: cW, align: 'center' });
+        doc.fontSize(7).fillColor(WHITE);
+        doc.text('FDIC Insured | Equal Housing Lender | NMLS #091238946', mL, footerTop + 22, { width: cW, align: 'center' });
+        doc.text('1-800-HERITAGE | support@heritagebank.com | www.heritagebank.com', mL, footerTop + 34, { width: cW, align: 'center' });
+        doc.text('Regulated by the Office of the Comptroller of the Currency (OCC)', mL, footerTop + 46, { width: cW, align: 'center' });
+        doc.fontSize(7).fillColor(GOLD).text('This is a computer-generated statement and does not require a physical signature.', mL, footerTop + 60, { width: cW, align: 'center' });
 
+        doc.end();
         stream.on('finish', () => {
             res.download(pdfPath, `statement_${user.accountNumber}.pdf`, () => {
                 fs.unlinkSync(pdfPath);
