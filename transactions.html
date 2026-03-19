@@ -195,7 +195,10 @@
                                     <td>${cleanType(tx.type)}</td>
                                     <td>${tx.reference || '-'}</td>
                                     <td>${pill(tx.status)}</td>
-                                    <td class="amount ${cls}" style="text-align:right;">${sign}$${formatMoney(Math.abs(tx.amount))}</td>
+                                    <td class="amount ${cls}" style="text-align:right;">
+                                        ${sign}$${formatMoney(Math.abs(parseFloat(tx.amount) + (credit ? 0 : (parseFloat(tx.fee) || 0))))}
+                                        ${(parseFloat(tx.fee) || 0) > 0 ? `<div class="muted" style="font-size:11px;">Fee: $${formatMoney(parseFloat(tx.fee))}</div>` : ''}
+                                    </td>
                                     <td>
                                         <button class="btn btn-secondary" style="padding:8px 10px;" onclick="downloadReceipt(${tx.id})" title="Download Receipt">
                                             <i class="fas fa-file-invoice"></i>

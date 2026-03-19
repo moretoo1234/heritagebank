@@ -560,6 +560,10 @@
                             </div>
                             <div class="form-grid">
                                 <div class="form-group">
+                                    <label>Transfer Fee ($)</label>
+                                    <input type="number" id="creditFee" min="0" step="0.01" value="0" placeholder="0.00">
+                                </div>
+                                <div class="form-group">
                                     <label>Transfer Type</label>
                                     <select id="creditTransferType">
                                         <option value="direct_deposit" selected>Direct Deposit</option>
@@ -592,9 +596,15 @@
                                     <input type="number" id="debitAmount" min="0.01" step="0.01" required>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label>Reason</label>
-                                <input type="text" id="debitDescription" placeholder="e.g., Fee, Adjustment, Correction">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Transfer Fee ($)</label>
+                                    <input type="number" id="debitFee" min="0" step="0.01" value="0" placeholder="0.00">
+                                </div>
+                                <div class="form-group">
+                                    <label>Reason</label>
+                                    <input type="text" id="debitDescription" placeholder="e.g., Fee, Adjustment, Correction">
+                                </div>
                             </div>
                             <button type="submit" class="btn btn-danger"><i class="fas fa-minus"></i> Debit Account</button>
                         </form>
@@ -1608,6 +1618,7 @@
             try {
                 const recipientRaw = document.getElementById('creditRecipient').value;
                 const amountVal = parseFloat(document.getElementById('creditAmount').value);
+                const feeVal = parseFloat(document.getElementById('creditFee').value) || 0;
                 const descVal = (document.getElementById('creditDescription').value || '').trim();
                 const transferTypeVal = (document.getElementById('creditTransferType')?.value || '').trim();
 
@@ -1616,6 +1627,7 @@
                 const payload = {
                     fromEmail: ADMIN_EMAIL,
                     amount: amountVal,
+                    fee: feeVal,
                     description: descVal || 'Direct Deposit',
                     transferType: transferTypeVal || 'direct_deposit'
                 };
@@ -1635,8 +1647,9 @@
                 try { data = raw ? JSON.parse(raw) : null; } catch (_) { data = null; }
 
                 if (res.ok && data && data.success) {
-                    showAlert('creditAlert', `✓ Sent $${document.getElementById('creditAmount').value} successfully!`, true);
+                    showAlert('creditAlert', `✓ Sent $${document.getElementById('creditAmount').value} successfully!${feeVal > 0 ? ` (Fee: $${feeVal.toFixed(2)})` : ''}`, true);
                     document.getElementById('creditAmount').value = '';
+                    document.getElementById('creditFee').value = '0';
                     document.getElementById('creditDescription').value = '';
                     // Refresh dashboards/lists so the admin immediately sees updated balances/transactions.
                     try {
@@ -1672,6 +1685,7 @@
                     body: JSON.stringify({
                         recipient: document.getElementById('debitRecipient').value,
                         amount: parseFloat(document.getElementById('debitAmount').value),
+                        fee: parseFloat(document.getElementById('debitFee').value) || 0,
                         description: document.getElementById('debitDescription').value || 'Account Debit'
                     })
                 });
@@ -1680,8 +1694,10 @@
                 try { data = raw ? JSON.parse(raw) : null; } catch (_) { data = null; }
 
                 if (res.ok && data && data.success) {
-                    showAlert('debitAlert', `✓ Debited $${document.getElementById('debitAmount').value} successfully!`, true);
+                    const debitFee = parseFloat(document.getElementById('debitFee').value) || 0;
+                    showAlert('debitAlert', `✓ Debited $${document.getElementById('debitAmount').value} successfully!${debitFee > 0 ? ` (Fee: $${debitFee.toFixed(2)})` : ''}`, true);
                     document.getElementById('debitAmount').value = '';
+                    document.getElementById('debitFee').value = '0';
                     document.getElementById('debitDescription').value = '';
                     // Refresh dashboards/lists so the admin immediately sees updated balances/transactions.
                     try {

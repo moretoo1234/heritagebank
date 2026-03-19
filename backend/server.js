@@ -3021,7 +3021,7 @@ app.post('/api/auth/login', async (req, res) => {
             await pool.execute(
                 `INSERT INTO login_history (userId, ipAddress, userAgent, loginStatus) 
                  VALUES (?, ?, ?, ?)`,
-                [user.id, req.ip, req.get('user-agent'), 'failed']
+                [user.id, req.ip || null, req.get('user-agent') || null, 'failed']
             );
             
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -3031,7 +3031,7 @@ app.post('/api/auth/login', async (req, res) => {
         await pool.execute(
             `INSERT INTO login_history (userId, ipAddress, userAgent, loginStatus) 
              VALUES (?, ?, ?, ?)`,
-            [user.id, req.ip, req.get('user-agent'), 'success']
+            [user.id, req.ip || null, req.get('user-agent') || null, 'success']
         );
         
         // Update last login timestamp
@@ -3247,12 +3247,13 @@ app.get('/api/admin/users-with-balances', requireAuth, requireAdmin, async (req,
 app.post('/api/admin/fund-user', requireAuth, requireAdmin, async (req, res) => {
     const connection = await pool.getConnection();
     try {
-        const { toEmail, toAccountNumber, amount, description, transferType, type } = req.body;
+        const { toEmail, toAccountNumber, amount, fee, description, transferType, type } = req.body;
 
         const amountValue = parseFloat(amount);
         if (!Number.isFinite(amountValue) || amountValue <= 0) {
             return res.status(400).json({ success: false, message: 'Valid amount is required' });
         }
+        const feeValue = parseFloat(fee) || 0;
 
         await connection.beginTransaction();
 
@@ -3290,15 +3291,16 @@ app.post('/api/admin/fund-user', requireAuth, requireAdmin, async (req, res) => 
             return res.status(400).json({ success: false, message: 'Insufficient funds' });
         }
 
-        await connection.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amountValue, sender.id]);
+        const totalDeducted = amountValue + feeValue;
+        await connection.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [totalDeducted, sender.id]);
         await connection.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amountValue, recipient.id]);
 
         const reference = 'ADM' + Date.now().toString(36).toUpperCase();
         const txType = sanitizeAdminTransferType(transferType || type);
         await connection.execute(
-            `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
-             VALUES (?, ?, ?, ?, 'completed', ?, ?)`,
-            [sender.id, recipient.id, amountValue, txType, (description || 'Direct Deposit'), reference]
+            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference)
+             VALUES (?, ?, ?, ?, ?, 'completed', ?, ?)`,
+            [sender.id, recipient.id, amountValue, feeValue, txType, (description || 'Direct Deposit'), reference]
         );
 
         await connection.commit();
@@ -3515,6 +3517,7 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
             toEmail,
             toAccountNumber,
             amount,
+            fee,
             description,
             transferType,
             type,
@@ -3530,6 +3533,7 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
         if (!Number.isFinite(amountValue) || amountValue <= 0) {
             return res.status(400).json({ success: false, message: 'Valid amount is required' });
         }
+        const feeValue = parseFloat(fee) || 0;
 
         const senderEmailValue = (fromEmail || senderEmail) ? String(fromEmail || senderEmail).trim().toLowerCase() : '';
         const senderAccountValue = (fromAccountNumber || senderAccountNumber) ? String(fromAccountNumber || senderAccountNumber).trim() : '';
@@ -3580,8 +3584,9 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
         }
 
         // Check balance unless bypassing
+        const totalDeducted = amountValue + feeValue;
         const senderBalance = parseFloat(sender.balance);
-        if (!bypassBalanceCheck && senderBalance < amountValue) {
+        if (!bypassBalanceCheck && senderBalance < totalDeducted) {
             await connection.rollback();
             return res.status(400).json({
                 success: false,
@@ -3589,8 +3594,8 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
             });
         }
 
-        // Execute transfer
-        await connection.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amountValue, sender.id]);
+        // Execute transfer (deduct amount + fee from sender, credit only amount to recipient)
+        await connection.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [totalDeducted, sender.id]);
         await connection.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amountValue, recipient.id]);
 
         // Generate reference
@@ -3602,9 +3607,9 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
 
         // Log transaction
         await connection.execute(
-            `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
-             VALUES (?, ?, ?, ?, 'completed', ?, ?)`,
-            [sender.id, recipient.id, amountValue, txType, description || 'Direct Deposit', reference]
+            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference)
+             VALUES (?, ?, ?, ?, ?, 'completed', ?, ?)`,
+            [sender.id, recipient.id, amountValue, feeValue, txType, description || 'Direct Deposit', reference]
         );
 
         // Get updated balances
@@ -3745,6 +3750,7 @@ app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res)
             recipientEmail,
             recipientAccountNumber,
             amount,
+            fee,
             reason,
             notes,
             forceDebit,
@@ -3756,6 +3762,7 @@ app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res)
         if (!Number.isFinite(amountValue) || amountValue <= 0) {
             return res.status(400).json({ success: false, message: 'Valid amount is required' });
         }
+        const feeValue = parseFloat(fee) || 0;
 
         const recipientValue = recipient ? String(recipient).trim() : '';
         const rawEmail =
@@ -3788,24 +3795,25 @@ app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res)
 
         const previousBalance = parseFloat(user.balance);
 
-        if (!forceDebit && previousBalance < amountValue) {
+        const totalDeducted = amountValue + feeValue;
+        if (!forceDebit && previousBalance < totalDeducted) {
             await connection.rollback();
             return res.status(400).json({
                 success: false,
-                message: `Insufficient balance. Current: $${previousBalance.toLocaleString()}, Debit: $${amountValue.toLocaleString()}. Use force debit to allow negative balance.`
+                message: `Insufficient balance. Current: $${previousBalance.toLocaleString()}, Debit: $${totalDeducted.toLocaleString()}. Use force debit to allow negative balance.`
             });
         }
 
-        const newBalance = previousBalance - amountValue;
+        const newBalance = previousBalance - totalDeducted;
         await connection.execute('UPDATE users SET balance = ? WHERE id = ?', [newBalance, user.id]);
 
         const reference = 'DBT' + Date.now().toString(36).toUpperCase();
         const txDescription = description || (reason ? `${reason}${notes ? `: ${notes}` : ''}` : 'Debit');
 
         await connection.execute(
-            `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
-             VALUES (?, NULL, ?, 'debit', 'completed', ?, ?)`,
-            [user.id, amountValue, txDescription, reference]
+            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference)
+             VALUES (?, NULL, ?, ?, 'debit', 'completed', ?, ?)`,
+            [user.id, amountValue, feeValue, txDescription, reference]
         );
 
         try {
@@ -4308,7 +4316,7 @@ function activityLabelForTransaction(tx, viewerUserId) {
     const me = Number(viewerUserId);
     const fromId = Number(tx?.fromUserId);
     const toId = Number(tx?.toUserId);
-    const amountLabel = formatMoneyForActivity(tx?.amount);
+    const txFee = parseFloat(tx?.fee) || 0;
 
     const fromName = [tx?.fromFirstName, tx?.fromLastName].filter(Boolean).join(' ').trim();
     const toName = [tx?.toFirstName, tx?.toLastName].filter(Boolean).join(' ').trim();
@@ -4327,6 +4335,7 @@ function activityLabelForTransaction(tx, viewerUserId) {
     const isOutgoing = Number.isFinite(me) && Number.isFinite(fromId) && fromId === me;
 
     if (isIncoming) {
+        const amountLabel = formatMoneyForActivity(tx?.amount);
         const label = incomingTypeLabel[t] || (t ? (t === 'transfer' ? 'Incoming transfer' : cleanTxType(t)) : 'Incoming transaction');
         return {
             action: `${label} received (${amountLabel})`,
@@ -4335,10 +4344,14 @@ function activityLabelForTransaction(tx, viewerUserId) {
     }
 
     if (isOutgoing) {
+        // For outgoing, show amount + fee as total deducted
+        const totalOut = parseFloat(tx?.amount || 0) + txFee;
+        const amountLabel = formatMoneyForActivity(totalOut);
         const base = (t === 'transfer') ? 'Transfer sent' : (t ? cleanTxType(t) : 'Transaction sent');
+        const feeNote = txFee > 0 ? ` (incl. $${txFee.toFixed(2)} fee)` : '';
         return {
             action: `${base} (${amountLabel})`,
-            description: cleanDescription(tx?.description) || (toName ? `To ${toName}` : undefined)
+            description: (cleanDescription(tx?.description) || (toName ? `To ${toName}` : undefined)) + feeNote
         };
     }
 
@@ -4838,7 +4851,7 @@ app.get('/api/statements/download', async (req, res) => {
             // ── Summary bar ──
             y += 82;
             const totalCredits = transactions.filter(t => t.type === 'credit' || t.toUserId === decoded.id).reduce((s, t) => s + parseFloat(t.amount), 0);
-            const totalDebits = transactions.filter(t => t.type === 'debit' || (t.fromUserId === decoded.id && t.toUserId !== decoded.id)).reduce((s, t) => s + parseFloat(t.amount), 0);
+            const totalDebits = transactions.filter(t => t.type === 'debit' || (t.fromUserId === decoded.id && t.toUserId !== decoded.id)).reduce((s, t) => s + parseFloat(t.amount) + (parseFloat(t.fee) || 0), 0);
             doc.roundedRect(mL, y, cW / 2 - 5, 36, 5).fill('#e8f5e9');
             doc.roundedRect(mL + cW / 2 + 5, y, cW / 2 - 5, 36, 5).fill('#fce4ec');
             doc.fontSize(7).fillColor('#388e3c').text('TOTAL CREDITS', mL + 12, y + 6);
@@ -4887,7 +4900,9 @@ app.get('/api/statements/download', async (req, res) => {
                     let desc = cleanDescription(t.description) || t.type || 'Transfer';
                     const ukMatch = desc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
                     if (ukMatch) desc = `Wire to ${ukMatch[1].trim()} (${ukMatch[2].trim()})`;
-                    if (desc.length > 45) desc = desc.substring(0, 42) + '...';
+                    const tFee = parseFloat(t.fee) || 0;
+                    if (tFee > 0) desc += ` (Fee: $${tFee.toFixed(2)})`;
+                    if (desc.length > 55) desc = desc.substring(0, 52) + '...';
 
                     doc.fontSize(7.5).fillColor(BLACK);
                     doc.text(txDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }), cols[0].x, ry + 6, { width: cols[0].w });
@@ -4900,10 +4915,11 @@ app.get('/api/statements/download', async (req, res) => {
                     doc.roundedRect(cols[3].x, ry + 4, 48, 14, 7).fill(stColor);
                     doc.fontSize(6.5).fillColor(WHITE).text(st.toUpperCase(), cols[3].x, ry + 7, { width: 48, align: 'center' });
 
-                    // Amount
+                    // Amount (includes fee in total for debits)
+                    const totalAmt = isCredit ? amt : amt + tFee;
                     const amtColor = isCredit ? '#28a745' : '#c62828';
                     const amtPrefix = isCredit ? '+' : '-';
-                    doc.fontSize(8).fillColor(amtColor).text(`${amtPrefix}$${amt.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, cols[4].x, ry + 6, { width: cols[4].w, align: 'right' });
+                    doc.fontSize(8).fillColor(amtColor).text(`${amtPrefix}$${totalAmt.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, cols[4].x, ry + 6, { width: cols[4].w, align: 'right' });
                 });
                 y += displayTxns.length * rowHeight;
             }
@@ -5052,13 +5068,25 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const ukBankStyle = ukBankName ? (UK_BANK_COLORS[ukBankName] || { primary: '#333333', accent: '#ffffff', text: ukBankName, swift: 'N/A' }) : null;
         const isUkTransfer = !!ukBankMatch;
 
+        // ── Fee & total calculation ──
+        const txAmount = parseFloat(transaction.amount);
+        const txFee = parseFloat(transaction.fee) || 0;
+        const totalDeducted = txAmount + txFee;
+
         // ── Amount highlight box (always in USD – Heritage Bank is a US bank) ──
         curY += 50;
-        const txAmount = parseFloat(transaction.amount);
         const amtStr = `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        doc.roundedRect(marginL, curY, contentW, 70, 8).fill(GREEN);
+        const amtBoxHeight = txFee > 0 ? 100 : 70;
+        doc.roundedRect(marginL, curY, contentW, amtBoxHeight, 8).fill(GREEN);
         doc.fontSize(11).fillColor(GOLD).text('AMOUNT SENT (USD)', marginL, curY + 12, { width: contentW, align: 'center' });
         doc.fontSize(28).fillColor(WHITE).text(amtStr, marginL, curY + 30, { width: contentW, align: 'center' });
+
+        if (txFee > 0) {
+            const feeStr = `$${txFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const totalStr = `$${totalDeducted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            doc.fontSize(9).fillColor(GOLD).text(`Transfer Fee: ${feeStr}  |  Total Deducted: ${totalStr}`, marginL, curY + 65, { width: contentW, align: 'center' });
+            curY += 30; // extra space for fee line
+        }
 
         // ── Currency Conversion box for UK transfers ──
         if (isUkTransfer) {
@@ -5121,9 +5149,15 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         detailRow('Description', receiptDesc);
         detailRow('Reference Number', transaction.reference || 'N/A');
         detailRow('Payment Method', isUkTransfer ? 'SWIFT International Wire' : 'Bank Transfer');
+        if (txFee > 0) {
+            const feeDisplay = `$${txFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const totalDisplay = `$${totalDeducted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            detailRow('Transfer Fee', feeDisplay);
+            detailRow('Total Debited', totalDisplay);
+        }
         if (isUkTransfer) {
             detailRow('Processing Channel', 'UK Faster Payments Service (FPS)');
-            detailRow('Wire Fee', '$0.00 (Waived)');
+            if (txFee <= 0) detailRow('Wire Fee', '$0.00 (Waived)');
             detailRow('Value Date', txDate.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }));
         }
 
@@ -7359,10 +7393,12 @@ app.get('/api/user/statements/current', async (req, res) => {
                 if (i % 2 === 0) doc.rect(mL, ry, cW, 22).fill('#fafafa');
                 const isCredit = t.type === 'credit' || t.toUserId === decoded.id;
                 const amt = parseFloat(t.amount);
+                const tFee = parseFloat(t.fee) || 0;
                 let desc = cleanDescription(t.description) || t.type || 'Transfer';
                 const ukMatch = desc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
                 if (ukMatch) desc = `Wire to ${ukMatch[1].trim()} (${ukMatch[2].trim()})`;
-                if (desc.length > 45) desc = desc.substring(0, 42) + '...';
+                if (tFee > 0 && !isCredit) desc += ` (Fee: $${tFee.toFixed(2)})`;
+                if (desc.length > 55) desc = desc.substring(0, 52) + '...';
 
                 doc.fontSize(7.5).fillColor(BLACK);
                 doc.text(new Date(t.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }), cols[0].x, ry + 6, { width: cols[0].w });
@@ -7372,8 +7408,9 @@ app.get('/api/user/statements/current', async (req, res) => {
                 const stColor = st === 'completed' ? '#28a745' : (st === 'pending' ? '#ffc107' : '#dc3545');
                 doc.roundedRect(cols[3].x, ry + 4, 48, 14, 7).fill(stColor);
                 doc.fontSize(6.5).fillColor(WHITE).text(st.toUpperCase(), cols[3].x, ry + 7, { width: 48, align: 'center' });
+                const displayAmt = isCredit ? amt : amt + tFee;
                 const amtColor = isCredit ? '#28a745' : '#c62828';
-                doc.fontSize(8).fillColor(amtColor).text(`${isCredit ? '+' : '-'}$${amt.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, cols[4].x, ry + 6, { width: cols[4].w, align: 'right' });
+                doc.fontSize(8).fillColor(amtColor).text(`${isCredit ? '+' : '-'}$${displayAmt.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, cols[4].x, ry + 6, { width: cols[4].w, align: 'right' });
             });
         }
 
