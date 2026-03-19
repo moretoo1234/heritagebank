@@ -4573,8 +4573,8 @@ app.get('/api/user/:userId/transactions', async (req, res) => {
                 const [r] = await pool.execute(
                     `SELECT t.*,
                             ${createdExpr} AS createdAt,
-                            uf.firstName AS fromFirstName, uf.lastName AS fromLastName,
-                            ut.firstName AS toFirstName, ut.lastName AS toLastName
+                            uf.firstName AS fromFirstName, uf.lastName AS fromLastName, uf.accountNumber AS fromAccountNumber,
+                            ut.firstName AS toFirstName, ut.lastName AS toLastName, ut.accountNumber AS toAccountNumber
                      FROM transactions t
                      LEFT JOIN users uf ON ${fromExpr} = uf.id
                      LEFT JOIN users ut ON ${toExpr} = ut.id
@@ -4732,8 +4732,8 @@ app.get('/api/user/:userId/activity', async (req, res) => {
                     const [r] = await pool.execute(
                         `SELECT t.*,
                                 ${createdExpr} AS createdAt,
-                                uf.firstName AS fromFirstName, uf.lastName AS fromLastName,
-                                ut.firstName AS toFirstName, ut.lastName AS toLastName
+                                uf.firstName AS fromFirstName, uf.lastName AS fromLastName, uf.accountNumber AS fromAccountNumber,
+                                ut.firstName AS toFirstName, ut.lastName AS toLastName, ut.accountNumber AS toAccountNumber
                          FROM transactions t
                          LEFT JOIN users uf ON ${fromExpr} = uf.id
                          LEFT JOIN users ut ON ${toExpr} = ut.id
@@ -4898,8 +4898,8 @@ app.get('/api/statements/download', async (req, res) => {
 
         let query = `
             SELECT t.*, 
-                   uf.firstName AS fromFirstName, uf.lastName AS fromLastName, uf.email AS fromEmail,
-                   ut.firstName AS toFirstName, ut.lastName AS toLastName, ut.email AS toEmail
+                   uf.firstName AS fromFirstName, uf.lastName AS fromLastName, uf.email AS fromEmail, uf.accountNumber AS fromAccountNumber,
+                   ut.firstName AS toFirstName, ut.lastName AS toLastName, ut.email AS toEmail, ut.accountNumber AS toAccountNumber
             FROM transactions t
             LEFT JOIN users uf ON t.fromUserId = uf.id
             LEFT JOIN users ut ON t.toUserId = ut.id
@@ -5493,8 +5493,8 @@ app.get('/api/transactions/search', async (req, res) => {
 
         let query = `
             SELECT t.*,
-                   uf.firstName AS fromFirstName, uf.lastName AS fromLastName, uf.email AS fromEmail,
-                   ut.firstName AS toFirstName, ut.lastName AS toLastName, ut.email AS toEmail
+                   uf.firstName AS fromFirstName, uf.lastName AS fromLastName, uf.email AS fromEmail, uf.accountNumber AS fromAccountNumber,
+                   ut.firstName AS toFirstName, ut.lastName AS toLastName, ut.email AS toEmail, ut.accountNumber AS toAccountNumber
             FROM transactions t
             LEFT JOIN users uf ON t.fromUserId = uf.id
             LEFT JOIN users ut ON t.toUserId = ut.id
@@ -7475,8 +7475,8 @@ app.get('/api/user/statements/current', async (req, res) => {
         // Get transactions for current month
         const [transactions] = await pool.execute(`
             SELECT t.*, 
-                   uf.firstName AS fromFirstName, uf.lastName AS fromLastName,
-                   ut.firstName AS toFirstName, ut.lastName AS toLastName
+                   uf.firstName AS fromFirstName, uf.lastName AS fromLastName, uf.accountNumber AS fromAccountNumber,
+                   ut.firstName AS toFirstName, ut.lastName AS toLastName, ut.accountNumber AS toAccountNumber
             FROM transactions t
             LEFT JOIN users uf ON t.fromUserId = uf.id
             LEFT JOIN users ut ON t.toUserId = ut.id

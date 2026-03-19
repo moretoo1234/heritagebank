@@ -165,6 +165,20 @@
             return tx.type === 'credit' || tx.type === 'deposit' || tx.type === 'received';
         }
 
+        function formatNameAcct(firstName, lastName, accountNumber) {
+            const f = firstName ? firstName.charAt(0) + '.' : '';
+            const l = lastName || '';
+            const name = [f, l].filter(Boolean).join(' ') || '-';
+            if (accountNumber) return `${name} (...${String(accountNumber).slice(-5)})`;
+            return name;
+        }
+
+        function getCountryFlag(description) {
+            const d = String(description || '').toLowerCase();
+            if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return '🇬🇧';
+            return '🇺🇸';
+        }
+
         async function init() {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -237,12 +251,14 @@
                             desc = desc.replace(/Admin\s*/gi, '').trim() || tx.type || 'Transaction';
                             // Parse UK bank transfer description for cleaner display
                             const ukMatch = desc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
-                            let fromTo = `From: ${tx.fromFirstName || ''} ${tx.fromLastName || ''} • To: ${tx.toFirstName || ''} ${tx.toLastName || ''}`;
+                            const fromDisp = formatNameAcct(tx.fromFirstName, tx.fromLastName, tx.fromAccountNumber);
+                            const toFl = getCountryFlag(tx.description);
+                            let fromTo = `\ud83c\uddfa\ud83c\uddf8 From: ${fromDisp} • ${toFl} To: ${formatNameAcct(tx.toFirstName, tx.toLastName, tx.toAccountNumber)}`;
                             if (ukMatch) {
                                 const bankName = ukMatch[1].trim();
                                 const recipientName = ukMatch[2].trim();
                                 desc = `UK Transfer to ${bankName}`;
-                                fromTo = `To: ${recipientName} • via ${bankName}`;
+                                fromTo = `\ud83c\uddfa\ud83c\uddf8 From: ${fromDisp} • \ud83c\uddec\ud83c\udde7 To: ${recipientName} • via ${bankName}`;
                             }
                             return `
                                 <tr onclick="showTransactionDetail(${tx.id})">
@@ -343,8 +359,12 @@
             const statusLabel = statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
             const typeLabel = cleanType(tx.type);
 
-            const fromName = [tx.fromFirstName, tx.fromLastName].filter(Boolean).join(' ') || '-';
-            const toName = [tx.toFirstName, tx.toLastName].filter(Boolean).join(' ') || '-';
+            const fromDisplay = formatNameAcct(tx.fromFirstName, tx.fromLastName, tx.fromAccountNumber);
+            let toDisplay = formatNameAcct(tx.toFirstName, tx.toLastName, tx.toAccountNumber);
+            const rawDesc = String(tx.description || '');
+            const toFlag = getCountryFlag(rawDesc);
+            const ukDetailMatch = rawDesc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
+            if (ukDetailMatch) toDisplay = ukDetailMatch[2].trim() + ' via ' + ukDetailMatch[1].trim();
 
             let html = `
                 <div class="txn-modal-amount">
@@ -369,12 +389,16 @@
                 </div>
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">From</span>
-                    <span class="txn-detail-value">${escapeHtml(fromName)}</span>
+                    <span class="txn-detail-value">\ud83c\uddfa\ud83c\uddf8 ${escapeHtml(fromDisplay)}</span>
                 </div>
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">To</span>
-                    <span class="txn-detail-value">${escapeHtml(toName)}</span>
-                </div>`;
+                    <span class="txn-detail-value">${toFlag} ${escapeHtml(toDisplay)}</span>
+                </div>
+                ${toFlag !== '\ud83c\uddfa\ud83c\uddf8' ? `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Destination</span>
+                    <span class="txn-detail-value">${toFlag} ${toFlag === '\ud83c\uddec\ud83c\udde7' ? 'United Kingdom' : 'International'}</span>
+                </div>` : ''}`;
 
             if (tx.reference) {
                 html += `
