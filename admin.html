@@ -614,7 +614,31 @@
                 <!-- Transfer Approvals Section -->
                 <div id="transfer-approvals" class="section">
                     <div class="card">
-                        <h2><i class="fas fa-clock"></i> Pending Transfer Approvals</h2>
+                        <h2><i class="fas fa-hourglass-half"></i> Pending Transactions</h2>
+                        <p style="color: #888; margin-bottom: 20px;">All user-initiated transfers waiting for admin approval. Approve to complete the transfer or deny with a reason.</p>
+                        <button class="btn btn-info" onclick="loadPendingTransactions()" style="margin-bottom: 20px;"><i class="fas fa-sync"></i> Refresh</button>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Amount</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pendingTransactionsBody">
+                                    <tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2><i class="fas fa-clock"></i> Pending Transfer Approvals (Restricted Users)</h2>
                         <p style="color: #888; margin-bottom: 20px;">These are transfers from users with restricted accounts that require your approval.</p>
                         <button class="btn btn-info" onclick="loadPendingTransfers()" style="margin-bottom: 20px;"><i class="fas fa-sync"></i> Refresh</button>
                         <div class="table-wrapper">
@@ -935,6 +959,7 @@
             if (sectionId === 'activity') loadActivityLogs();
             if (sectionId === 'support-tickets') loadSupportTickets();
             if (sectionId === 'user-messages') loadUserMessages();
+            if (sectionId === 'transfer-approvals') { loadPendingTransactions(); loadPendingTransfers(); }
         }
 
         function fmtDate(value) {
@@ -1735,6 +1760,89 @@
         // ==================== TRANSFER APPROVALS ====================
 
         // Load Pending Transfers
+        // ════════════ Pending Transactions (all user transfers) ════════════
+        async function loadPendingTransactions() {
+            const tbody = document.getElementById('pendingTransactionsBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/pending-transactions`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.pendingTransactions) {
+                    if (data.pendingTransactions.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No pending transactions</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.pendingTransactions.map(t => `
+                        <tr>
+                            <td>${new Date(t.createdAt).toLocaleString()}</td>
+                            <td>${t.senderFirstName || ''} ${t.senderLastName || ''}<br><small style="color:#888;">${t.senderEmail || ''}</small></td>
+                            <td>${t.recipientFirstName || ''} ${t.recipientLastName || ''}<br><small style="color:#888;">${t.recipientEmail || ''}</small></td>
+                            <td style="color:#27ae60; font-weight:600;">$${parseFloat(t.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}${parseFloat(t.fee) > 0 ? `<br><small style="color:#888;">Fee: $${parseFloat(t.fee).toFixed(2)}</small>` : ''}</td>
+                            <td>${t.description || '-'}</td>
+                            <td><span style="background:#ffc107;color:#000;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">PENDING</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="approveTransaction(${t.id})" style="margin-bottom:4px;"><i class="fas fa-check"></i> Approve</button>
+                                <button class="btn btn-sm btn-danger" onclick="denyTransaction(${t.id})"><i class="fas fa-times"></i> Deny</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Error loading pending transactions</td></tr>';
+            }
+        }
+
+        async function approveTransaction(transactionId) {
+            if (!confirm('Are you sure you want to approve this transaction? Funds will be transferred immediately.')) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/approve-transaction/${transactionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Transaction approved successfully!\n' + (data.message || ''));
+                    loadPendingTransactions();
+                    loadTransactions();
+                    loadDashboardStats();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function denyTransaction(transactionId) {
+            const reason = prompt('Enter denial reason:');
+            if (reason === null) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/deny-transaction/${transactionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ reason: reason || 'Denied by admin' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Transaction denied.');
+                    loadPendingTransactions();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // ════════════ Pending Transfers (restricted users only) ════════════
         async function loadPendingTransfers() {
             const tbody = document.getElementById('pendingTransfersBody');
             tbody.innerHTML = '<tr><td colspan="6" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';

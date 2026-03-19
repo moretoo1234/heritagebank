@@ -735,6 +735,7 @@
                 // Clean up description - remove "Admin" references for cleaner display
                 let title = tx.description ? String(tx.description) : subtitle;
                 title = title.replace(/Admin\s*/gi, '').trim() || subtitle;
+                const statusBadge = tx.status === 'pending' ? '<span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px;">Pending</span>' : (tx.status === 'rejected' ? '<span style="background:#f8d7da;color:#721c24;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px;">Denied</span>' : '');
                 
                 return `
                     <div class="transaction-item">
@@ -742,7 +743,7 @@
                             <i class="fas ${icon}"></i>
                         </div>
                         <div class="transaction-details">
-                            <h4>${escapeHtml(title)}</h4>
+                            <h4>${escapeHtml(title)}${statusBadge}</h4>
                             <span>${escapeHtml(subtitle)} • ${escapeHtml(date)}</span>
                         </div>
                         <div class="transaction-amount ${amountClass}">

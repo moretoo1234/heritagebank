@@ -624,7 +624,7 @@
                     <div style="font-size:1.4rem; font-weight:700; color:#28a745;" id="receiptRecvAmount">$0.00</div>
                     <div style="font-size:0.72rem; color:#999;" id="receiptExRate">Rate: 1 USD = 0.79 GBP</div>
                 </div>
-                <div class="receipt-stamp">SUCCESSFUL</div>
+                <div class="receipt-stamp" id="receiptStamp">SUCCESSFUL</div>
                 <hr class="receipt-divider">
                 <div class="receipt-row"><span class="rlabel">To</span><span class="rvalue" id="receiptTo">-</span></div>
                 <div class="receipt-row"><span class="rlabel">Bank</span><span class="rvalue" id="receiptBank">Heritage Bank</span></div>
@@ -632,9 +632,9 @@
                 <div class="receipt-row"><span class="rlabel">Reference</span><span class="rvalue" id="receiptRef">-</span></div>
                 <div class="receipt-row"><span class="rlabel">Description</span><span class="rvalue" id="receiptDesc">-</span></div>
                 <div class="receipt-row" id="receiptCurrencyRow" style="display:none;"><span class="rlabel">Currency</span><span class="rvalue" id="receiptCurrency">-</span></div>
-                <div class="receipt-row"><span class="rlabel">Status</span><span class="rvalue" style="color:#28a745;font-weight:700;">Completed ✓</span></div>
+                <div class="receipt-row"><span class="rlabel">Status</span><span class="rvalue" id="receiptStatus" style="color:#28a745;font-weight:700;">Completed ✓</span></div>
                 <hr class="receipt-divider">
-                <div class="receipt-row"><span class="rlabel">Transaction Fee</span><span class="rvalue">$0.00</span></div>
+                <div class="receipt-row"><span class="rlabel">Transaction Fee</span><span class="rvalue" id="receiptFee">$0.00</span></div>
                 <div class="receipt-row" style="font-weight:700;font-size:1rem;"><span class="rlabel" style="color:#1a472a;">Total Debited</span><span class="rvalue" style="color:#1a472a;" id="receiptTotal">$0.00</span></div>
             </div>
             <div class="receipt-footer">
@@ -997,10 +997,6 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    // Update balance
-                    currentBalance -= amount;
-                    document.getElementById('currentBalance').textContent = '$' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
-                    
                     // Determine recipient display
                     let recipientDisplay = data.transaction?.to || 'Recipient';
                     let bankDisplay = 'Heritage Bank';
@@ -1009,7 +1005,7 @@
                         bankDisplay = selectedUkBank.name;
                     }
 
-                    // Show receipt modal
+                    // Show receipt modal — pending or completed
                     showReceiptModal({
                         amount: amount,
                         to: recipientDisplay,
@@ -1019,7 +1015,8 @@
                         transactionId: data.transactionId,
                         recipientCurrency: recipientCurrency,
                         convertedAmount: convertedAmount,
-                        exchangeRate: exchangeRate
+                        exchangeRate: exchangeRate,
+                        pending: !!data.pending
                     });
                     
                     // Save to recent recipients
@@ -1068,10 +1065,33 @@
             document.getElementById('receiptTotal').textContent = '$' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
             document.getElementById('receiptTo').textContent = details.to;
             document.getElementById('receiptBank').textContent = details.bank;
+
+            // Update stamp and status based on pending flag
+            const stampEl = document.getElementById('receiptStamp');
+            const statusEl = document.getElementById('receiptStatus');
+            if (details.pending) {
+                stampEl.textContent = 'PENDING';
+                stampEl.style.borderColor = '#f0ad4e';
+                stampEl.style.color = '#f0ad4e';
+                statusEl.textContent = 'Pending Approval ⏳';
+                statusEl.style.color = '#f0ad4e';
+            } else {
+                stampEl.textContent = 'SUCCESSFUL';
+                stampEl.style.borderColor = '';
+                stampEl.style.color = '';
+                statusEl.textContent = 'Completed ✓';
+                statusEl.style.color = '#28a745';
+            }
             document.getElementById('receiptDate').textContent = now.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) + ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             document.getElementById('receiptRef').textContent = details.reference;
             document.getElementById('receiptDesc').textContent = details.description;
             lastTransactionId = details.transactionId;
+
+            // Fee display
+            const fee = parseFloat(details.fee) || 0;
+            document.getElementById('receiptFee').textContent = fee > 0 ? '$' + fee.toLocaleString(undefined, {minimumFractionDigits: 2}) : '$0.00 (Waived)';
+            const totalDebited = details.amount + fee;
+            document.getElementById('receiptTotal').textContent = '$' + totalDebited.toLocaleString(undefined, {minimumFractionDigits: 2});
 
             // Currency conversion display on receipt
             const convRow = document.getElementById('receiptConversionRow');

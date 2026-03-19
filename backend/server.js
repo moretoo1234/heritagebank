@@ -4146,6 +4146,142 @@ app.get('/api/user/pending-transfers', requireAuth, async (req, res) => {
     }
 });
 
+// ── Admin: List pending transactions (user-initiated transfers awaiting approval) ──
+app.get('/api/admin/pending-transactions', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(`
+            SELECT 
+                t.id, t.fromUserId, t.toUserId, t.amount, t.fee, t.type,
+                t.status, t.description, t.reference, t.createdAt,
+                sender.firstName AS senderFirstName, sender.lastName AS senderLastName,
+                sender.email AS senderEmail, sender.accountNumber AS senderAccountNumber,
+                recipient.firstName AS recipientFirstName, recipient.lastName AS recipientLastName,
+                recipient.email AS recipientEmail, recipient.accountNumber AS recipientAccountNumber
+            FROM transactions t
+            LEFT JOIN users sender ON t.fromUserId = sender.id
+            LEFT JOIN users recipient ON t.toUserId = recipient.id
+            WHERE t.status = 'pending'
+            ORDER BY t.createdAt DESC
+        `);
+
+        res.json({ success: true, pendingTransactions: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ── Admin: Approve a pending transaction ──
+app.post('/api/admin/approve-transaction/:transactionId', requireAuth, requireAdmin, async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        const { transactionId } = req.params;
+
+        await connection.beginTransaction();
+
+        const [txRows] = await connection.execute(
+            'SELECT * FROM transactions WHERE id = ? AND status = ? FOR UPDATE',
+            [transactionId, 'pending']
+        );
+        const tx = txRows[0];
+        if (!tx) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Pending transaction not found or already processed' });
+        }
+
+        const amountValue = parseFloat(tx.amount);
+        const feeValue = parseFloat(tx.fee) || 0;
+        const totalDeducted = amountValue + feeValue;
+
+        // Lock sender and recipient
+        const [senders] = await connection.execute('SELECT * FROM users WHERE id = ? FOR UPDATE', [tx.fromUserId]);
+        const sender = senders[0];
+        const [recipients] = await connection.execute('SELECT * FROM users WHERE id = ? FOR UPDATE', [tx.toUserId]);
+        const recipient = recipients[0];
+
+        if (!sender || !recipient) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Sender or recipient no longer exists' });
+        }
+
+        const senderBalance = parseFloat(sender.balance);
+        if (senderBalance < totalDeducted) {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: `Insufficient funds. Sender balance: $${senderBalance.toLocaleString()}` });
+        }
+
+        // Deduct from sender, credit to recipient
+        await connection.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [totalDeducted, sender.id]);
+        await connection.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amountValue, recipient.id]);
+
+        // Update transaction status to completed
+        await connection.execute(
+            'UPDATE transactions SET status = ? WHERE id = ?',
+            ['completed', transactionId]
+        );
+
+        // Log activities
+        try {
+            await connection.execute(
+                'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+                [sender.id, 'TRANSFER_APPROVED', `Transfer of $${amountValue.toLocaleString()} to ${recipient.firstName} ${recipient.lastName} approved`, req.ip || null]
+            );
+            await connection.execute(
+                'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+                [recipient.id, 'TRANSFER_RECEIVED', `Received $${amountValue.toLocaleString()} from ${sender.firstName} ${sender.lastName}`, req.ip || null]
+            );
+        } catch (e) {}
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            message: `Transfer of $${amountValue.toLocaleString()} from ${sender.firstName} ${sender.lastName} to ${recipient.firstName} ${recipient.lastName} has been approved`
+        });
+    } catch (error) {
+        try { await connection.rollback(); } catch (e) {}
+        res.status(500).json({ success: false, message: error.message });
+    } finally {
+        connection.release();
+    }
+});
+
+// ── Admin: Deny a pending transaction ──
+app.post('/api/admin/deny-transaction/:transactionId', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { transactionId } = req.params;
+        const { reason } = req.body;
+
+        const [txRows] = await pool.execute(
+            'SELECT * FROM transactions WHERE id = ? AND status = ?',
+            [transactionId, 'pending']
+        );
+        if (!txRows[0]) {
+            return res.status(404).json({ success: false, message: 'Pending transaction not found or already processed' });
+        }
+
+        const denyReason = reason || 'Denied by admin';
+        // Update status to rejected and append reason to description
+        const originalDesc = txRows[0].description || '';
+        const updatedDesc = `${originalDesc} [DENIED: ${denyReason}]`;
+        await pool.execute(
+            'UPDATE transactions SET status = ?, description = ? WHERE id = ?',
+            ['rejected', updatedDesc, transactionId]
+        );
+
+        // Log activity
+        try {
+            await pool.execute(
+                'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+                [txRows[0].fromUserId, 'TRANSFER_DENIED', `Transfer of $${parseFloat(txRows[0].amount).toLocaleString()} denied. Reason: ${denyReason}`, req.ip || null]
+            );
+        } catch (e) {}
+
+        res.json({ success: true, message: 'Transaction has been denied' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Transfer funds
 app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req, res) => {
     const connection = await pool.getConnection();
@@ -4262,31 +4398,21 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             return res.status(400).json({ success: false, message: 'Insufficient funds' });
         }
 
-        await connection.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amountValue, sender.id]);
-        await connection.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amountValue, recipientUser.id]);
-
+        // Create transaction as PENDING — balance not changed until admin approves
         const reference = 'TRF' + Date.now().toString(36).toUpperCase();
         const [txnResult] = await connection.execute(
-            `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
-             VALUES (?, ?, ?, 'transfer', 'completed', ?, ?)`,
+            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference)
+             VALUES (?, ?, ?, 0, 'transfer', 'pending', ?, ?)`,
             [sender.id, recipientUser.id, amountValue, description || 'Transfer', reference]
         );
         const transactionId = txnResult.insertId;
 
-        // Log activity for both parties (best-effort).
-        // NOTE: Keep this non-blocking so missing tables/columns don't break transfers.
+        // Log activity (best-effort)
         try {
-            const senderDetails = `Sent $${amountValue.toLocaleString()} to ${recipientUser.firstName || ''} ${recipientUser.lastName || ''}`.trim();
+            const senderDetails = `Transfer of $${amountValue.toLocaleString()} to ${recipientUser.firstName || ''} ${recipientUser.lastName || ''} submitted for approval`.trim();
             await connection.execute(
                 'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
-                [sender.id, 'TRANSFER_SENT', `${senderDetails}${description ? ` — ${description}` : ''}`, req.ip]
-            );
-        } catch (e) {}
-        try {
-            const recipientDetails = `Received $${amountValue.toLocaleString()} from ${sender.firstName || ''} ${sender.lastName || ''}`.trim();
-            await connection.execute(
-                'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
-                [recipientUser.id, 'TRANSFER_RECEIVED', `${recipientDetails}${description ? ` — ${description}` : ''}`, req.ip]
+                [sender.id, 'TRANSFER_PENDING', `${senderDetails}${description ? ` — ${description}` : ''}`, req.ip || null]
             );
         } catch (e) {}
 
@@ -4294,7 +4420,8 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
 
         res.json({
             success: true,
-            message: `$${amountValue.toLocaleString()} sent to ${recipientUser.firstName} ${recipientUser.lastName}`,
+            pending: true,
+            message: `Transfer of $${amountValue.toLocaleString()} is pending approval`,
             reference,
             transactionId
         });
@@ -5149,15 +5276,17 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         detailRow('Description', receiptDesc);
         detailRow('Reference Number', transaction.reference || 'N/A');
         detailRow('Payment Method', isUkTransfer ? 'SWIFT International Wire' : 'Bank Transfer');
-        if (txFee > 0) {
-            const feeDisplay = `$${txFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            const totalDisplay = `$${totalDeducted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            detailRow('Transfer Fee', feeDisplay);
-            detailRow('Total Debited', totalDisplay);
-        }
+        // Always show fee row
+        const feeDisplay = txFee > 0 ? `$${txFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00 (Waived)';
+        detailRow('Transfer Fee', feeDisplay);
+        const totalDisplay = `$${totalDeducted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        detailRow('Total Debited', totalDisplay);
         if (isUkTransfer) {
+            const usdToGbpRateDetail = 0.79;
+            const gbpReceived = (txAmount * usdToGbpRateDetail);
+            detailRow('Amount Sent (USD)', `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+            detailRow('Amount Received (GBP)', `£${gbpReceived.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`);
             detailRow('Processing Channel', 'UK Faster Payments Service (FPS)');
-            if (txFee <= 0) detailRow('Wire Fee', '$0.00 (Waived)');
             detailRow('Value Date', txDate.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }));
         }
 
@@ -5208,9 +5337,13 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
             curY += 28;
 
-            detailRow('Account Holder', `${transaction.toFirstName || ''} ${transaction.toLastName || ''}`);
+            const recipName = `${transaction.toFirstName || ''} ${transaction.toLastName || ''}`.trim();
+            detailRow('Recipient Name', recipName || 'N/A');
             detailRow('Account Number', maskAccount(transaction.toAccountNumber || ''));
-            detailRow('Bank', 'Heritage Bank');
+            detailRow('Bank Name', 'Heritage Bank');
+            detailRow('Bank Country', 'United States');
+            detailRow('Receiving Currency', 'USD (US Dollar)');
+            detailRow('Amount Received', `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
         }
 
         // ── Security strip ──
