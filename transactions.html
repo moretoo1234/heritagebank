@@ -43,6 +43,40 @@
         .empty { padding: 40px; text-align: center; color: #666; }
         .empty i { font-size: 42px; color: #ddd; display: block; margin-bottom: 10px; }
 
+        /* Clickable rows */
+        tbody tr { cursor: pointer; transition: background 0.2s; }
+        tbody tr:hover { background: #f8f9fa; }
+
+        /* Transaction Detail Modal */
+        .txn-modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center; }
+        .txn-modal-overlay.active { display:flex; }
+        .txn-modal { background:white; border-radius:16px; width:90%; max-width:500px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation: txnSlideUp 0.3s ease; }
+        @keyframes txnSlideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+        .txn-modal-header { display:flex; justify-content:space-between; align-items:center; padding:20px 25px; border-bottom:1px solid #eee; }
+        .txn-modal-header h3 { color:#1a472a; font-size:1.1rem; display:flex; align-items:center; gap:10px; }
+        .txn-modal-close { background:none; border:none; font-size:1.5rem; cursor:pointer; color:#999; padding:5px; }
+        .txn-modal-close:hover { color:#333; }
+        .txn-modal-body { padding:25px; }
+        .txn-modal-amount { text-align:center; padding:20px 0; border-bottom:1px solid #f0f0f0; margin-bottom:20px; }
+        .txn-modal-amount .amount-value { font-size:2rem; font-weight:700; }
+        .txn-modal-amount .amount-value.credit { color:#28a745; }
+        .txn-modal-amount .amount-value.debit { color:#dc3545; }
+        .txn-modal-amount .amount-label { color:#888; font-size:0.85rem; margin-top:5px; }
+        .txn-detail-row { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f5f5f5; }
+        .txn-detail-row:last-child { border-bottom:none; }
+        .txn-detail-label { color:#888; font-size:0.85rem; }
+        .txn-detail-value { color:#333; font-weight:500; font-size:0.9rem; text-align:right; max-width:60%; word-break:break-word; }
+        .txn-status-badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:600; }
+        .txn-status-badge.completed { background:#d4edda; color:#155724; }
+        .txn-status-badge.pending { background:#fff3cd; color:#856404; }
+        .txn-status-badge.rejected, .txn-status-badge.failed { background:#f8d7da; color:#721c24; }
+        .txn-modal-footer { padding:15px 25px 20px; display:flex; gap:10px; }
+        .txn-modal-footer button { flex:1; padding:12px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:0.9rem; }
+        .txn-btn-receipt { background:#1a472a; color:white; }
+        .txn-btn-receipt:hover { background:#2d5f3f; }
+        .txn-btn-close-modal { background:#f0f0f0; color:#555; }
+        .txn-btn-close-modal:hover { background:#e0e0e0; }
+
         @media (max-width: 700px) {
             .container { padding: 15px; margin: 15px auto; }
             .input { min-width: 0; width: 100%; }
@@ -211,7 +245,7 @@
                                 fromTo = `To: ${recipientName} • via ${bankName}`;
                             }
                             return `
-                                <tr>
+                                <tr onclick="showTransactionDetail(${tx.id})">
                                     <td>${formatDate(date)}</td>
                                     <td>
                                         <div>${desc}</div>
@@ -225,7 +259,7 @@
                                         ${(parseFloat(tx.fee) || 0) > 0 ? `<div class="muted" style="font-size:11px;">Fee: $${formatMoney(parseFloat(tx.fee))}</div>` : ''}
                                     </td>
                                     <td>
-                                        <button class="btn btn-secondary" style="padding:8px 10px;" onclick="downloadReceipt(${tx.id})" title="Download Receipt">
+                                        <button class="btn btn-secondary" style="padding:8px 10px;" onclick="event.stopPropagation(); downloadReceipt(${tx.id})" title="Download Receipt">
                                             <i class="fas fa-file-invoice"></i>
                                         </button>
                                     </td>
@@ -265,6 +299,133 @@
             location.href = 'signin.html';
         });
     </script>
+
+    <!-- Transaction Detail Modal -->
+    <div class="txn-modal-overlay" id="txnModal" onclick="if(event.target===this)closeTxnModal()">
+        <div class="txn-modal">
+            <div class="txn-modal-header">
+                <h3><i class="fas fa-receipt"></i> Transaction Details</h3>
+                <button class="txn-modal-close" onclick="closeTxnModal()">&times;</button>
+            </div>
+            <div class="txn-modal-body" id="txnModalBody"></div>
+            <div class="txn-modal-footer">
+                <button class="txn-btn-receipt" id="txnModalReceiptBtn"><i class="fas fa-download"></i> Download Receipt</button>
+                <button class="txn-btn-close-modal" onclick="closeTxnModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = text || '';
+            return d.innerHTML;
+        }
+
+        function showTransactionDetail(txId) {
+            const tx = allTx.find(t => t.id == txId);
+            if (!tx) return;
+
+            const credit = isCredit(tx);
+            const amountClass = credit ? 'credit' : 'debit';
+            const sign = credit ? '+' : '-';
+            const fee = parseFloat(tx.fee) || 0;
+            const totalAmount = Math.abs(parseFloat(tx.amount)) + (credit ? 0 : fee);
+
+            const ts = tx.createdAt || tx.date || tx.created_at;
+            const d = ts ? new Date(ts) : null;
+            const dateStr = d && !isNaN(d.getTime()) ? d.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+
+            let desc = tx.description ? String(tx.description) : (tx.type || 'Transaction');
+            desc = desc.replace(/Admin\s*/gi, '').trim() || tx.type || 'Transaction';
+
+            const statusClass = (tx.status || 'completed').toLowerCase();
+            const statusLabel = statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
+            const typeLabel = cleanType(tx.type);
+
+            const fromName = [tx.fromFirstName, tx.fromLastName].filter(Boolean).join(' ') || '-';
+            const toName = [tx.toFirstName, tx.toLastName].filter(Boolean).join(' ') || '-';
+
+            let html = `
+                <div class="txn-modal-amount">
+                    <div class="amount-value ${amountClass}">${sign}$${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</div>
+                    <div class="amount-label">${escapeHtml(typeLabel)}</div>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Description</span>
+                    <span class="txn-detail-value">${escapeHtml(desc)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Date & Time</span>
+                    <span class="txn-detail-value">${escapeHtml(dateStr)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Status</span>
+                    <span class="txn-detail-value"><span class="txn-status-badge ${statusClass}">${escapeHtml(statusLabel)}</span></span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Type</span>
+                    <span class="txn-detail-value">${escapeHtml(typeLabel)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">From</span>
+                    <span class="txn-detail-value">${escapeHtml(fromName)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">To</span>
+                    <span class="txn-detail-value">${escapeHtml(toName)}</span>
+                </div>`;
+
+            if (tx.reference) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Reference</span>
+                    <span class="txn-detail-value" style="font-family:monospace; font-size:0.8rem;">${escapeHtml(tx.reference)}</span>
+                </div>`;
+            }
+
+            html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Amount</span>
+                    <span class="txn-detail-value">${sign}$${Math.abs(parseFloat(tx.amount)).toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>`;
+
+            if (fee > 0) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Fee</span>
+                    <span class="txn-detail-value">$${fee.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Total</span>
+                    <span class="txn-detail-value" style="font-weight:700;">${sign}$${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>`;
+            }
+
+            if (tx.category) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Category</span>
+                    <span class="txn-detail-value">${escapeHtml(tx.category)}</span>
+                </div>`;
+            }
+
+            document.getElementById('txnModalBody').innerHTML = html;
+            document.getElementById('txnModalReceiptBtn').onclick = function() { downloadReceipt(tx.id); };
+            document.getElementById('txnModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeTxnModal() {
+            document.getElementById('txnModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeTxnModal();
+        });
+    </script>
+
     <footer style="background:#1a2332; padding:20px 0; margin-top:40px; text-align:center;">
         <div style="max-width:1200px; margin:0 auto; padding:0 20px;">
             <div style="margin-bottom:10px;">
