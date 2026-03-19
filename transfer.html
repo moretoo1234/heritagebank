@@ -504,16 +504,16 @@
             <div id="alertBox"></div>
             
             <div class="transfer-tabs">
-                <button class="tab-btn active" onclick="setTransferType('email')">
+                <button class="tab-btn active" onclick="setTransferType('email', this)">
                     <i class="fas fa-envelope"></i> By Email
                 </button>
-                <button class="tab-btn" onclick="setTransferType('account')">
+                <button class="tab-btn" onclick="setTransferType('account', this)">
                     <i class="fas fa-university"></i> Heritage Account
                 </button>
-                <button class="tab-btn" onclick="setTransferType('ukbank')">
+                <button class="tab-btn" onclick="setTransferType('ukbank', this)">
                     <i class="fas fa-landmark"></i> UK Bank Transfer
                 </button>
-                <button class="tab-btn" onclick="setTransferType('usbank')">
+                <button class="tab-btn" onclick="setTransferType('usbank', this)">
                     <i class="fas fa-flag-usa"></i> US Wire/ACH
                 </button>
             </div>
@@ -618,17 +618,17 @@
                 <div class="form-group">
                     <label>Recipient's Currency</label>
                     <div class="currency-selector">
-                        <div class="currency-option active" onclick="setRecipientCurrency('USD')">
+                        <div class="currency-option active" onclick="setRecipientCurrency('USD', this)">
                             <span class="cur-symbol">$</span>
                             USD
                             <span class="cur-label">US Dollar</span>
                         </div>
-                        <div class="currency-option" onclick="setRecipientCurrency('GBP')">
+                        <div class="currency-option" onclick="setRecipientCurrency('GBP', this)">
                             <span class="cur-symbol">£</span>
                             GBP
                             <span class="cur-label">British Pound</span>
                         </div>
-                        <div class="currency-option" onclick="setRecipientCurrency('EUR')">
+                        <div class="currency-option" onclick="setRecipientCurrency('EUR', this)">
                             <span class="cur-symbol">€</span>
                             EUR
                             <span class="cur-label">Euro</span>
@@ -767,10 +767,10 @@
         const CURRENCY_SYMBOLS = { GBP: '£', USD: '$', EUR: '€' };
         const CURRENCY_NAMES = { GBP: 'British Pound', USD: 'US Dollar', EUR: 'Euro' };
 
-        function setRecipientCurrency(cur) {
+        function setRecipientCurrency(cur, el) {
             recipientCurrency = cur;
-            document.querySelectorAll('.currency-option').forEach(el => el.classList.remove('active'));
-            event.target.closest('.currency-option').classList.add('active');
+            document.querySelectorAll('.currency-option').forEach(o => o.classList.remove('active'));
+            if (el) el.closest('.currency-option').classList.add('active');
             updateSummary();
         }
 
@@ -902,10 +902,10 @@
             }
         }
         
-        function setTransferType(type) {
+        function setTransferType(type, btn) {
             transferType = type;
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.closest('.tab-btn').classList.add('active');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.closest('.tab-btn').classList.add('active');
             
             document.getElementById('emailGroup').style.display = type === 'email' ? 'block' : 'none';
             document.getElementById('accountGroup').style.display = type === 'account' ? 'block' : 'none';
@@ -1378,13 +1378,20 @@
 
         function transferToBeneficiary(accountNumber, email, name) {
             if (accountNumber) {
-                transferType = 'account';
-                document.getElementById('accountTab').click();
-                document.getElementById('recipientAccount').value = accountNumber;
+                // Click the account tab button
+                const tabs = document.querySelectorAll('.tab-btn');
+                tabs.forEach(btn => {
+                    if (btn.textContent.includes('Account')) btn.click();
+                });
+                setTransferType('account');
+                document.getElementById('toAccountNumber').value = accountNumber;
             } else if (email) {
-                transferType = 'email';
-                document.getElementById('emailTab').click();
-                document.getElementById('recipientEmail').value = email;
+                const tabs = document.querySelectorAll('.tab-btn');
+                tabs.forEach(btn => {
+                    if (btn.textContent.includes('Email')) btn.click();
+                });
+                setTransferType('email');
+                document.getElementById('toEmail').value = email;
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }

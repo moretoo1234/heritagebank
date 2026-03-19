@@ -423,10 +423,19 @@
                     </div>
                 </div>
                 <div class="header-right">
-                    <button class="notification-btn">
+                    <button class="notification-btn" onclick="toggleNotifications()" id="notifBtn">
                         <i class="fas fa-bell"></i>
                         <span class="notification-badge" id="notifBadge">0</span>
                     </button>
+                    <div class="notif-dropdown" id="notifDropdown" style="display:none; position:absolute; top:55px; right:80px; width:340px; max-height:400px; background:#fff; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,0.15); z-index:1000; overflow:hidden;">
+                        <div style="padding:15px; border-bottom:1px solid #eee; font-weight:600; color:#1a472a; display:flex; justify-content:space-between; align-items:center;">
+                            <span><i class="fas fa-bell"></i> Notifications</span>
+                            <button onclick="markAllRead()" style="background:none; border:none; color:#2196F3; cursor:pointer; font-size:0.85rem;">Mark all read</button>
+                        </div>
+                        <div id="notifList" style="max-height:320px; overflow-y:auto; padding:5px 0;">
+                            <p style="text-align:center; color:#999; padding:20px;">No notifications</p>
+                        </div>
+                    </div>
                     <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
                 </div>
             </div>
@@ -517,7 +526,7 @@
             <div class="transactions-card">
                 <div class="transactions-header">
                     <h3><i class="fas fa-history"></i> Recent Transactions</h3>
-                    <a href="#" class="view-all" onclick="showAllTransactions()">View All</a>
+                    <a href="transactions.html" class="view-all">View All</a>
                 </div>
                 <div id="transactionsList">
                     <div class="no-transactions">
@@ -659,12 +668,52 @@
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('notifBadge').textContent = data.unreadCount || 0;
+                    const list = document.getElementById('notifList');
+                    if (data.notifications && data.notifications.length > 0) {
+                        list.innerHTML = data.notifications.map(n => `
+                            <div style="padding:12px 15px; border-bottom:1px solid #f0f0f0; ${n.read ? '' : 'background:#f0f8ff;'}">
+                                <div style="font-size:0.9rem; color:#333;">${escapeHtmlDash(n.message || n.title || 'Notification')}</div>
+                                <div style="font-size:0.75rem; color:#999; margin-top:4px;">${new Date(n.createdAt).toLocaleDateString()}</div>
+                            </div>
+                        `).join('');
+                    }
                 }
             } catch (e) {
-                // Keep badge as-is on errors
                 console.error('Notifications load error:', e);
             }
         }
+
+        function escapeHtmlDash(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        function toggleNotifications() {
+            const dd = document.getElementById('notifDropdown');
+            dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function markAllRead() {
+            const token = localStorage.getItem('token');
+            try {
+                await fetch(`${API_URL}/api/notifications/mark-read`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                document.getElementById('notifBadge').textContent = '0';
+                document.querySelectorAll('#notifList > div').forEach(d => d.style.background = '');
+            } catch (e) { console.error(e); }
+        }
+
+        // Close notification dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('notifDropdown');
+            const btn = document.getElementById('notifBtn');
+            if (dd && dd.style.display !== 'none' && !dd.contains(e.target) && !btn.contains(e.target)) {
+                dd.style.display = 'none';
+            }
+        });
 
         async function loadSavingsGoalProgress(balance, token) {
             try {

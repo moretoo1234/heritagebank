@@ -269,11 +269,11 @@
             <div id="alertBox"></div>
             
             <div class="biller-categories">
-                <button class="category-btn active" onclick="filterBillers('all')">All</button>
-                <button class="category-btn" onclick="filterBillers('Utilities')">Utilities</button>
-                <button class="category-btn" onclick="filterBillers('Insurance')">Insurance</button>
-                <button class="category-btn" onclick="filterBillers('Credit')">Credit</button>
-                <button class="category-btn" onclick="filterBillers('Housing')">Housing</button>
+                <button class="category-btn active" onclick="filterBillers('all', this)">All</button>
+                <button class="category-btn" onclick="filterBillers('Utilities', this)">Utilities</button>
+                <button class="category-btn" onclick="filterBillers('Insurance', this)">Insurance</button>
+                <button class="category-btn" onclick="filterBillers('Credit', this)">Credit</button>
+                <button class="category-btn" onclick="filterBillers('Housing', this)">Housing</button>
             </div>
             
             <div class="billers-grid" id="billersGrid">
@@ -405,9 +405,9 @@
             `).join('');
         }
         
-        function filterBillers(category) {
-            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+        function filterBillers(category, btn) {
+            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
             
             if (category === 'all') {
                 displayBillers(billers);

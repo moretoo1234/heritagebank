@@ -183,9 +183,9 @@ function showReviewSummary() {
 }
 
 // Account type selection
-function selectAccountType(type) {
+function selectAccountType(type, el) {
     document.querySelectorAll('.account-type-card').forEach(card => card.classList.remove('selected'));
-    event.currentTarget.classList.add('selected');
+    if (el) el.closest('.account-type-card').classList.add('selected');
     document.getElementById(`type${type.charAt(0).toUpperCase() + type.slice(1)}`).checked = true;
 }
 
@@ -307,9 +307,14 @@ document.getElementById('ssn')?.addEventListener('input', function(e) {
 
 // Phone formatting
 document.getElementById('phone')?.addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 0) value = '+1 (' + value.slice(0, 3);
-    if (value.length > 7) value = value + ') ' + value.slice(7, 10);
-    if (value.length > 13) value = value + '-' + value.slice(13, 17);
-    e.target.value = value.slice(0, 18);
+    let digits = e.target.value.replace(/\D/g, '');
+    if (digits.length > 11) digits = digits.slice(0, 11);
+    // Remove leading 1 if present
+    if (digits.startsWith('1') && digits.length > 10) digits = digits.slice(1);
+    let formatted = '';
+    if (digits.length > 0) formatted = '+1 (' + digits.slice(0, 3);
+    if (digits.length >= 3) formatted += ') ';
+    if (digits.length > 3) formatted += digits.slice(3, 6);
+    if (digits.length > 6) formatted += '-' + digits.slice(6, 10);
+    e.target.value = formatted;
 });

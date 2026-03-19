@@ -327,11 +327,11 @@
             
             <!-- Date Filter -->
             <div class="date-filter">
-                <button class="filter-btn" onclick="filterByPeriod('week')">This Week</button>
-                <button class="filter-btn active" onclick="filterByPeriod('month')">This Month</button>
-                <button class="filter-btn" onclick="filterByPeriod('quarter')">Quarter</button>
-                <button class="filter-btn" onclick="filterByPeriod('year')">This Year</button>
-                <button class="filter-btn" onclick="filterByPeriod('all')">All Time</button>
+                <button class="filter-btn" onclick="filterByPeriod('week', this)">This Week</button>
+                <button class="filter-btn active" onclick="filterByPeriod('month', this)">This Month</button>
+                <button class="filter-btn" onclick="filterByPeriod('quarter', this)">Quarter</button>
+                <button class="filter-btn" onclick="filterByPeriod('year', this)">This Year</button>
+                <button class="filter-btn" onclick="filterByPeriod('all', this)">All Time</button>
             </div>
             
             <!-- Stats Row -->
@@ -612,10 +612,10 @@
             }).join('');
         }
         
-        function filterByPeriod(period) {
+        function filterByPeriod(period, btn) {
             currentPeriod = period;
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
             loadAnalytics();
         }
         

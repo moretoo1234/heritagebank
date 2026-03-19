@@ -154,7 +154,7 @@ function populateAccountInfo(user) {
     const routingNumberEl = document.getElementById('routingNumber');
     const accountTypeEl = document.getElementById('accountType');
     const accountStatusEl = document.getElementById('accountStatus');
-    const balanceEl = document.getElementById('balance');
+    const balanceEl = document.getElementById('currentBalance');
     const memberSinceEl = document.getElementById('memberSince');
     
     if (accountNumberEl) {
@@ -596,6 +596,35 @@ function toggle2FAForm() {
     }
 }
 
+function toggle2FACheckbox() {
+    const toggle = document.getElementById('twoFactorToggle');
+    const setup = document.getElementById('twoFASetup');
+    if (toggle && toggle.checked) {
+        if (setup) setup.style.display = 'block';
+        enable2FA();
+    } else {
+        if (setup) setup.style.display = 'none';
+        disable2FA();
+    }
+}
+
+function handleUpdate2FAMethod() {
+    const method = document.getElementById('twoFAMethod')?.value;
+    if (method) {
+        showAlert(`2FA method updated to ${method}`, 'success');
+    }
+}
+
+function requestLimitIncrease() {
+    const msg = document.getElementById('limitIncreaseMsg');
+    if (msg) {
+        msg.style.display = 'block';
+        msg.innerHTML = '<i class="fas fa-info-circle"></i> Your request has been submitted. A representative will review your account and contact you within 2-3 business days.';
+    } else {
+        showAlert('Your limit increase request has been submitted. A representative will contact you within 2-3 business days.', 'success');
+    }
+}
+
 async function enable2FA(e) {
     e?.preventDefault();
     const method = document.getElementById('twoFactorMethod')?.value || 'sms';
@@ -866,6 +895,38 @@ function displayBeneficiaries(beneficiaries) {
 function maskAccountNumber(account) {
     if (!account) return 'N/A';
     return '*'.repeat(account.length - 4) + account.slice(-4);
+}
+
+function editBeneficiary(benId) {
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    fetch(`${API_URL}/api/user/${userId}/beneficiaries`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(r => r.json())
+    .then(data => {
+        const ben = (data.beneficiaries || []).find(b => (b.id || b._id) == benId);
+        if (!ben) return showAlert('Beneficiary not found', 'error');
+        const name = prompt('Beneficiary Name:', ben.name || '');
+        if (name === null) return;
+        const nickname = prompt('Nickname (optional):', ben.nickname || '');
+        fetch(`${API_URL}/api/user/${userId}/beneficiaries/${benId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ name, nickname })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                showAlert('Beneficiary updated', 'success');
+                loadBeneficiaries();
+            } else {
+                showAlert(res.message || 'Update failed', 'error');
+            }
+        })
+        .catch(e => showAlert('Error: ' + e.message, 'error'));
+    })
+    .catch(e => showAlert('Error: ' + e.message, 'error'));
 }
 
 function showAddBeneficiaryForm() {

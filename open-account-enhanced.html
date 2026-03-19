@@ -206,25 +206,25 @@
                 <div class="form-group">
                     <label>Select Account Type <span class="required">*</span></label>
                     <div class="account-type-cards">
-                        <div class="account-type-card" onclick="selectAccountType('checking')">
+                        <div class="account-type-card" onclick="selectAccountType('checking', this)">
                             <input type="radio" name="accountType" value="checking" id="typeChecking">
                             <i class="fas fa-wallet"></i>
                             <h3>Checking Account</h3>
                             <p>For everyday transactions</p>
                         </div>
-                        <div class="account-type-card" onclick="selectAccountType('savings')">
+                        <div class="account-type-card" onclick="selectAccountType('savings', this)">
                             <input type="radio" name="accountType" value="savings" id="typeSavings">
                             <i class="fas fa-piggy-bank"></i>
                             <h3>Savings Account</h3>
                             <p>Earn interest on deposits</p>
                         </div>
-                        <div class="account-type-card" onclick="selectAccountType('business')">
+                        <div class="account-type-card" onclick="selectAccountType('business', this)">
                             <input type="radio" name="accountType" value="business" id="typeBusiness">
                             <i class="fas fa-briefcase"></i>
                             <h3>Business Account</h3>
                             <p>For business transactions</p>
                         </div>
-                        <div class="account-type-card" onclick="selectAccountType('premium')">
+                        <div class="account-type-card" onclick="selectAccountType('premium', this)">
                             <input type="radio" name="accountType" value="premium" id="typePremium">
                             <i class="fas fa-crown"></i>
                             <h3>Premium Account</h3>

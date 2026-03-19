@@ -330,43 +330,43 @@
         <div class="main-content">
             <!-- Sidebar Navigation -->
             <div class="sidebar">
-                <div class="nav-item active" onclick="showSection('dashboard')">
+                <div class="nav-item active" onclick="showSection('dashboard', this)">
                     <i class="fas fa-tachometer-alt"></i> Dashboard
                 </div>
-                <div class="nav-item" onclick="showSection('users')">
+                <div class="nav-item" onclick="showSection('users', this)">
                     <i class="fas fa-users"></i> User Management
                 </div>
-                <div class="nav-item" onclick="showSection('create-user')">
+                <div class="nav-item" onclick="showSection('create-user', this)">
                     <i class="fas fa-user-plus"></i> Create User
                 </div>
-                <div class="nav-item" onclick="showSection('transactions')">
+                <div class="nav-item" onclick="showSection('transactions', this)">
                     <i class="fas fa-exchange-alt"></i> Transactions
                 </div>
-                <div class="nav-item" onclick="showSection('cards')">
+                <div class="nav-item" onclick="showSection('cards', this)">
                     <i class="fas fa-credit-card"></i> Cards
                 </div>
-                <div class="nav-item" onclick="showSection('transfers')">
+                <div class="nav-item" onclick="showSection('transfers', this)">
                     <i class="fas fa-paper-plane"></i> Fund Account
                 </div>
-                <div class="nav-item" onclick="showSection('transfer-approvals')">
+                <div class="nav-item" onclick="showSection('transfer-approvals', this)">
                     <i class="fas fa-clock"></i> Transfer Approvals
                 </div>
-                <div class="nav-item" onclick="showSection('check-deposits')">
+                <div class="nav-item" onclick="showSection('check-deposits', this)">
                     <i class="fas fa-camera"></i> Check Deposits
                 </div>
-                <div class="nav-item" onclick="showSection('support-tickets')">
+                <div class="nav-item" onclick="showSection('support-tickets', this)">
                     <i class="fas fa-headset"></i> Support Tickets
                 </div>
-                <div class="nav-item" onclick="showSection('user-messages')">
+                <div class="nav-item" onclick="showSection('user-messages', this)">
                     <i class="fas fa-envelope"></i> User Messages
                 </div>
-                <div class="nav-item" onclick="showSection('loans')">
+                <div class="nav-item" onclick="showSection('loans', this)">
                     <i class="fas fa-hand-holding-usd"></i> Loan Applications
                 </div>
-                <div class="nav-item" onclick="showSection('activity')">
+                <div class="nav-item" onclick="showSection('activity', this)">
                     <i class="fas fa-history"></i> Activity Logs
                 </div>
-                <div class="nav-item" onclick="showSection('reports')">
+                <div class="nav-item" onclick="showSection('reports', this)">
                     <i class="fas fa-chart-bar"></i> Reports
                 </div>
             </div>
@@ -1036,11 +1036,16 @@
             }
         }
 
-        function showSection(sectionId) {
+        function showSection(sectionId, el) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById(sectionId).classList.add('active');
-            event.target.closest('.nav-item')?.classList.add('active');
+            if (el) {
+                const navItem = el.closest('.nav-item');
+                if (navItem) navItem.classList.add('active');
+            } else {
+                document.querySelector(`.nav-item[onclick*="'${sectionId}'"]`)?.classList.add('active');
+            }
             
             // Load data for specific sections
             if (sectionId === 'users') loadAllUsers();
@@ -1349,7 +1354,7 @@
         }
 
         function formatTxnFrom(t) {
-            return (
+            const raw = (
                 t.fromAccount ||
                 t.fromAccountNumber ||
                 t.senderAccountNumber ||
@@ -1358,10 +1363,11 @@
                 (t.fromUserId ? `User #${t.fromUserId}` : '') ||
                 'System'
             );
+            return escapeHtml(raw);
         }
 
         function formatTxnTo(t) {
-            return (
+            const raw = (
                 t.toAccount ||
                 t.toAccountNumber ||
                 t.recipientAccountNumber ||
@@ -1370,21 +1376,12 @@
                 (t.toUserId ? `User #${t.toUserId}` : '') ||
                 'N/A'
             );
+            return escapeHtml(raw);
         }
 
         // Keep the last loaded transaction list in memory so we can show details on click.
         // (Avoids needing an extra API endpoint for transaction-by-id.)
         let ADMIN_TRANSACTIONS_CACHE = [];
-
-        function escapeHtml(value) {
-            const s = String(value ?? '');
-            return s
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
 
         function formatMoney(value) {
             const n = Number(value);
@@ -1636,9 +1633,9 @@
                             <td>${formatTxnFrom(t)}</td>
                             <td>${formatTxnTo(t)}</td>
                             <td>$${parseFloat(t.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                            <td><span class="badge badge-info">${t.type || 'transfer'}</span></td>
-                            <td>${t.description || '-'}</td>
-                            <td><span class="badge ${t.status === 'completed' ? 'badge-success' : 'badge-warning'}">${t.status || 'completed'}</span></td>
+                            <td><span class="badge badge-info">${escapeHtml(t.type || 'transfer')}</span></td>
+                            <td>${escapeHtml(t.description || '-')}</td>
+                            <td><span class="badge ${t.status === 'completed' ? 'badge-success' : 'badge-warning'}">${escapeHtml(t.status || 'completed')}</span></td>
                         </tr>
                     `).join('');
                     tbody.innerHTML = rows;
@@ -1650,8 +1647,8 @@
                             <td>${formatTxnFrom(t)}</td>
                             <td>${formatTxnTo(t)}</td>
                             <td>$${parseFloat(t.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                            <td><span class="badge badge-info">${t.type || 'transfer'}</span></td>
-                            <td><span class="badge ${t.status === 'completed' ? 'badge-success' : 'badge-warning'}">${t.status || 'completed'}</span></td>
+                            <td><span class="badge badge-info">${escapeHtml(t.type || 'transfer')}</span></td>
+                            <td><span class="badge ${t.status === 'completed' ? 'badge-success' : 'badge-warning'}">${escapeHtml(t.status || 'completed')}</span></td>
                         </tr>
                     `).join('');
                 }
@@ -1685,9 +1682,9 @@
                             <td>${formatTxnFrom(t)}</td>
                             <td>${formatTxnTo(t)}</td>
                             <td>$${parseFloat(t.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                            <td><span class="badge badge-info">${t.type || 'transfer'}</span></td>
-                            <td>${t.description || '-'}</td>
-                            <td><span class="badge ${t.status === 'completed' ? 'badge-success' : 'badge-warning'}">${t.status || 'completed'}</span></td>
+                            <td><span class="badge badge-info">${escapeHtml(t.type || 'transfer')}</span></td>
+                            <td>${escapeHtml(t.description || '-')}</td>
+                            <td><span class="badge ${t.status === 'completed' ? 'badge-success' : 'badge-warning'}">${escapeHtml(t.status || 'completed')}</span></td>
                         </tr>
                     `).join('');
                 }
@@ -2513,15 +2510,15 @@
                     tbody.innerHTML = data.tickets.map(t => `
                         <tr>
                             <td>#${t.id}</td>
-                            <td>${t.userEmail || 'Unknown'}</td>
-                            <td>${t.category || 'General'}</td>
+                            <td>${escapeHtml(t.userEmail || 'Unknown')}</td>
+                            <td>${escapeHtml(t.category || 'General')}</td>
                             <td>${escapeHtml(t.subject)}</td>
-                            <td><span class="status-badge status-${t.priority || 'low'}">${t.priority || 'low'}</span></td>
-                            <td><span class="status-badge status-${t.status}">${t.status}</span></td>
+                            <td><span class="status-badge status-${escapeHtml(t.priority || 'low')}">${escapeHtml(t.priority || 'low')}</span></td>
+                            <td><span class="status-badge status-${escapeHtml(t.status)}">${escapeHtml(t.status)}</span></td>
                             <td>${formatDateTime(t.createdAt)}</td>
                             <td>
-                                <button class="btn btn-small btn-success" onclick="showTicketResponse(${t.id}, '${escapeHtml(t.subject)}', '${escapeHtml(t.description)}')"><i class="fas fa-reply"></i></button>
-                                ${t.status !== 'resolved' ? `<button class="btn btn-small btn-info" onclick="resolveTicket(${t.id})"><i class="fas fa-check"></i></button>` : ''}
+                                <button class="btn btn-small btn-success" data-ticket-id="${t.id}" data-subject="${escapeHtml(t.subject)}" data-description="${escapeHtml(t.description)}" onclick="showTicketResponse(Number(this.dataset.ticketId), this.dataset.subject, this.dataset.description)"><i class="fas fa-reply"></i></button>
+                                ${t.status !== 'resolved' ? `<button class="btn btn-small btn-info" onclick="resolveTicket(${Number(t.id)})"><i class="fas fa-check"></i></button>` : ''}
                             </td>
                         </tr>
                     `).join('');
@@ -2621,12 +2618,12 @@
                     tbody.innerHTML = data.messages.map(m => `
                         <tr>
                             <td>#${m.id}</td>
-                            <td>${m.userEmail || 'Unknown'}</td>
+                            <td>${escapeHtml(m.userEmail || 'Unknown')}</td>
                             <td>${escapeHtml(m.subject)}</td>
                             <td><span class="status-badge ${m.adminReply ? 'status-success' : 'status-pending'}">${m.adminReply ? 'Replied' : 'Pending'}</span></td>
                             <td>${formatDateTime(m.createdAt)}</td>
                             <td>
-                                <button class="btn btn-small btn-success" onclick="showMessageResponse(${m.id}, '${escapeHtml(m.subject)}', '${m.userEmail || ''}', '${escapeHtml(m.body)}')"><i class="fas fa-reply"></i></button>
+                                <button class="btn btn-small btn-success" data-msg-id="${m.id}" data-subject="${escapeHtml(m.subject)}" data-email="${escapeHtml(m.userEmail || '')}" data-body="${escapeHtml(m.body)}" onclick="showMessageResponse(Number(this.dataset.msgId), this.dataset.subject, this.dataset.email, this.dataset.body)"><i class="fas fa-reply"></i></button>
                             </td>
                         </tr>
                     `).join('');
@@ -2682,13 +2679,6 @@
             } catch (e) {
                 alert('Error: ' + e.message);
             }
-        }
-        
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text.replace(/[&<>"']/g, m => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-            })[m]);
         }
 
         // Initialize
