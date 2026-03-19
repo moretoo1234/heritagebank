@@ -27,7 +27,23 @@
         .read-more:hover { gap: 10px; }
         .featured-post { grid-column: span 2; }
         .featured-post .blog-image { height: 300px; }
-        @media (max-width: 768px) { .featured-post { grid-column: span 1; } .featured-post .blog-image { height: 200px; } }
+        @media (max-width: 768px) {
+            .featured-post { grid-column: span 1; }
+            .featured-post .blog-image { height: 200px; }
+            .blog-hero { padding: 70px 0 40px; }
+            .blog-hero h1 { font-size: 1.6rem; }
+            .blog-grid { grid-template-columns: 1fr; }
+            .blog-content { padding: 18px; }
+            .blog-card h3 { font-size: 1.1rem; }
+            .newsletter-box { padding: 22px; }
+        }
+
+        @media (max-width: 480px) {
+            .blog-hero { padding: 60px 0 30px; }
+            .blog-hero h1 { font-size: 1.3rem; }
+            .blog-content { padding: 15px; }
+            .blog-meta { font-size: 0.8rem; flex-wrap: wrap; gap: 5px; }
+        }
         .categories-sidebar { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); margin-bottom: 30px; }
         .categories-sidebar h3 { margin-bottom: 20px; color: #1a5f7a; }
         .category-list { list-style: none; }

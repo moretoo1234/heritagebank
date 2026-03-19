@@ -275,6 +275,9 @@
             cursor: pointer;
         }
         
+        /* Global word-wrap */
+        h1, h2, h3, h4, p, span, strong { overflow-wrap: break-word; word-wrap: break-word; }
+
         @media (max-width: 900px) {
             .balance-card.primary { grid-column: span 1; }
         }
@@ -291,7 +294,53 @@
             .sidebar.open { left: 0; }
             .mobile-toggle { display: block; }
             .main-content { padding: 20px; }
-            .balance-card h2 { font-size: 2rem; }
+            .header h1 { font-size: 1.3rem; }
+            .balance-card h2 { font-size: 1.6rem; }
+            .balance-card.primary h2 { font-size: 1.8rem; }
+            .balance-card.primary { padding: 25px; }
+            .balance-cards { grid-template-columns: 1fr; gap: 15px; }
+            .quick-actions { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+            .action-card { padding: 18px 10px; }
+            .action-card i { font-size: 1.5rem; margin-bottom: 8px; }
+            .action-card h4 { font-size: 0.82rem; }
+            .section-title { font-size: 1rem; }
+            .transactions-card, .account-info, .activity-card { padding: 18px; }
+            .info-grid { grid-template-columns: 1fr; gap: 12px; }
+            .info-item strong { font-size: 0.95rem; }
+            .transaction-details h4 { font-size: 0.85rem; }
+            .transaction-details span { font-size: 0.78rem; }
+            .transaction-amount { font-size: 0.9rem; }
+            .transaction-icon { width: 38px; height: 38px; margin-right: 10px; }
+            .btn-receipt { padding: 6px 8px; font-size: 12px; }
+            .logout-btn { padding: 8px 14px; font-size: 0.85rem; }
+            .session-timer { font-size: 1.5rem; }
+        }
+
+        @media (max-width: 480px) {
+            .main-content { padding: 15px; }
+            .header { margin-bottom: 20px; gap: 10px; }
+            .header h1 { font-size: 1.15rem; }
+            .header-right { gap: 8px; }
+            .balance-card { padding: 18px; }
+            .balance-card h2 { font-size: 1.4rem; }
+            .balance-card.primary h2 { font-size: 1.5rem; }
+            .balance-card p { font-size: 0.8rem; }
+            .quick-actions { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .action-card { padding: 14px 6px; }
+            .action-card i { font-size: 1.3rem; margin-bottom: 6px; }
+            .action-card h4 { font-size: 0.75rem; }
+            .transaction-item { padding: 10px 0; }
+            .transaction-icon { width: 32px; height: 32px; margin-right: 8px; font-size: 0.8rem; }
+            .transaction-details h4 { font-size: 0.8rem; }
+            .transaction-details span { font-size: 0.72rem; }
+            .transaction-amount { font-size: 0.82rem; margin-right: 5px; }
+            .btn-receipt { padding: 5px 6px; font-size: 11px; }
+            .activity-item { padding: 10px 0; }
+            .activity-content p { font-size: 0.85rem; }
+            .activity-content span { font-size: 0.75rem; }
+            .notification-btn { width: 34px; height: 34px; }
+            .logout-btn { padding: 7px 12px; font-size: 0.8rem; }
+            .sidebar-menu li { padding: 12px 15px; font-size: 0.9rem; }
         }
     </style>
 </head>

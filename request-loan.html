@@ -65,6 +65,33 @@
         .app-status.approved { background: #d4edda; color: #155724; }
         .app-status.rejected { background: #f8d7da; color: #721c24; }
         .app-status.under_review { background: #cce5ff; color: #004085; }
+
+        @media (max-width: 768px) {
+            .loan-hero { padding: 70px 0 40px; }
+            .loan-hero h1 { font-size: 1.6rem; }
+            .loan-grid { grid-template-columns: 1fr; }
+            .form-container { padding: 25px 20px; }
+            .step-indicator { gap: 10px; flex-wrap: wrap; justify-content: center; }
+            .step span { font-size: 0.85rem; }
+            .calc-result h4 { font-size: 1.4rem; }
+            .calculator { padding: 20px; }
+            .requirements { padding: 20px; }
+            .application-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+        }
+
+        @media (max-width: 480px) {
+            .loan-hero { padding: 60px 0 30px; }
+            .loan-hero h1 { font-size: 1.3rem; }
+            .loan-card { padding: 20px; }
+            .loan-card .icon { width: 50px; height: 50px; }
+            .loan-card .icon i { font-size: 1.3rem; }
+            .loan-card .rate { font-size: 1.2rem; }
+            .form-container { padding: 20px 15px; }
+            .submit-btn { padding: 14px; font-size: 1rem; }
+            .success-content { padding: 25px; }
+            .success-icon { width: 60px; height: 60px; }
+            .success-icon i { font-size: 1.8rem; }
+        }
     </style>
 </head>
 <body>

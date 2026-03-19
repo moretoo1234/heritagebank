@@ -94,6 +94,17 @@
             border-color: #d4af37;
             box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
         }
+
+        @media (max-width: 768px) {
+            .container { padding: 20px; }
+            .investment-item { grid-template-columns: 1fr 1fr; gap: 10px; }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 15px; }
+            .investment-item { grid-template-columns: 1fr; gap: 8px; }
+            h2 { font-size: 1.3rem !important; }
+        }
     </style>
 </head>
 <body>

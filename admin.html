@@ -234,10 +234,49 @@
         .detail-item .label { font-size: 12px; color: #888; }
         .detail-item .value { font-size: 16px; color: #fff; font-weight: 500; }
 
+        /* Global word-wrap */
+        h1, h2, h3, h4, p, span, td, th, .value { overflow-wrap: break-word; word-wrap: break-word; }
+
         @media (max-width: 900px) {
             .main-content { flex-direction: column; }
-            .sidebar { width: 100%; position: static; }
+            .sidebar { width: 100%; position: static; display: flex; flex-wrap: wrap; gap: 5px; padding: 10px; border-radius: 10px; }
+            .nav-item { padding: 10px 15px; font-size: 13px; border-left: none; border-bottom: 3px solid transparent; }
+            .nav-item.active { border-left-color: transparent; border-bottom-color: #ffd700; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 600px) {
+            .header { padding: 12px 15px; flex-wrap: wrap; gap: 10px; }
+            .logo { font-size: 16px; }
+            .header-right { gap: 10px; }
+            .admin-info .name { font-size: 13px; }
+            .admin-info .balance { font-size: 12px; }
+            .logout-btn { padding: 8px 12px; font-size: 12px; }
+            .container { padding: 12px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .stat-card { padding: 14px; }
+            .stat-card i { font-size: 22px; margin-bottom: 6px; }
+            .stat-card .value { font-size: 20px; }
+            .stat-card .label { font-size: 10px; }
+            .card { padding: 16px; }
+            .card h2 { font-size: 16px; }
+            .card h3 { font-size: 14px; }
+            th, td { padding: 8px 6px; font-size: 12px; }
+            th { font-size: 10px; }
+            .btn { padding: 8px 12px; font-size: 12px; }
+            .btn-sm { padding: 5px 8px; font-size: 10px; }
+            .badge { font-size: 9px; padding: 3px 7px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .form-group label { font-size: 12px; }
+            .form-group input, .form-group select, .form-group textarea { padding: 10px 12px; font-size: 13px; }
+            .search-box { flex-direction: column; }
+            .search-box input { min-width: 0; }
+            .modal-content { padding: 20px; }
+            .user-details-grid { grid-template-columns: 1fr; }
+            .detail-item .value { font-size: 14px; }
+            .sidebar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .nav-item { white-space: nowrap; flex-shrink: 0; padding: 8px 12px; font-size: 12px; }
+            .quick-actions { flex-direction: column; }
         }
     </style>
 </head>

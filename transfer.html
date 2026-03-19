@@ -422,11 +422,59 @@
         .transfer-details h4 { font-size: 0.95rem; color: #333; }
         .transfer-details span { font-size: 0.85rem; color: #666; }
         
+        /* Global word-wrap */
+        h1, h2, h3, h4, p, span, strong, .rvalue { overflow-wrap: break-word; word-wrap: break-word; }
+
         @media (max-width: 600px) {
             .container { padding: 15px; margin: 15px auto; }
-            .card { padding: 20px; }
+            .card { padding: 20px 16px; }
             .transfer-tabs { flex-direction: column; }
             .quick-amounts { flex-wrap: wrap; }
+            .header h1 { font-size: 1.2rem; }
+            .balance-card h2 { font-size: 1.5rem; }
+            .balance-card { padding: 18px; }
+            .form-group input, .form-group select, .form-group textarea { padding: 12px; font-size: 0.95rem; }
+            .amount-input input { font-size: 1.1rem; }
+            .btn-primary { padding: 14px; font-size: 1rem; }
+            .tab-btn { padding: 10px; font-size: 0.85rem; }
+            .bank-selector { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
+            .bank-option { padding: 8px 6px; font-size: 0.75rem; }
+            .bank-option .bank-icon { font-size: 1.1rem; }
+            .sort-code-display { padding: 8px 10px; font-size: 0.85rem; }
+            .currency-option { padding: 8px 4px; font-size: 0.8rem; }
+            .currency-option .cur-symbol { font-size: 1rem; }
+            .currency-option .cur-label { font-size: 0.65rem; }
+            .conversion-box { padding: 12px; }
+            .conv-amount { font-size: 1rem; }
+            .receipt-card { width: 95vw; }
+            .receipt-header { padding: 18px 18px 16px; }
+            .receipt-header h3 { font-size: 1rem; }
+            .receipt-body { padding: 30px 18px 16px; }
+            .receipt-amount-display .amount { font-size: 1.6rem; }
+            .receipt-row { font-size: 0.82rem; padding: 6px 0; }
+            .receipt-row .rvalue { max-width: 60%; font-size: 0.82rem; }
+            .receipt-footer { padding: 12px 18px 18px; }
+            .receipt-footer .btn-receipt-action { padding: 8px 14px; font-size: 0.82rem; }
+            .summary-row { font-size: 0.9rem; padding: 8px 0; }
+            .summary-row.total { font-size: 1rem; }
+            .alert { padding: 12px; font-size: 0.88rem; }
+            .quick-amount { padding: 6px 12px; font-size: 0.82rem; }
+            .transfer-item { padding: 10px; }
+            .transfer-icon { width: 34px; height: 34px; margin-right: 10px; }
+            .transfer-details h4 { font-size: 0.88rem; }
+            .transfer-details span { font-size: 0.78rem; }
+        }
+
+        @media (max-width: 380px) {
+            .container { padding: 10px; margin: 10px auto; }
+            .card { padding: 16px 12px; }
+            .header h1 { font-size: 1.05rem; }
+            .balance-card h2 { font-size: 1.3rem; }
+            .bank-selector { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+            .currency-selector { flex-wrap: wrap; }
+            .currency-option { min-width: calc(50% - 4px); }
+            .receipt-amount-display .amount { font-size: 1.4rem; }
+            .receipt-row .rvalue { max-width: 58%; }
         }
     </style>
 </head>

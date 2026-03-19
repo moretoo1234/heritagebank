@@ -284,6 +284,18 @@
             .dashboard { grid-template-columns: 1fr; }
             .sidebar { display: none; }
             .goals-grid { grid-template-columns: 1fr; }
+            .main-content { padding: 20px; }
+            .stat-card h3 { font-size: 1.3rem; }
+            .stat-card i { font-size: 1.5rem; }
+        }
+
+        @media (max-width: 480px) {
+            .main-content { padding: 15px; }
+            .stats-cards { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .stat-card { padding: 14px; }
+            .stat-card h3 { font-size: 1.1rem; }
+            .goal-card { padding: 18px; }
+            .header h1 { font-size: 1.15rem; }
         }
     </style>
 </head>

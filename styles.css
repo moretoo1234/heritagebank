@@ -19,6 +19,14 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     color: var(--dark-text);
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* Global word-wrap protection */
+h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 
 .container {
@@ -688,24 +696,153 @@ body {
     }
 
     .hero-content h1 {
-        font-size: 2.5rem;
+        font-size: 2rem;
+    }
+
+    .hero-content p {
+        font-size: 1rem;
     }
 
     .hero-buttons {
         flex-direction: column;
     }
 
+    .btn {
+        padding: 12px 22px;
+        font-size: 0.95rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.6rem;
+    }
+
+    .section-header p {
+        font-size: 0.95rem;
+    }
+
+    .stat-card h3 {
+        font-size: 1.5rem;
+    }
+
+    .stat-card i {
+        font-size: 1.8rem;
+    }
+
+    .services-grid,
+    .why-us-grid,
+    .testimonials-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .service-card,
+    .why-card {
+        padding: 25px 20px;
+    }
+
     .contact-wrapper {
         grid-template-columns: 1fr;
-        gap: 40px;
+        gap: 30px;
+    }
+
+    .contact-form-wrapper {
+        padding: 25px 20px;
     }
 
     .form-row {
         grid-template-columns: 1fr;
     }
 
-    .testimonials-grid,
-    .why-us-grid {
-        grid-template-columns: 1fr;
+    .contact-item i {
+        font-size: 1.5rem;
+    }
+
+    .contact-item h4 {
+        font-size: 1rem;
+    }
+
+    .footer-section h4 {
+        font-size: 1rem;
+    }
+
+    .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0 15px;
+    }
+
+    .hero-content h1 {
+        font-size: 1.65rem;
+        line-height: 1.25;
+    }
+
+    .hero-content p {
+        font-size: 0.9rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.35rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .stat-card {
+        padding: 18px 12px;
+    }
+
+    .stat-card h3 {
+        font-size: 1.3rem;
+    }
+
+    .stat-card i {
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+    }
+
+    .stat-card p {
+        font-size: 0.8rem;
+    }
+
+    .service-card {
+        padding: 20px 15px;
+    }
+
+    .service-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+    .service-card h3,
+    .why-card h3 {
+        font-size: 1.1rem;
+    }
+
+    .testimonial-card {
+        padding: 20px 15px;
+    }
+
+    .quick-stats,
+    .services {
+        padding: 40px 0;
+    }
+
+    .footer {
+        padding: 40px 0 20px;
+    }
+
+    .footer-grid {
+        gap: 25px;
+    }
+
+    .social-links a {
+        width: 35px;
+        height: 35px;
     }
 }

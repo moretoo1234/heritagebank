@@ -318,6 +318,19 @@
             .dashboard { grid-template-columns: 1fr; }
             .sidebar { display: none; }
             .form-row { grid-template-columns: 1fr; }
+            .main-content { padding: 20px; }
+            .header h1 { font-size: 1.3rem; }
+            .settings-card { padding: 20px; }
+        }
+
+        @media (max-width: 480px) {
+            .main-content { padding: 15px; }
+            .header h1 { font-size: 1.15rem; }
+            .settings-card { padding: 15px; }
+            .form-group input, .form-group select { padding: 10px; font-size: 0.9rem; }
+            .form-group label { font-size: 0.85rem; }
+            .pin-modal-content { width: 95%; padding: 20px; }
+            .pin-input input { width: 42px; height: 48px; font-size: 1.2rem; }
         }
     </style>
 </head>

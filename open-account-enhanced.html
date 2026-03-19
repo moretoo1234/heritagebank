@@ -57,6 +57,25 @@
         .help-text { font-size: 0.85rem; color: #666; margin-top: 5px; }
         .back-link { text-align: center; margin-top: 20px; }
         .back-link a { color: #1a472a; text-decoration: none; }
+
+        @media (max-width: 768px) {
+            .signup-container { padding: 30px 20px; margin: 15px; }
+            .signup-header h1 { font-size: 24px; }
+            .form-row { grid-template-columns: 1fr; gap: 12px; }
+            .account-type-cards { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .progress-steps { gap: 5px; flex-wrap: wrap; justify-content: center; }
+            .account-type-card { padding: 15px 10px; }
+            .account-type-card i { font-size: 1.5rem; }
+            .account-type-card h3 { font-size: 0.95rem; }
+        }
+
+        @media (max-width: 480px) {
+            .signup-container { padding: 20px 15px; }
+            .signup-header h1 { font-size: 20px; }
+            .account-type-cards { grid-template-columns: 1fr; }
+            .btn { padding: 14px 20px; font-size: 0.95rem; }
+            .form-group input, .form-group select, .form-group textarea { padding: 12px; font-size: 0.9rem; }
+        }
     </style>
 </head>
 <body>

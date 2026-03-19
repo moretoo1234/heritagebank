@@ -49,7 +49,34 @@
         .stat-item i { font-size: 2rem; color: #1a5f7a; margin-bottom: 10px; }
         .stat-item h3 { font-size: 2rem; color: #1a5f7a; margin-bottom: 5px; }
         .stat-item p { color: #666; }
-        @media (max-width: 768px) { .stats-bar { grid-template-columns: repeat(2, 1fr); } .search-box { flex-direction: column; } }
+        @media (max-width: 768px) {
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .search-box { flex-direction: column; }
+            .branches-hero { padding: 70px 0 40px; }
+            .branches-hero h1 { font-size: 1.6rem; }
+            .branches-grid { grid-template-columns: 1fr; }
+            .region-title { font-size: 1.2rem; }
+            .stat-item h3 { font-size: 1.5rem; }
+            .stat-item i { font-size: 1.5rem; }
+            .map-placeholder { height: 250px; }
+            .atm-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .branches-hero { padding: 60px 0 30px; }
+            .branches-hero h1 { font-size: 1.3rem; }
+            .stats-bar { gap: 10px; }
+            .stat-item { padding: 15px; }
+            .stat-item h3 { font-size: 1.2rem; }
+            .stat-item i { font-size: 1.2rem; }
+            .branch-card { padding: 18px; }
+            .branch-card h3 { font-size: 1rem; }
+            .branch-actions { flex-direction: column; }
+            .branch-actions a { font-size: 0.82rem; }
+            .search-box input { padding: 12px 15px; font-size: 0.9rem; }
+            .search-box button { padding: 12px; font-size: 0.9rem; }
+            .atm-card i { font-size: 1.5rem; }
+        }
     </style>
 </head>
 <body>

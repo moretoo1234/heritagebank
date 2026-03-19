@@ -237,8 +237,17 @@
         
         @media (max-width: 600px) {
             .container { padding: 15px; margin: 15px auto; }
-            .card { padding: 20px; }
-            .billers-grid { grid-template-columns: repeat(2, 1fr); }
+            .card { padding: 20px 16px; }
+            .billers-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .header h1 { font-size: 1.2rem; }
+            .balance-card h2 { font-size: 1.5rem; }
+            .balance-card { padding: 18px; }
+            .form-group input, .form-group select { padding: 12px; font-size: 0.95rem; }
+        }
+
+        @media (max-width: 380px) {
+            .billers-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+            .biller-option { padding: 10px 6px; font-size: 0.75rem; }
         }
     </style>
 </head>

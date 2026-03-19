@@ -27,6 +27,23 @@
         .rights-card i { font-size: 2rem; color: #1a5f7a; margin-bottom: 10px; }
         .rights-card h4 { color: #333; margin-bottom: 5px; }
         .rights-card p { color: #666; font-size: 0.9rem; }
+
+        @media (max-width: 768px) {
+            .privacy-hero { padding: 70px 0 40px; }
+            .privacy-hero h1 { font-size: 1.6rem; }
+            .privacy-container { padding: 30px 20px; margin: 0 15px; }
+            .data-table { display: block; overflow-x: auto; }
+            .rights-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 480px) {
+            .privacy-hero { padding: 60px 0 30px; }
+            .privacy-hero h1 { font-size: 1.3rem; }
+            .privacy-container { padding: 25px 15px; }
+            .rights-grid { grid-template-columns: 1fr; }
+            .rights-card i { font-size: 1.5rem; }
+            .data-table th, .data-table td { padding: 10px 8px; font-size: 0.85rem; }
+        }
     </style>
 </head>
 <body>

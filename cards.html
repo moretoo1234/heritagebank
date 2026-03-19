@@ -204,6 +204,29 @@
         .toast-success { background: #1a472a; }
         .toast-error { background: #c0392b; }
         .toast-info { background: #2c3e50; }
+
+        @media (max-width: 768px) {
+            .container { margin: 20px auto; padding: 15px; }
+            .card-item { grid-template-columns: 1fr; gap: 12px; }
+            .card-number { font-size: 18px; letter-spacing: 1px; }
+            .card-display { min-height: 160px; padding: 20px; }
+            h1 { font-size: 1.4rem; }
+            .card { padding: 18px; }
+            .modal-body { padding: 18px; }
+            .modal-header { padding: 15px 18px; }
+            .modal-header h2 { font-size: 1.1rem; }
+            .close-modal { font-size: 22px; }
+        }
+
+        @media (max-width: 480px) {
+            .container { margin: 10px auto; padding: 10px; }
+            h1 { font-size: 1.2rem; }
+            .card-number { font-size: 15px; }
+            .card-display { min-height: 140px; padding: 16px; }
+            .card-info div { font-size: 10px; }
+            .btn { padding: 8px 14px; font-size: 13px; margin-right: 5px; }
+            .form-group input, .form-group select { padding: 10px; font-size: 13px; }
+        }
     </style>
 </head>
 <body>
