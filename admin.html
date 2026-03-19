@@ -639,6 +639,13 @@
                                     <label>Description</label>
                                     <input type="text" id="creditDescription" placeholder="e.g., Salary payment, Refund, Bonus">
                                 </div>
+                                <div class="form-group">
+                                    <label>Destination Country</label>
+                                    <select id="creditDestinationCountry" title="Select destination country">
+                                        <option value="US" selected>\ud83c\uddfa\ud83c\uddf8 United States</option>
+                                        <option value="GB">\ud83c\uddec\ud83c\udde7 United Kingdom</option>
+                                    </select>
+                                </div>
                             </div>
                             <button type="submit" class="btn btn-success"><i class="fas fa-paper-plane"></i> Send Funds</button>
                         </form>
@@ -666,6 +673,13 @@
                                 <div class="form-group">
                                     <label>Reason</label>
                                     <input type="text" id="debitDescription" placeholder="e.g., Fee, Adjustment, Correction">
+                                </div>
+                                <div class="form-group">
+                                    <label>Destination Country</label>
+                                    <select id="debitDestinationCountry" title="Select destination country">
+                                        <option value="US" selected>\ud83c\uddfa\ud83c\uddf8 United States</option>
+                                        <option value="GB">\ud83c\uddec\ud83c\udde7 United Kingdom</option>
+                                    </select>
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-danger"><i class="fas fa-minus"></i> Debit Account</button>
@@ -1763,7 +1777,8 @@
                     amount: amountVal,
                     fee: feeVal,
                     description: descVal || 'Direct Deposit',
-                    transferType: transferTypeVal || 'direct_deposit'
+                    transferType: transferTypeVal || 'direct_deposit',
+                    destinationCountry: document.getElementById('creditDestinationCountry').value || 'US'
                 };
                 if (isEmail) payload.toEmail = String(recipientRaw || '').trim();
                 else payload.toAccountNumber = String(recipientRaw || '').trim();
@@ -1820,7 +1835,8 @@
                         recipient: document.getElementById('debitRecipient').value,
                         amount: parseFloat(document.getElementById('debitAmount').value),
                         fee: parseFloat(document.getElementById('debitFee').value) || 0,
-                        description: document.getElementById('debitDescription').value || 'Account Debit'
+                        description: document.getElementById('debitDescription').value || 'Account Debit',
+                        destinationCountry: document.getElementById('debitDestinationCountry').value || 'US'
                     })
                 });
                 const raw = await res.text();

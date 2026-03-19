@@ -173,8 +173,12 @@
             return name;
         }
 
-        function getCountryFlag(description) {
-            const d = String(description || '').toLowerCase();
+        function getCountryFlag(tx) {
+            if (tx && tx.destinationCountry) {
+                if (tx.destinationCountry === 'GB') return '🇬🇧';
+                if (tx.destinationCountry === 'US') return '🇺🇸';
+            }
+            const d = String((tx && tx.description) || '').toLowerCase();
             if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return '🇬🇧';
             return '🇺🇸';
         }
@@ -252,7 +256,7 @@
                             // Parse UK bank transfer description for cleaner display
                             const ukMatch = desc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
                             const fromDisp = formatNameAcct(tx.fromFirstName, tx.fromLastName, tx.fromAccountNumber);
-                            const toFl = getCountryFlag(tx.description);
+                            const toFl = getCountryFlag(tx);
                             let fromTo = `\ud83c\uddfa\ud83c\uddf8 From: ${fromDisp} • ${toFl} To: ${formatNameAcct(tx.toFirstName, tx.toLastName, tx.toAccountNumber)}`;
                             if (ukMatch) {
                                 const bankName = ukMatch[1].trim();
@@ -362,7 +366,7 @@
             const fromDisplay = formatNameAcct(tx.fromFirstName, tx.fromLastName, tx.fromAccountNumber);
             let toDisplay = formatNameAcct(tx.toFirstName, tx.toLastName, tx.toAccountNumber);
             const rawDesc = String(tx.description || '');
-            const toFlag = getCountryFlag(rawDesc);
+            const toFlag = getCountryFlag(tx);
             const ukDetailMatch = rawDesc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
             if (ukDetailMatch) toDisplay = ukDetailMatch[2].trim() + ' via ' + ukDetailMatch[1].trim();
 

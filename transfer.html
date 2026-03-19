@@ -1146,13 +1146,12 @@
                 } else if (transferType === 'ukbank') {
                     body.toAccountNumber = document.getElementById('ukAccountNumber').value;
                     body.description = `UK Transfer to ${document.getElementById('ukRecipientName').value} at ${selectedUkBank.name} (${selectedUkBank.sortCode}) | Ref: ${document.getElementById('ukReference').value || 'N/A'}`;
-                } else if (transferType === 'usbank') {
-                    const method = document.getElementById('usTransferMethod').value.toUpperCase();
-                    body.toAccountNumber = document.getElementById('usAccountNumber').value;
-                    body.description = `US ${method} Transfer to ${document.getElementById('usRecipientName').value} at ${selectedUsBank.name} (Routing: ${selectedUsBank.routing}) | ${document.getElementById('usAccountType').value} account | Ref: ${document.getElementById('usReference').value || 'N/A'}`;
-                }
-
-                // Append currency conversion info to description if foreign
+        body.destinationCountry = 'GB';
+    } else if (transferType === 'usbank') {
+        const method = document.getElementById('usTransferMethod').value.toUpperCase();
+        body.toAccountNumber = document.getElementById('usAccountNumber').value;
+        body.description = `US ${method} Transfer to ${document.getElementById('usRecipientName').value} at ${selectedUsBank.name} (Routing: ${selectedUsBank.routing}) | ${document.getElementById('usAccountType').value} account | Ref: ${document.getElementById('usReference').value || 'N/A'}`;
+        body.destinationCountry = 'US';
                 if (isForeignCurrency) {
                     body.description += ` | Converted: $${amount.toFixed(2)} → ${recvSym}${convertedAmount.toFixed(2)} (Rate: 1 USD = ${exchangeRate.toFixed(4)} ${recipientCurrency})`;
                 }

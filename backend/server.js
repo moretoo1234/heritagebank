@@ -1049,6 +1049,8 @@ async function initializeDatabase() {
 
         // Add transaction category column to transactions table
         try { await connection.execute('ALTER TABLE transactions ADD COLUMN category VARCHAR(50) DEFAULT NULL'); } catch (e) {}
+        // Add destination country column for flag display
+        try { await connection.execute("ALTER TABLE transactions ADD COLUMN destinationCountry VARCHAR(2) DEFAULT NULL"); } catch (e) {}
 
         // Check if admin exists
         const [adminCheck] = await connection.execute(
@@ -1278,8 +1280,15 @@ function normalizeTransactionRow(row) {
         toUserId,
         createdAt,
         reference,
-        description
+        description,
+        destinationCountry: r.destinationCountry ?? r.destination_country ?? null
     };
+}
+
+function detectCountryFromDescription(desc) {
+    const d = String(desc || '').toLowerCase();
+    if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return 'GB';
+    return 'US';
 }
 
 // Admin transfer types: keep tight + user-friendly. This value is stored in transactions.type
@@ -3320,10 +3329,11 @@ app.post('/api/admin/fund-user', requireAuth, requireAdmin, async (req, res) => 
 
         const reference = 'ADM' + Date.now().toString(36).toUpperCase();
         const txType = sanitizeAdminTransferType(transferType || type);
+        const destCountry = req.body.destinationCountry || detectCountryFromDescription(description);
         await connection.execute(
-            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference)
-             VALUES (?, ?, ?, ?, ?, 'completed', ?, ?)`,
-            [sender.id, recipient.id, amountValue, feeValue, txType, (description || 'Direct Deposit'), reference]
+            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry)
+             VALUES (?, ?, ?, ?, ?, 'completed', ?, ?, ?)`,
+            [sender.id, recipient.id, amountValue, feeValue, txType, (description || 'Direct Deposit'), reference, destCountry]
         );
 
         await connection.commit();
@@ -3627,12 +3637,13 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
         // Store a realistic transfer type for user-facing labeling.
         // (Default to direct deposit if not provided.)
         const txType = sanitizeAdminTransferType(transferType || type);
+        const destCountry = req.body.destinationCountry || detectCountryFromDescription(description);
 
         // Log transaction
         await connection.execute(
-            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference)
-             VALUES (?, ?, ?, ?, ?, 'completed', ?, ?)`,
-            [sender.id, recipient.id, amountValue, feeValue, txType, description || 'Direct Deposit', reference]
+            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry)
+             VALUES (?, ?, ?, ?, ?, 'completed', ?, ?, ?)`,
+            [sender.id, recipient.id, amountValue, feeValue, txType, description || 'Direct Deposit', reference, destCountry]
         );
 
         // Get updated balances
@@ -3832,11 +3843,12 @@ app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res)
 
         const reference = 'DBT' + Date.now().toString(36).toUpperCase();
         const txDescription = description || (reason ? `${reason}${notes ? `: ${notes}` : ''}` : 'Debit');
+        const destCountry = req.body.destinationCountry || detectCountryFromDescription(txDescription);
 
         await connection.execute(
-            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference)
-             VALUES (?, NULL, ?, ?, 'debit', 'completed', ?, ?)`,
-            [user.id, amountValue, feeValue, txDescription, reference]
+            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry)
+             VALUES (?, NULL, ?, ?, 'debit', 'completed', ?, ?, ?)`,
+            [user.id, amountValue, feeValue, txDescription, reference, destCountry]
         );
 
         try {
@@ -4423,10 +4435,11 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
 
         // Create transaction as PENDING — balance not changed until admin approves
         const reference = 'TRF' + Date.now().toString(36).toUpperCase();
+        const destCountry = req.body.destinationCountry || detectCountryFromDescription(description);
         const [txnResult] = await connection.execute(
-            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference)
-             VALUES (?, ?, ?, 0, 'transfer', 'pending', ?, ?)`,
-            [sender.id, recipientUser.id, amountValue, description || 'Transfer', reference]
+            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry)
+             VALUES (?, ?, ?, 0, 'transfer', 'pending', ?, ?, ?)`,
+            [sender.id, recipientUser.id, amountValue, description || 'Transfer', reference, destCountry]
         );
         const transactionId = txnResult.insertId;
 
