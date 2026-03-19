@@ -695,57 +695,78 @@ function downloadBackupCodes() {
 }
 
 // ============================================================================
-// DOCUMENTS & VERIFICATION
+// ACCOUNT VERIFICATION & DOCUMENTS
 // ============================================================================
 
 async function loadDocumentStatus(user) {
     const token = localStorage.getItem('token');
-    const container = document.getElementById('documentList');
-    if (!container) return;
+    const statusEl = document.getElementById('verificationStatus');
+    const loadingEl = document.getElementById('verificationLoading');
+    const requestSection = document.getElementById('documentRequestSection');
+    if (!statusEl) return;
     
     try {
-        const res = await fetch(`${API_URL}/api/user/documents`, {
+        const res = await fetch(`${API_URL}/api/user/verification-status`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
         const data = await res.json();
-        if (data.success && data.documents) {
-            displayDocuments(data.documents);
-        } else {
-            container.innerHTML = '<p style="color: #999; text-align: center;">No documents uploaded yet</p>';
+        if (data.success) {
+            const v = data.verification;
+            if (loadingEl) loadingEl.style.display = 'none';
+            
+            if (v.isVerified) {
+                statusEl.style.background = '#e8f5e9';
+                statusEl.style.border = '2px solid #4caf50';
+                statusEl.innerHTML = `
+                    <i class="fas fa-check-circle" style="font-size: 2.5rem; color: #4caf50; margin-bottom: 10px;"></i>
+                    <h3 style="margin: 0; color: #2e7d32;">Account Verified</h3>
+                    <p style="margin: 8px 0 0; color: #555; font-size: 0.9rem;">Your identity has been verified. You have full access to all banking features.</p>
+                `;
+            } else {
+                statusEl.style.background = '#fff8e1';
+                statusEl.style.border = '2px solid #ffc107';
+                statusEl.innerHTML = `
+                    <i class="fas fa-clock" style="font-size: 2.5rem; color: #ffc107; margin-bottom: 10px;"></i>
+                    <h3 style="margin: 0; color: #f57f17;">Verification Pending</h3>
+                    <p style="margin: 8px 0 0; color: #555; font-size: 0.9rem;">Your account is awaiting verification. You may be asked to submit documents.</p>
+                `;
+            }
+
+            // Show document request section if admin has requested documents
+            if (v.documentRequested && requestSection) {
+                requestSection.style.display = 'block';
+                const msgEl = document.getElementById('documentRequestMessage');
+                if (msgEl) msgEl.textContent = v.documentRequestMessage || 'Please upload the requested identification documents.';
+            }
+
+            // Show previously uploaded docs
+            if (v.documents && v.documents.length > 0) {
+                displayDocuments(v.documents);
+            }
         }
     } catch (e) {
-        console.error('Error loading documents:', e);
+        console.error('Error loading verification status:', e);
+        if (loadingEl) loadingEl.textContent = 'Unable to load verification status';
     }
 }
 
 function displayDocuments(documents) {
-    const container = document.getElementById('documentList');
+    const container = document.getElementById('uploadedDocsList');
     if (!container) return;
     
-    if (!documents || documents.length === 0) {
-        container.innerHTML = '<p style="color: #999; text-align: center;">No documents uploaded</p>';
-        return;
-    }
+    if (!documents || documents.length === 0) return;
     
-    container.innerHTML = documents.map(doc => `
-        <div class="document-item" style="padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+    container.innerHTML = '<h4 style="margin-bottom: 10px; color: #333;">Uploaded Documents</h4>' + documents.map(doc => `
+        <div style="padding: 12px; background: #f9f9f9; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <strong>${doc.documentType || 'Document'}</strong>
-                <p style="margin: 5px 0 0 0; color: #666; font-size: 0.85rem;">
-                    Uploaded: ${formatDate(doc.uploadedAt || new Date())}<br>
-                    Status: <span style="color: ${doc.verified ? '#4caf50' : '#ff9800'};">
-                        ${doc.verified ? '<i class="fas fa-check-circle"></i> Verified' : '<i class="fas fa-clock"></i> Pending Review'}
+                <p style="margin: 4px 0 0; color: #666; font-size: 0.85rem;">
+                    Uploaded: ${new Date(doc.uploadedAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    &bull; Status: <span style="color: ${doc.verified ? '#4caf50' : '#ff9800'};">
+                        ${doc.verified ? '<i class="fas fa-check-circle"></i> Verified' : '<i class="fas fa-clock"></i> Under Review'}
                     </span>
                 </p>
-            </div>
-            <div>
-                <button class="btn btn-secondary btn-sm" onclick="downloadDocument('${doc.id || doc._id}')">
-                    <i class="fas fa-download"></i>
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteDocument('${doc.id || doc._id}')" style="margin-left: 5px;">
-                    <i class="fas fa-trash"></i>
-                </button>
             </div>
         </div>
     `).join('');
@@ -780,27 +801,6 @@ async function uploadDocument(e) {
         }
     } catch (e) {
         showAlert('Error uploading document: ' + e.message, 'error');
-    }
-}
-
-async function deleteDocument(docId) {
-    if (!confirm('Delete this document?')) return;
-    
-    const token = localStorage.getItem('token');
-    
-    try {
-        const res = await fetch(`${API_URL}/api/user/documents/${docId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        const data = await res.json();
-        if (data.success) {
-            showAlert('Document deleted', 'success');
-            await loadDocumentStatus({});
-        }
-    } catch (e) {
-        showAlert('Error: ' + e.message, 'error');
     }
 }
 

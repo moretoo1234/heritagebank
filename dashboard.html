@@ -359,7 +359,7 @@
                 <div class="balance-card secondary">
                     <i class="fas fa-piggy-bank card-icon"></i>
                     <p>Savings Goal</p>
-                    <h2 id="savingsGoal">$10,000</h2>
+                    <h2 id="savingsGoal">Loading...</h2>
                     <p><span id="savingsProgress">0%</span> achieved</p>
                 </div>
             </div>
@@ -547,11 +547,9 @@
                     document.getElementById('accountType').textContent = (data.user.accountType || 'Savings') + ' Account';
                     document.getElementById('accType').textContent = data.user.accountType || 'Savings';
                     
-                    // Calculate savings progress
+                    // Load savings goals from API to calculate progress
                     const balance = data.user.balance || 0;
-                    const goal = 10000;
-                    const progress = Math.min(100, Math.round((balance / goal) * 100));
-                    document.getElementById('savingsProgress').textContent = progress + '%';
+                    loadSavingsGoalProgress(balance, token);
                     
                     // Load transactions and activity
                     loadTransactions();
@@ -578,6 +576,34 @@
             } catch (e) {
                 // Keep badge as-is on errors
                 console.error('Notifications load error:', e);
+            }
+        }
+
+        async function loadSavingsGoalProgress(balance, token) {
+            try {
+                const res = await fetch(`${API_URL}/api/savings-goals`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                let totalGoal = 0;
+                let totalSaved = 0;
+                if (data.success && data.goals && data.goals.length > 0) {
+                    data.goals.forEach(g => {
+                        totalGoal += parseFloat(g.targetAmount || 0);
+                        totalSaved += parseFloat(g.currentAmount || 0);
+                    });
+                    document.getElementById('savingsGoal').textContent = '$' + totalGoal.toLocaleString(undefined, {minimumFractionDigits: 0});
+                    const progress = totalGoal > 0 ? Math.min(100, Math.round((totalSaved / totalGoal) * 100)) : 0;
+                    document.getElementById('savingsProgress').textContent = progress + '%';
+                } else {
+                    // No goals set — show balance-based default
+                    document.getElementById('savingsGoal').textContent = 'No Goal Set';
+                    document.getElementById('savingsProgress').textContent = '-';
+                }
+            } catch (e) {
+                console.error('Savings goal load error:', e);
+                document.getElementById('savingsGoal').textContent = '$0';
+                document.getElementById('savingsProgress').textContent = '-';
             }
         }
         

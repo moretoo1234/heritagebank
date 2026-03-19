@@ -506,29 +506,29 @@
                 <div class="form-group">
                     <label>Amount</label>
                     <div class="amount-input">
-                        <span>£</span>
+                        <span>$</span>
                         <input type="number" id="amount" min="1" step="0.01" placeholder="0.00" required oninput="updateSummary()">
                     </div>
                     <div class="quick-amounts">
-                        <button type="button" class="quick-amount" onclick="setAmount(50)">£50</button>
-                        <button type="button" class="quick-amount" onclick="setAmount(100)">£100</button>
-                        <button type="button" class="quick-amount" onclick="setAmount(250)">£250</button>
-                        <button type="button" class="quick-amount" onclick="setAmount(500)">£500</button>
+                        <button type="button" class="quick-amount" onclick="setAmount(50)">$50</button>
+                        <button type="button" class="quick-amount" onclick="setAmount(100)">$100</button>
+                        <button type="button" class="quick-amount" onclick="setAmount(250)">$250</button>
+                        <button type="button" class="quick-amount" onclick="setAmount(500)">$500</button>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label>Recipient's Currency</label>
                     <div class="currency-selector">
-                        <div class="currency-option active" onclick="setRecipientCurrency('GBP')">
-                            <span class="cur-symbol">£</span>
-                            GBP
-                            <span class="cur-label">British Pound</span>
-                        </div>
-                        <div class="currency-option" onclick="setRecipientCurrency('USD')">
+                        <div class="currency-option active" onclick="setRecipientCurrency('USD')">
                             <span class="cur-symbol">$</span>
                             USD
                             <span class="cur-label">US Dollar</span>
+                        </div>
+                        <div class="currency-option" onclick="setRecipientCurrency('GBP')">
+                            <span class="cur-symbol">£</span>
+                            GBP
+                            <span class="cur-label">British Pound</span>
                         </div>
                         <div class="currency-option" onclick="setRecipientCurrency('EUR')">
                             <span class="cur-symbol">€</span>
@@ -541,15 +541,15 @@
                 <div class="conversion-box" id="conversionBox">
                     <div class="conv-send">
                         <div><div class="conv-label">You Send</div></div>
-                        <div class="conv-amount" id="convSendAmount">£0.00</div>
+                        <div class="conv-amount" id="convSendAmount">$0.00</div>
                     </div>
                     <div class="conversion-arrow"><i class="fas fa-arrow-down"></i></div>
                     <div class="conv-receive">
                         <div><div class="conv-label">Recipient Receives</div></div>
-                        <div class="conv-amount" id="convReceiveAmount">$0.00</div>
+                        <div class="conv-amount" id="convReceiveAmount">£0.00</div>
                     </div>
                     <div class="conv-rate" id="convRate">
-                        <i class="fas fa-chart-line"></i> Exchange rate: 1 GBP = 1.27 USD
+                        <i class="fas fa-chart-line"></i> Exchange rate: 1 USD = 0.79 GBP
                     </div>
                 </div>
                 
@@ -560,8 +560,8 @@
                 
                 <div class="transfer-summary" id="transferSummary" style="display: none;">
                     <div class="summary-row">
-                        <span>You Send (GBP)</span>
-                        <span id="summaryAmount">£0.00</span>
+                        <span>You Send (USD)</span>
+                        <span id="summaryAmount">$0.00</span>
                     </div>
                     <div class="summary-row" id="summaryConvRow" style="display:none;">
                         <span>Recipient Receives (<span id="summaryRecvCurrency">USD</span>)</span>
@@ -573,11 +573,11 @@
                     </div>
                     <div class="summary-row">
                         <span>Transfer Fee</span>
-                        <span>£0.00</span>
+                        <span>$0.00</span>
                     </div>
                     <div class="summary-row total">
                         <span>Total Debited</span>
-                        <span id="summaryTotal">£0.00</span>
+                        <span id="summaryTotal">$0.00</span>
                     </div>
                 </div>
                 
@@ -617,12 +617,12 @@
             <div class="receipt-body">
                 <div class="receipt-amount-display">
                     <div class="label">Amount Sent</div>
-                    <div class="amount" id="receiptAmount">£0.00</div>
+                    <div class="amount" id="receiptAmount">$0.00</div>
                 </div>
                 <div id="receiptConversionRow" style="display:none; text-align:center; margin-bottom: 14px;">
                     <div style="color:#888; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">Recipient Receives</div>
                     <div style="font-size:1.4rem; font-weight:700; color:#28a745;" id="receiptRecvAmount">$0.00</div>
-                    <div style="font-size:0.72rem; color:#999;" id="receiptExRate">Rate: 1 GBP = 1.27 USD</div>
+                    <div style="font-size:0.72rem; color:#999;" id="receiptExRate">Rate: 1 USD = 0.79 GBP</div>
                 </div>
                 <div class="receipt-stamp">SUCCESSFUL</div>
                 <hr class="receipt-divider">
@@ -634,15 +634,15 @@
                 <div class="receipt-row" id="receiptCurrencyRow" style="display:none;"><span class="rlabel">Currency</span><span class="rvalue" id="receiptCurrency">-</span></div>
                 <div class="receipt-row"><span class="rlabel">Status</span><span class="rvalue" style="color:#28a745;font-weight:700;">Completed ✓</span></div>
                 <hr class="receipt-divider">
-                <div class="receipt-row"><span class="rlabel">Transaction Fee</span><span class="rvalue">£0.00</span></div>
-                <div class="receipt-row" style="font-weight:700;font-size:1rem;"><span class="rlabel" style="color:#1a472a;">Total Debited</span><span class="rvalue" style="color:#1a472a;" id="receiptTotal">£0.00</span></div>
+                <div class="receipt-row"><span class="rlabel">Transaction Fee</span><span class="rvalue">$0.00</span></div>
+                <div class="receipt-row" style="font-weight:700;font-size:1rem;"><span class="rlabel" style="color:#1a472a;">Total Debited</span><span class="rvalue" style="color:#1a472a;" id="receiptTotal">$0.00</span></div>
             </div>
             <div class="receipt-footer">
                 <div class="receipt-actions">
                     <button class="btn-receipt-action btn-download-receipt" onclick="downloadLastReceipt()"><i class="fas fa-download"></i> Download PDF</button>
                     <button class="btn-receipt-action btn-close-receipt" onclick="closeReceipt()"><i class="fas fa-times"></i> Close</button>
                 </div>
-                <div class="receipt-ref" id="receiptFooterRef">Heritage Bank PLC • Authorised by the PRA and regulated by the FCA</div>
+                <div class="receipt-ref" id="receiptFooterRef">Heritage Bank N.A. • Member FDIC • Equal Housing Lender</div>
             </div>
         </div>
     </div>
@@ -657,13 +657,13 @@
         let recentRecipients = [];
         let selectedUkBank = null;
         let lastTransactionId = null;
-        let recipientCurrency = 'GBP';
+        let recipientCurrency = 'USD';
 
-        // Exchange rates (GBP base → target)
+        // Exchange rates (USD base → target)
         const EXCHANGE_RATES = {
-            GBP: 1.00,
-            USD: 1.27,
-            EUR: 1.17
+            USD: 1.00,
+            GBP: 0.79,
+            EUR: 0.92
         };
         const CURRENCY_SYMBOLS = { GBP: '£', USD: '$', EUR: '€' };
         const CURRENCY_NAMES = { GBP: 'British Pound', USD: 'US Dollar', EUR: 'Euro' };
@@ -675,8 +675,8 @@
             updateSummary();
         }
 
-        function convertAmount(gbpAmount, toCurrency) {
-            return gbpAmount * EXCHANGE_RATES[toCurrency];
+        function convertAmount(usdAmount, toCurrency) {
+            return usdAmount * EXCHANGE_RATES[toCurrency];
         }
 
         function formatCur(amount, currency) {
@@ -747,7 +747,7 @@
                 if (data.success && data.user) {
                     userId = data.user.id;
                     currentBalance = data.user.balance || 0;
-                    document.getElementById('currentBalance').textContent = '£' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('currentBalance').textContent = '$' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
                     loadRecentRecipients();
                 } else {
                     window.location.href = 'signin.html';
@@ -790,10 +790,10 @@
             const amount = parseFloat(document.getElementById('amount').value) || 0;
             if (amount > 0) {
                 document.getElementById('transferSummary').style.display = 'block';
-                document.getElementById('summaryAmount').textContent = '£' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
-                document.getElementById('summaryTotal').textContent = '£' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('summaryAmount').textContent = '$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('summaryTotal').textContent = '$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
 
-                const isForeignCurrency = recipientCurrency !== 'GBP';
+                const isForeignCurrency = recipientCurrency !== 'USD';
                 const convBox = document.getElementById('conversionBox');
                 const convRowEl = document.getElementById('summaryConvRow');
                 const rateRowEl = document.getElementById('summaryRateRow');
@@ -805,16 +805,16 @@
 
                     // Conversion box
                     convBox.classList.add('show');
-                    document.getElementById('convSendAmount').textContent = '£' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('convSendAmount').textContent = '$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
                     document.getElementById('convReceiveAmount').textContent = sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2});
-                    document.getElementById('convRate').innerHTML = `<i class="fas fa-chart-line"></i> Exchange rate: 1 GBP = ${rate.toFixed(4)} ${recipientCurrency}`;
+                    document.getElementById('convRate').innerHTML = `<i class="fas fa-chart-line"></i> Exchange rate: 1 USD = ${rate.toFixed(4)} ${recipientCurrency}`;
 
                     // Summary rows
                     convRowEl.style.display = 'flex';
                     rateRowEl.style.display = 'flex';
                     document.getElementById('summaryRecvCurrency').textContent = recipientCurrency;
                     document.getElementById('summaryRecvAmount').textContent = sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2});
-                    document.getElementById('summaryRate').textContent = `1 GBP = ${rate.toFixed(4)} ${recipientCurrency}`;
+                    document.getElementById('summaryRate').textContent = `1 USD = ${rate.toFixed(4)} ${recipientCurrency}`;
                 } else {
                     convBox.classList.remove('show');
                     convRowEl.style.display = 'none';
@@ -966,7 +966,7 @@
                 };
 
                 // Build conversion info
-                const isForeignCurrency = recipientCurrency !== 'GBP';
+                const isForeignCurrency = recipientCurrency !== 'USD';
                 const convertedAmount = isForeignCurrency ? convertAmount(amount, recipientCurrency) : amount;
                 const exchangeRate = EXCHANGE_RATES[recipientCurrency];
                 const recvSym = CURRENCY_SYMBOLS[recipientCurrency];
@@ -982,7 +982,7 @@
 
                 // Append currency conversion info to description if foreign
                 if (isForeignCurrency) {
-                    body.description += ` | Converted: £${amount.toFixed(2)} → ${recvSym}${convertedAmount.toFixed(2)} (Rate: 1 GBP = ${exchangeRate.toFixed(4)} ${recipientCurrency})`;
+                    body.description += ` | Converted: $${amount.toFixed(2)} → ${recvSym}${convertedAmount.toFixed(2)} (Rate: 1 USD = ${exchangeRate.toFixed(4)} ${recipientCurrency})`;
                 }
                 
                 const res = await fetch(`${API_URL}/api/user/transfer`, {
@@ -999,7 +999,7 @@
                 if (data.success) {
                     // Update balance
                     currentBalance -= amount;
-                    document.getElementById('currentBalance').textContent = '£' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('currentBalance').textContent = '$' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
                     
                     // Determine recipient display
                     let recipientDisplay = data.transaction?.to || 'Recipient';
@@ -1064,11 +1064,11 @@
         // ── Receipt Modal Functions ──
         function showReceiptModal(details) {
             const now = new Date();
-            document.getElementById('receiptAmount').textContent = '£' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
-            document.getElementById('receiptTotal').textContent = '£' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById('receiptAmount').textContent = '$' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById('receiptTotal').textContent = '$' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
             document.getElementById('receiptTo').textContent = details.to;
             document.getElementById('receiptBank').textContent = details.bank;
-            document.getElementById('receiptDate').textContent = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('receiptDate').textContent = now.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) + ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             document.getElementById('receiptRef').textContent = details.reference;
             document.getElementById('receiptDesc').textContent = details.description;
             lastTransactionId = details.transactionId;
@@ -1076,15 +1076,15 @@
             // Currency conversion display on receipt
             const convRow = document.getElementById('receiptConversionRow');
             const curRow = document.getElementById('receiptCurrencyRow');
-            if (details.recipientCurrency && details.recipientCurrency !== 'GBP') {
+            if (details.recipientCurrency && details.recipientCurrency !== 'USD') {
                 const sym = CURRENCY_SYMBOLS[details.recipientCurrency];
                 const converted = details.convertedAmount;
                 const rate = details.exchangeRate;
                 convRow.style.display = 'block';
                 curRow.style.display = 'flex';
                 document.getElementById('receiptRecvAmount').textContent = sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2});
-                document.getElementById('receiptExRate').textContent = `Rate: 1 GBP = ${rate.toFixed(4)} ${details.recipientCurrency}`;
-                document.getElementById('receiptCurrency').textContent = `GBP → ${details.recipientCurrency}`;
+                document.getElementById('receiptExRate').textContent = `Rate: 1 USD = ${rate.toFixed(4)} ${details.recipientCurrency}`;
+                document.getElementById('receiptCurrency').textContent = `USD → ${details.recipientCurrency}`;
             } else {
                 convRow.style.display = 'none';
                 curRow.style.display = 'none';

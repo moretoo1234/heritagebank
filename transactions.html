@@ -82,6 +82,12 @@
             return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
+        function cleanType(type) {
+            const map = { 'direct_deposit': 'Direct Deposit', 'admin_transfer': 'Transfer', 'admin_debit': 'Debit', 'admin_credit': 'Credit', 'wire_transfer': 'Wire Transfer', 'bank_transfer': 'Bank Transfer' };
+            if (map[(type || '').toLowerCase()]) return map[(type || '').toLowerCase()];
+            return (type || 'Transfer').replace(/_/g, ' ').replace(/\badmin\b\s*/gi, '').replace(/\b\w/g, c => c.toUpperCase()).trim() || 'Transfer';
+        }
+
         function formatDate(d) {
             try {
                 return new Date(d).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -186,10 +192,10 @@
                                         <div>${desc}</div>
                                         <div class="muted">${fromTo}</div>
                                     </td>
-                                    <td>${tx.type || '-'}</td>
+                                    <td>${cleanType(tx.type)}</td>
                                     <td>${tx.reference || '-'}</td>
                                     <td>${pill(tx.status)}</td>
-                                    <td class="amount ${cls}" style="text-align:right;">${sign}£${formatMoney(Math.abs(tx.amount))}</td>
+                                    <td class="amount ${cls}" style="text-align:right;">${sign}$${formatMoney(Math.abs(tx.amount))}</td>
                                     <td>
                                         <button class="btn btn-secondary" style="padding:8px 10px;" onclick="downloadReceipt(${tx.id})" title="Download Receipt">
                                             <i class="fas fa-file-invoice"></i>

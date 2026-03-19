@@ -466,6 +466,11 @@ async function initializeDatabase() {
         // Transfer restriction flag - when true, user needs admin approval for transfers
         try { await connection.execute('ALTER TABLE users ADD COLUMN transferRestricted BOOLEAN DEFAULT false'); } catch (e) {}
 
+        // Account verification (admin-controlled)
+        try { await connection.execute('ALTER TABLE users ADD COLUMN isVerified BOOLEAN DEFAULT false'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN documentRequested BOOLEAN DEFAULT false'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN documentRequestMessage VARCHAR(500) NULL'); } catch (e) {}
+
         // Pending transfers table (for accounts with transfer restrictions)
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS pending_transfers (
@@ -1269,6 +1274,24 @@ function sanitizeAdminTransferType(raw) {
     const t = String(raw || '').trim().toLowerCase();
     if (!t) return 'direct_deposit';
     return ADMIN_TRANSFER_TYPES.has(t) ? t : 'direct_deposit';
+}
+
+// Clean transaction type for user-facing display (no underscores, no "admin")
+function cleanTxType(raw) {
+    const TYPE_LABELS = {
+        'direct_deposit': 'Direct Deposit', 'admin_transfer': 'Transfer',
+        'ach': 'ACH Credit', 'wire': 'Wire Transfer', 'income': 'Income',
+        'salary': 'Salary Payment', 'credit': 'Credit', 'debit': 'Debit',
+        'transfer': 'Transfer', 'deposit': 'Deposit', 'withdrawal': 'Withdrawal'
+    };
+    const t = String(raw || 'transfer').toLowerCase().trim();
+    return TYPE_LABELS[t] || t.replace(/_/g, ' ').replace(/\badmin\b\s*/gi, '').replace(/\b\w/g, c => c.toUpperCase()).trim() || 'Transfer';
+}
+
+// Clean description for user-facing display (remove "Admin" references)
+function cleanDescription(desc) {
+    if (!desc) return '';
+    return desc.replace(/\bAdmin\s*/gi, '').replace(/^\s*-\s*/, '').trim();
 }
 
 // Calculate available balance (ledger - holds)
@@ -3275,7 +3298,7 @@ app.post('/api/admin/fund-user', requireAuth, requireAdmin, async (req, res) => 
         await connection.execute(
             `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
              VALUES (?, ?, ?, ?, 'completed', ?, ?)`,
-            [sender.id, recipient.id, amountValue, txType, (description || 'Admin Transfer'), reference]
+            [sender.id, recipient.id, amountValue, txType, (description || 'Direct Deposit'), reference]
         );
 
         await connection.commit();
@@ -3581,7 +3604,7 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
         await connection.execute(
             `INSERT INTO transactions (fromUserId, toUserId, amount, type, status, description, reference)
              VALUES (?, ?, ?, ?, 'completed', ?, ?)`,
-            [sender.id, recipient.id, amountValue, txType, description || 'Admin Transfer', reference]
+            [sender.id, recipient.id, amountValue, txType, description || 'Direct Deposit', reference]
         );
 
         // Get updated balances
@@ -4304,25 +4327,25 @@ function activityLabelForTransaction(tx, viewerUserId) {
     const isOutgoing = Number.isFinite(me) && Number.isFinite(fromId) && fromId === me;
 
     if (isIncoming) {
-        const label = incomingTypeLabel[t] || (t ? (t === 'transfer' ? 'Incoming transfer' : t.replace(/_/g, ' ')) : 'Incoming transaction');
+        const label = incomingTypeLabel[t] || (t ? (t === 'transfer' ? 'Incoming transfer' : cleanTxType(t)) : 'Incoming transaction');
         return {
             action: `${label} received (${amountLabel})`,
-            description: tx?.description || (fromName ? `From ${fromName}` : undefined)
+            description: cleanDescription(tx?.description) || (fromName ? `From ${fromName}` : undefined)
         };
     }
 
     if (isOutgoing) {
-        const base = (t === 'transfer') ? 'Transfer sent' : (t ? t.replace(/_/g, ' ') : 'Transaction sent');
+        const base = (t === 'transfer') ? 'Transfer sent' : (t ? cleanTxType(t) : 'Transaction sent');
         return {
             action: `${base} (${amountLabel})`,
-            description: tx?.description || (toName ? `To ${toName}` : undefined)
+            description: cleanDescription(tx?.description) || (toName ? `To ${toName}` : undefined)
         };
     }
 
     // Fallback for non-standard rows.
     return {
         action: `Transaction (${amountLabel})`,
-        description: tx?.description || undefined
+        description: cleanDescription(tx?.description) || undefined
     };
 }
 
@@ -4861,14 +4884,14 @@ app.get('/api/statements/download', async (req, res) => {
                     const amt = parseFloat(t.amount);
 
                     // Clean description for UK bank transfers
-                    let desc = t.description || t.type || 'Transfer';
+                    let desc = cleanDescription(t.description) || t.type || 'Transfer';
                     const ukMatch = desc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
                     if (ukMatch) desc = `Wire to ${ukMatch[1].trim()} (${ukMatch[2].trim()})`;
                     if (desc.length > 45) desc = desc.substring(0, 42) + '...';
 
                     doc.fontSize(7.5).fillColor(BLACK);
                     doc.text(txDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }), cols[0].x, ry + 6, { width: cols[0].w });
-                    doc.text((t.type || 'transfer').charAt(0).toUpperCase() + (t.type || 'transfer').slice(1), cols[1].x, ry + 6, { width: cols[1].w });
+                    doc.text(cleanTxType(t.type), cols[1].x, ry + 6, { width: cols[1].w });
                     doc.fontSize(7).fillColor(GRAY).text(desc, cols[2].x, ry + 6, { width: cols[2].w });
 
                     // Status badge
@@ -5089,13 +5112,13 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             rowI++;
         }
 
-        const cleanDescription = isUkTransfer
+        const receiptDesc = isUkTransfer
             ? `International Wire Transfer to ${ukBankStyle.text}`
-            : (transaction.description || 'Fund Transfer');
+            : (cleanDescription(transaction.description) || 'Fund Transfer');
 
         detailRow('Transaction ID', `TXN-${String(id).padStart(8, '0')}`);
-        detailRow('Transaction Type', isUkTransfer ? 'International Wire Transfer (USD → GBP)' : ((transaction.type || 'Transfer').charAt(0).toUpperCase() + (transaction.type || 'transfer').slice(1)));
-        detailRow('Description', cleanDescription);
+        detailRow('Transaction Type', isUkTransfer ? 'International Wire Transfer (USD → GBP)' : cleanTxType(transaction.type));
+        detailRow('Description', receiptDesc);
         detailRow('Reference Number', transaction.reference || 'N/A');
         detailRow('Payment Method', isUkTransfer ? 'SWIFT International Wire' : 'Bank Transfer');
         if (isUkTransfer) {
@@ -7336,14 +7359,14 @@ app.get('/api/user/statements/current', async (req, res) => {
                 if (i % 2 === 0) doc.rect(mL, ry, cW, 22).fill('#fafafa');
                 const isCredit = t.type === 'credit' || t.toUserId === decoded.id;
                 const amt = parseFloat(t.amount);
-                let desc = t.description || t.type || 'Transfer';
+                let desc = cleanDescription(t.description) || t.type || 'Transfer';
                 const ukMatch = desc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
                 if (ukMatch) desc = `Wire to ${ukMatch[1].trim()} (${ukMatch[2].trim()})`;
                 if (desc.length > 45) desc = desc.substring(0, 42) + '...';
 
                 doc.fontSize(7.5).fillColor(BLACK);
                 doc.text(new Date(t.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }), cols[0].x, ry + 6, { width: cols[0].w });
-                doc.text((t.type || 'transfer').charAt(0).toUpperCase() + (t.type || 'transfer').slice(1), cols[1].x, ry + 6, { width: cols[1].w });
+                doc.text(cleanTxType(t.type), cols[1].x, ry + 6, { width: cols[1].w });
                 doc.fontSize(7).fillColor(GRAY).text(desc, cols[2].x, ry + 6, { width: cols[2].w });
                 const st = (t.status || 'completed').toLowerCase();
                 const stColor = st === 'completed' ? '#28a745' : (st === 'pending' ? '#ffc107' : '#dc3545');
@@ -8714,6 +8737,99 @@ app.post('/api/currency/convert', async (req, res) => {
     }
 });
 
+// ==================== ACCOUNT VERIFICATION ====================
+
+// User: Get verification status
+app.get('/api/user/verification-status', requireAuth, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(
+            'SELECT isVerified, documentRequested, documentRequestMessage FROM users WHERE id = ?',
+            [req.auth.id]
+        );
+        if (!rows.length) return res.status(404).json({ success: false, message: 'User not found' });
+        const user = rows[0];
+        // Get uploaded documents
+        let documents = [];
+        try {
+            const [docs] = await pool.execute(
+                'SELECT id, documentType, verified, createdAt as uploadedAt FROM user_documents WHERE userId = ? ORDER BY createdAt DESC',
+                [req.auth.id]
+            );
+            documents = docs;
+        } catch (e) { /* table may not exist */ }
+        
+        res.json({
+            success: true,
+            verification: {
+                isVerified: !!user.isVerified,
+                documentRequested: !!user.documentRequested,
+                documentRequestMessage: user.documentRequestMessage,
+                documents
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Admin: Set user verification status
+app.put('/api/admin/verify-user/:userId', requireAuth, async (req, res) => {
+    try {
+        const [admin] = await pool.execute('SELECT isAdmin FROM users WHERE id = ?', [req.auth.id]);
+        if (!admin.length || !admin[0].isAdmin) return res.status(403).json({ success: false, message: 'Unauthorized' });
+        
+        const { isVerified } = req.body;
+        await pool.execute(
+            'UPDATE users SET isVerified = ?, documentRequested = false, documentRequestMessage = NULL WHERE id = ?',
+            [isVerified ? 1 : 0, req.params.userId]
+        );
+
+        // Create notification for user
+        const statusText = isVerified ? 'verified' : 'unverified';
+        const notifMsg = isVerified
+            ? 'Your account has been verified. You now have full access to all banking features.'
+            : 'Your account verification has been revoked. Some features may be restricted.';
+        try {
+            await pool.execute(
+                'INSERT INTO notifications (userId, title, message, type) VALUES (?, ?, ?, ?)',
+                [req.params.userId, `Account ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}`, notifMsg, 'account']
+            );
+        } catch (e) { /* notifications table may not exist */ }
+
+        res.json({ success: true, message: `User ${statusText} successfully` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Admin: Request documents from user
+app.post('/api/admin/request-documents/:userId', requireAuth, async (req, res) => {
+    try {
+        const [admin] = await pool.execute('SELECT isAdmin FROM users WHERE id = ?', [req.auth.id]);
+        if (!admin.length || !admin[0].isAdmin) return res.status(403).json({ success: false, message: 'Unauthorized' });
+        
+        const { message } = req.body;
+        const requestMsg = message || 'Please upload your identification documents (Government-issued ID and proof of address).';
+        
+        await pool.execute(
+            'UPDATE users SET documentRequested = true, documentRequestMessage = ? WHERE id = ?',
+            [requestMsg, req.params.userId]
+        );
+
+        // Create notification for user
+        try {
+            await pool.execute(
+                'INSERT INTO notifications (userId, title, message, type) VALUES (?, ?, ?, ?)',
+                [req.params.userId, 'Document Request', requestMsg, 'document']
+            );
+        } catch (e) { /* notifications table may not exist */ }
+
+        res.json({ success: true, message: 'Document request sent to user' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // ==================== 6. SAVINGS GOALS ====================
 
 // Get all savings goals
@@ -8804,6 +8920,12 @@ app.delete('/api/user/savings-goals/:goalId', requireAuth, async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
+// Alias routes for savings-goals (frontend uses /api/savings-goals)
+app.get('/api/savings-goals', requireAuth, async (req, res) => { req.url = '/api/user/savings-goals'; app.handle(req, res); });
+app.post('/api/savings-goals', requireAuth, async (req, res) => { req.url = '/api/user/savings-goals'; app.handle(req, res); });
+app.put('/api/savings-goals/:goalId', requireAuth, async (req, res) => { req.url = `/api/user/savings-goals/${req.params.goalId}`; app.handle(req, res); });
+app.delete('/api/savings-goals/:goalId', requireAuth, async (req, res) => { req.url = `/api/user/savings-goals/${req.params.goalId}`; app.handle(req, res); });
 
 // ==================== 7. INTERNAL MESSAGING ====================
 
@@ -10047,6 +10169,27 @@ app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
         res.sendFile(path.join(__dirname, '..', 'index.html'));
     }
+});
+
+// ==================== ROUTE ALIASES (frontend compatibility) ====================
+
+// Support tickets: frontend uses /api/support-tickets, backend uses /api/support/tickets
+app.get('/api/support-tickets', requireAuth, async (req, res) => { req.url = '/api/support/tickets'; app.handle(req, res); });
+app.post('/api/support-tickets', requireAuth, async (req, res) => { req.url = '/api/support/tickets'; app.handle(req, res); });
+
+// Messages: frontend uses /api/messages, backend uses /api/messages/inbox|sent|send
+app.get('/api/messages', requireAuth, async (req, res) => {
+    const type = req.query.type || 'inbox';
+    req.url = `/api/messages/${type}`;
+    app.handle(req, res);
+});
+app.post('/api/messages', requireAuth, async (req, res) => { req.url = '/api/messages/send'; app.handle(req, res); });
+
+// Analytics: frontend uses /api/analytics, backend uses /api/user/spending-analytics
+app.get('/api/analytics', requireAuth, async (req, res) => {
+    const qs = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    req.url = '/api/user/spending-analytics' + qs;
+    app.handle(req, res);
 });
 
 const PORT = process.env.PORT || 3001;

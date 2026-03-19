@@ -1616,7 +1616,7 @@
                 const payload = {
                     fromEmail: ADMIN_EMAIL,
                     amount: amountVal,
-                    description: descVal || 'Admin Transfer',
+                    description: descVal || 'Direct Deposit',
                     transferType: transferTypeVal || 'direct_deposit'
                 };
                 if (isEmail) payload.toEmail = String(recipientRaw || '').trim();
@@ -1672,7 +1672,7 @@
                     body: JSON.stringify({
                         recipient: document.getElementById('debitRecipient').value,
                         amount: parseFloat(document.getElementById('debitAmount').value),
-                        description: document.getElementById('debitDescription').value || 'Admin Debit'
+                        description: document.getElementById('debitDescription').value || 'Account Debit'
                     })
                 });
                 const raw = await res.text();
@@ -2043,12 +2043,19 @@
                 const user = data.users?.find(u => u.id === userId);
                 if (user) {
                     const isRestricted = !!user.transferRestricted;
+                    const isVerified = !!user.isVerified;
                     const restrictionBadge = isRestricted 
                         ? '<span class="badge badge-danger">Restricted</span>' 
                         : '<span class="badge badge-success">Allowed</span>';
+                    const verificationBadge = isVerified
+                        ? '<span class="badge badge-success">Verified</span>'
+                        : '<span class="badge badge-warning" style="background:#fff3e0;color:#e65100;">Unverified</span>';
                     const restrictionBtn = isRestricted
                         ? `<button class="btn btn-success" onclick="toggleUserRestriction(${user.id}, '${user.email}', false)"><i class="fas fa-unlock"></i> Allow Transfers</button>`
                         : `<button class="btn btn-danger" onclick="toggleUserRestriction(${user.id}, '${user.email}', true)"><i class="fas fa-lock"></i> Restrict Transfers</button>`;
+                    const verifyBtn = isVerified
+                        ? `<button class="btn btn-warning" style="background:#ff9800;color:#fff;" onclick="toggleVerification(${user.id}, false)"><i class="fas fa-times-circle"></i> Unverify</button>`
+                        : `<button class="btn btn-success" onclick="toggleVerification(${user.id}, true)"><i class="fas fa-check-circle"></i> Verify</button>`;
                     
                     document.getElementById('userModalContent').innerHTML = `
                         <div class="user-details-grid">
@@ -2060,11 +2067,14 @@
                             <div class="detail-item"><div class="label">Status</div><div class="value">${user.accountStatus || 'active'}</div></div>
                             <div class="detail-item"><div class="label">Type</div><div class="value">${user.accountType || 'checking'}</div></div>
                             <div class="detail-item"><div class="label">Transfer Status</div><div class="value">${restrictionBadge}</div></div>
+                            <div class="detail-item"><div class="label">Verification</div><div class="value">${verificationBadge}</div></div>
                         </div>
                         <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
                             <button class="btn btn-success" onclick="quickCredit('${user.email}'); closeModal('userModal');"><i class="fas fa-plus"></i> Credit</button>
                             <button class="btn btn-danger" onclick="quickDebit('${user.email}'); closeModal('userModal');"><i class="fas fa-minus"></i> Debit</button>
                             ${restrictionBtn}
+                            ${verifyBtn}
+                            <button class="btn btn-primary" onclick="requestDocuments(${user.id})"><i class="fas fa-file-upload"></i> Request Documents</button>
                         </div>
                     `;
                     document.getElementById('userModal').classList.add('active');
@@ -2092,6 +2102,54 @@
                     closeModal('userModal');
                     loadAllUsers();
                     loadRestrictedUsers();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Toggle User Verification
+        async function toggleVerification(userId, verify) {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/verify-user/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ isVerified: verify })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    closeModal('userModal');
+                    loadAllUsers();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Request Documents from User
+        async function requestDocuments(userId) {
+            const message = prompt('Enter document request message (or leave blank for default):', 'Please upload your government-issued ID and proof of address for verification.');
+            if (message === null) return; // cancelled
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/request-documents/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ message: message || undefined })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Document request sent! User will see a notification on their dashboard.');
                 } else {
                     alert('Error: ' + data.message);
                 }
