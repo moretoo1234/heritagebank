@@ -290,11 +290,11 @@
                 <div class="converter-form">
                     <div class="form-group">
                         <label>Amount</label>
-                        <input type="number" id="convertAmount" value="100" min="0" step="0.01" onchange="convertCurrency()">
+                        <input type="number" id="convertAmount" value="100" min="0" step="0.01" title="Amount" onchange="convertCurrency()">
                     </div>
                     <div class="form-group">
                         <label>From</label>
-                        <select id="fromCurrency" onchange="convertCurrency()">
+                        <select id="fromCurrency" title="From Currency" onchange="convertCurrency()">
                             <option value="USD">USD - US Dollar</option>
                             <option value="EUR">EUR - Euro</option>
                             <option value="GBP">GBP - British Pound</option>
@@ -307,7 +307,7 @@
                     <button class="swap-btn" onclick="swapCurrencies()" title="Swap"><i class="fas fa-exchange-alt"></i></button>
                     <div class="form-group">
                         <label>To</label>
-                        <select id="toCurrency" onchange="convertCurrency()">
+                        <select id="toCurrency" title="To Currency" onchange="convertCurrency()">
                             <option value="EUR">EUR - Euro</option>
                             <option value="USD">USD - US Dollar</option>
                             <option value="GBP">GBP - British Pound</option>
@@ -670,17 +670,17 @@
             window.location.href = 'signin.html';
         }
     </script>
-    <footer style="background:#1a2332; padding:20px 0; margin-top:40px; text-align:center;">
-        <div style="max-width:1200px; margin:0 auto; padding:0 20px;">
-            <div style="margin-bottom:10px;">
-                <a href="terms.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Terms</a>
-                <a href="privacy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Privacy</a>
-                <a href="cookie-policy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Cookies</a>
-                <a href="accessibility.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Accessibility</a>
-                <a href="disclosures.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Disclosures</a>
-                <a href="security.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Security</a>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
             </div>
-            <p style="color:#556677; font-size:0.75rem; margin:0;">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
 </body>

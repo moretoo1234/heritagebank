@@ -102,7 +102,7 @@
                 <div class="logo-section">
                     <a href="index.html"><img src="./assets/logo.png" alt="Heritage Bank" class="logo"></a>
                 </div>
-                <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+                <button class="hamburger" id="hamburger" title="Toggle Navigation"><span></span><span></span><span></span></button>
                 <ul class="nav-links" id="navLinks">
                     <li><a href="index.html">Home</a></li>
                     <li><a href="index.html#services">Services</a></li>
@@ -127,7 +127,7 @@
     <!-- Loan Types -->
     <section class="loan-types">
         <div class="container">
-            <h2 style="text-align: center; margin-bottom: 40px; color: #1a5f7a;">Choose Your Loan Type</h2>
+            <h2 class="loan-section-heading">Choose Your Loan Type</h2>
             <div class="loan-grid">
                 <div class="loan-card" onclick="selectLoan(this, 'personal')">
                     <div class="icon"><i class="fas fa-user"></i></div>
@@ -184,15 +184,15 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Loan Amount ($)</label>
-                        <input type="number" id="calcAmount" value="25000" oninput="calculateLoan()">
+                        <input type="number" id="calcAmount" value="25000" title="Loan Amount" oninput="calculateLoan()">
                     </div>
                     <div class="form-group">
                         <label>Interest Rate (%)</label>
-                        <input type="number" id="calcRate" value="6.99" step="0.01" oninput="calculateLoan()">
+                        <input type="number" id="calcRate" value="6.99" step="0.01" title="Interest Rate" oninput="calculateLoan()">
                     </div>
                     <div class="form-group">
                         <label>Term (Months)</label>
-                        <select id="calcTerm" onchange="calculateLoan()">
+                        <select id="calcTerm" title="Loan Term" onchange="calculateLoan()">
                             <option value="12">12 months</option>
                             <option value="24">24 months</option>
                             <option value="36" selected>36 months</option>
@@ -212,54 +212,54 @@
 
             <div class="form-container">
                 <!-- Auth Notice -->
-                <div id="authNotice" class="auth-notice" style="display: none;">
+                <div id="authNotice" class="auth-notice initially-hidden">
                     <i class="fas fa-exclamation-triangle"></i>
                     <div>
                         <strong>Sign in required</strong>
-                        <p style="margin: 5px 0 0; color: #856404;">Please <a href="signin.html">sign in</a> to submit a loan application.</p>
+                        <p class="auth-notice-text">Please <a href="signin.html">sign in</a> to submit a loan application.</p>
                     </div>
                 </div>
 
                 <!-- My Applications -->
-                <div id="myApplications" class="my-applications" style="display: none;"></div>
+                <div id="myApplications" class="my-applications initially-hidden"></div>
 
-                <h2 style="text-align: center; margin-bottom: 30px; color: #1a5f7a;"><i class="fas fa-file-alt"></i> Loan Application</h2>
+                <h2 class="loan-form-heading"><i class="fas fa-file-alt"></i> Loan Application</h2>
                 <form id="loanForm">
                     <input type="hidden" id="loanType" name="loanType" value="">
 
-                    <h3 style="color: #1a5f7a; margin-bottom: 20px;">Personal Information</h3>
+                    <h3 class="loan-subsection-heading">Personal Information</h3>
                     <div class="form-row">
                         <div class="form-group">
                             <label>First Name *</label>
-                            <input type="text" name="firstName" required>
+                            <input type="text" name="firstName" title="First Name" required>
                         </div>
                         <div class="form-group">
                             <label>Last Name *</label>
-                            <input type="text" name="lastName" required>
+                            <input type="text" name="lastName" title="Last Name" required>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label>Email Address *</label>
-                            <input type="email" name="email" required>
+                            <input type="email" name="email" title="Email Address" required>
                         </div>
                         <div class="form-group">
                             <label>Phone Number *</label>
-                            <input type="tel" name="phone" required>
+                            <input type="tel" name="phone" title="Phone Number" required>
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Street Address *</label>
-                        <input type="text" name="address" required>
+                        <input type="text" name="address" title="Street Address" required>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label>City *</label>
-                            <input type="text" name="city" required>
+                            <input type="text" name="city" title="City" required>
                         </div>
                         <div class="form-group">
                             <label>State *</label>
-                            <select name="state" required>
+                            <select name="state" title="State" required>
                                 <option value="">Select State</option>
                                 <option value="AL">Alabama</option>
                                 <option value="AK">Alaska</option>
@@ -274,15 +274,15 @@
                         </div>
                         <div class="form-group">
                             <label>ZIP Code *</label>
-                            <input type="text" name="zip" required>
+                            <input type="text" name="zip" title="ZIP Code" required>
                         </div>
                     </div>
 
-                    <h3 style="color: #1a5f7a; margin: 30px 0 20px;">Employment & Income</h3>
+                    <h3 class="loan-subsection-heading-spaced">Employment & Income</h3>
                     <div class="form-row">
                         <div class="form-group">
                             <label>Employment Status *</label>
-                            <select name="employment" required>
+                            <select name="employment" title="Employment Status" required>
                                 <option value="">Select...</option>
                                 <option value="employed">Employed Full-Time</option>
                                 <option value="part-time">Employed Part-Time</option>
@@ -293,7 +293,7 @@
                         </div>
                         <div class="form-group">
                             <label>Employer Name</label>
-                            <input type="text" name="employer">
+                            <input type="text" name="employer" title="Employer Name">
                         </div>
                     </div>
                     <div class="form-row">
@@ -303,11 +303,11 @@
                         </div>
                         <div class="form-group">
                             <label>Years at Current Job</label>
-                            <input type="number" name="yearsEmployed">
+                            <input type="number" name="yearsEmployed" title="Years at Current Job">
                         </div>
                     </div>
 
-                    <h3 style="color: #1a5f7a; margin: 30px 0 20px;">Loan Details</h3>
+                    <h3 class="loan-subsection-heading-spaced">Loan Details</h3>
                     <div class="form-row">
                         <div class="form-group">
                             <label>Requested Amount *</label>
@@ -315,7 +315,7 @@
                         </div>
                         <div class="form-group">
                             <label>Preferred Term *</label>
-                            <select name="term" required>
+                            <select name="term" title="Preferred Term" required>
                                 <option value="">Select...</option>
                                 <option value="12">12 months</option>
                                 <option value="24">24 months</option>
@@ -331,9 +331,9 @@
                     </div>
 
                     <div class="form-group">
-                        <label style="display: flex; align-items: center; gap: 10px; font-weight: normal;">
+                        <label class="label-flex">
                             <input type="checkbox" required>
-                            I agree to the <a href="terms.html" style="color: #1a5f7a;">Terms & Conditions</a> and <a href="privacy.html" style="color: #1a5f7a;">Privacy Policy</a>
+                            I agree to the <a href="terms.html" class="link-teal">Terms & Conditions</a> and <a href="privacy.html" class="link-teal">Privacy Policy</a>
                         </label>
                     </div>
 
@@ -362,10 +362,10 @@
                     <img src="./assets/logo.png" alt="Heritage Bank" class="footer-logo">
                     <p>Building financial legacies since 1999.</p>
                     <div class="social-links">
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
                     </div>
                 </div>
                 <div class="footer-section">
@@ -628,8 +628,8 @@
             <h2>Application Submitted!</h2>
             <p>Your loan application has been received and is now under review.</p>
             <div class="app-id" id="applicationId">#LA-000001</div>
-            <p style="font-size: 0.9rem; color: #888;">You'll receive an email update within 1-2 business days.</p>
-            <button onclick="closeSuccessModal()" class="submit-btn" style="margin-top: 20px;">
+            <p class="success-note">You'll receive an email update within 1-2 business days.</p>
+            <button onclick="closeSuccessModal()" class="submit-btn btn-success-done">
                 <i class="fas fa-check"></i> Done
             </button>
         </div>

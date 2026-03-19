@@ -81,20 +81,20 @@
 </head>
 <body>
     <div class="container">
-        <a href="dashboard.html" style="color: #d4af37; text-decoration: none; display: inline-block; margin-bottom: 20px;">
+        <a href="dashboard.html" class="back-link">
             <i class="fas fa-arrow-left"></i> Back to Dashboard
         </a>
 
         <div class="card">
-            <h1 style="color: #1a472a; margin-top: 0;">
+            <h1 class="page-heading-green">
                 <i class="fas fa-file-invoice"></i> Account Statements
             </h1>
-            <p style="color: #666;">Download your account statement for any period</p>
+            <p class="page-subtitle">Download your account statement for any period</p>
 
-            <form id="statementForm" style="margin-top: 30px;">
+            <form id="statementForm" class="form-mt">
                 <div class="form-group">
                     <label>Statement Period</label>
-                    <select id="period" onchange="toggleCustomDates()">
+                    <select id="period" onchange="toggleCustomDates()" title="Statement Period">
                         <option value="month">Last Month</option>
                         <option value="quarter">Last Quarter (3 months)</option>
                         <option value="year">Last Year</option>
@@ -102,20 +102,20 @@
                     </select>
                 </div>
 
-                <div id="customDates" style="display: none;">
+                <div id="customDates" class="initially-hidden">
                     <div class="form-group">
                         <label>Start Date</label>
-                        <input type="date" id="startDate">
+                        <input type="date" id="startDate" title="Start Date">
                     </div>
                     <div class="form-group">
                         <label>End Date</label>
-                        <input type="date" id="endDate">
+                        <input type="date" id="endDate" title="End Date">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label>Format</label>
-                    <select id="format">
+                    <select id="format" title="Statement Format">
                         <option value="pdf">PDF (Recommended)</option>
                         <option value="csv">CSV (Spreadsheet)</option>
                     </select>
@@ -133,9 +133,9 @@
         </div>
 
         <div class="card">
-            <h2 style="color: #1a472a;">Previous Statements</h2>
-            <p style="color: #666;">Quick access to recent statements</p>
-            <div id="previousStatements" style="margin-top: 20px;">
+            <h2 class="page-heading-green">Previous Statements</h2>
+            <p class="page-subtitle">Quick access to recent statements</p>
+            <div id="previousStatements" class="prev-statements-list">
                 <!-- Will be populated dynamically -->
             </div>
         </div>
@@ -446,17 +446,17 @@
             gap: 10px;
         }
     </style>
-    <footer style="background:#1a2332; padding:20px 0; margin-top:40px; text-align:center;">
-        <div style="max-width:1200px; margin:0 auto; padding:0 20px;">
-            <div style="margin-bottom:10px;">
-                <a href="terms.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Terms</a>
-                <a href="privacy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Privacy</a>
-                <a href="cookie-policy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Cookies</a>
-                <a href="accessibility.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Accessibility</a>
-                <a href="disclosures.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Disclosures</a>
-                <a href="security.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Security</a>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
             </div>
-            <p style="color:#556677; font-size:0.75rem; margin:0;">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
 </body>

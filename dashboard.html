@@ -415,10 +415,10 @@
         
         <main class="main-content">
             <div class="header">
-                <div style="display: flex; align-items: center; gap: 15px;">
+                <div class="header-welcome-group">
                     <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                     <div>
-                        <p style="color: #666; margin-bottom: 5px;">Welcome back,</p>
+                        <p class="header-welcome-text">Welcome back,</p>
                         <h1 id="userName">User</h1>
                     </div>
                 </div>
@@ -427,13 +427,13 @@
                         <i class="fas fa-bell"></i>
                         <span class="notification-badge" id="notifBadge">0</span>
                     </button>
-                    <div class="notif-dropdown" id="notifDropdown" style="display:none; position:absolute; top:55px; right:80px; width:340px; max-height:400px; background:#fff; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,0.15); z-index:1000; overflow:hidden;">
-                        <div style="padding:15px; border-bottom:1px solid #eee; font-weight:600; color:#1a472a; display:flex; justify-content:space-between; align-items:center;">
+                    <div class="notif-dropdown" id="notifDropdown">
+                        <div class="notif-dropdown-header">
                             <span><i class="fas fa-bell"></i> Notifications</span>
-                            <button onclick="markAllRead()" style="background:none; border:none; color:#2196F3; cursor:pointer; font-size:0.85rem;">Mark all read</button>
+                            <button onclick="markAllRead()" class="notif-mark-read-btn">Mark all read</button>
                         </div>
-                        <div id="notifList" style="max-height:320px; overflow-y:auto; padding:5px 0;">
-                            <p style="text-align:center; color:#999; padding:20px;">No notifications</p>
+                        <div id="notifList" class="notif-list">
+                            <p class="notif-empty">No notifications</p>
                         </div>
                     </div>
                     <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
@@ -463,12 +463,12 @@
                     <div class="info-item">
                         <label>Account Number</label>
                         <strong id="accountNumber">-</strong>
-                        <button class="copy-btn" onclick="copyToClipboard('accountNumber')"><i class="fas fa-copy"></i></button>
+                        <button class="copy-btn" onclick="copyToClipboard('accountNumber')" title="Copy account number"><i class="fas fa-copy"></i></button>
                     </div>
                     <div class="info-item">
                         <label>Routing Number</label>
                         <strong>091238946</strong>
-                        <button class="copy-btn" onclick="copyText('091238946')"><i class="fas fa-copy"></i></button>
+                        <button class="copy-btn" onclick="copyText('091238946')" title="Copy routing number"><i class="fas fa-copy"></i></button>
                     </div>
                     <div class="info-item">
                         <label>Account Type</label>
@@ -476,7 +476,7 @@
                     </div>
                     <div class="info-item">
                         <label>Account Status</label>
-                        <strong style="color: #28a745;"><i class="fas fa-check-circle"></i> Active</strong>
+                        <strong class="status-active"><i class="fas fa-check-circle"></i> Active</strong>
                     </div>
                 </div>
             </div>
@@ -545,10 +545,10 @@
             <h3>Session Expiring Soon</h3>
             <p>Your session will expire due to inactivity.</p>
             <div class="session-timer" id="sessionTimer">2:00</div>
-            <button class="btn btn-primary" onclick="extendSession()" style="padding: 12px 30px; background: #1a472a; color: white; border: none; border-radius: 8px; cursor: pointer; margin-right: 10px;">
+            <button class="btn btn-primary session-extend-btn" onclick="extendSession()">
                 <i class="fas fa-redo"></i> Stay Logged In
             </button>
-            <button class="btn btn-secondary" onclick="logout()" style="padding: 12px 30px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">
+            <button class="btn btn-secondary session-logout-btn" onclick="logout()">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
         </div>
@@ -1160,17 +1160,17 @@
         });
     </script>
 
-    <footer style="background:#1a2332; padding:20px 0; margin-top:40px; text-align:center;">
-        <div style="max-width:1200px; margin:0 auto; padding:0 20px;">
-            <div style="margin-bottom:10px;">
-                <a href="terms.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Terms</a>
-                <a href="privacy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Privacy</a>
-                <a href="cookie-policy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Cookies</a>
-                <a href="accessibility.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Accessibility</a>
-                <a href="disclosures.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Disclosures</a>
-                <a href="security.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Security</a>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
             </div>
-            <p style="color:#556677; font-size:0.75rem; margin:0;">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
 </body>

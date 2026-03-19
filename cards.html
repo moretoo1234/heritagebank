@@ -236,31 +236,31 @@
         <h1><i class="fas fa-credit-card"></i> My Cards</h1>
 
         <div class="card">
-            <h2 style="color: #1a472a; margin-top: 0;">Your Cards</h2>
+            <h2 class="cards-section-heading">Your Cards</h2>
             
             <div id="activeCards">
                 <!-- Cards will be loaded dynamically -->
-                <p style="color: #999; text-align: center; padding: 20px;">Loading cards...</p>
+                <p class="cards-loading">Loading cards...</p>
             </div>
         </div>
 
         <div class="card">
-            <h2 style="color: #1a472a; margin-top: 0;">Apply for a Card</h2>
+            <h2 class="cards-section-heading">Apply for a Card</h2>
 
-            <div style="display:grid; gap: 20px;">
-                <div style="background:#f5f7fa; padding: 18px; border-radius: 10px;">
-                    <h3 style="margin:0 0 8px 0; color:#1a472a;"><i class="fas fa-bolt"></i> Instant Virtual Card</h3>
-                    <p style="margin:0 0 12px 0; color:#666; font-size: 14px;">
+            <div class="cards-apply-grid">
+                <div class="card-option-box">
+                    <h3 class="card-option-title"><i class="fas fa-bolt"></i> Instant Virtual Card</h3>
+                    <p class="card-option-desc">
                         Get a virtual card instantly for online payments. You will see the full card number and CVV one time.
                     </p>
-                    <button class="btn" style="width:100%;" onclick="applyVirtualCard()">
+                    <button class="btn btn-full-width" onclick="applyVirtualCard()">
                         <i class="fas fa-plus"></i> Get Virtual Card Now
                     </button>
                 </div>
 
-                <div style="background:#f5f7fa; padding: 18px; border-radius: 10px;">
-                    <h3 style="margin:0 0 8px 0; color:#1a472a;"><i class="fas fa-truck"></i> Physical Card (Delivery)</h3>
-                    <p style="margin:0 0 12px 0; color:#666; font-size: 14px;">
+                <div class="card-option-box">
+                    <h3 class="card-option-title"><i class="fas fa-truck"></i> Physical Card (Delivery)</h3>
+                    <p class="card-option-desc">
                         Request a physical card. Estimated delivery is <strong>7–8 business days</strong>.
                     </p>
 
@@ -280,7 +280,7 @@
                             <input type="text" id="cardholderName" placeholder="Optional (defaults to your profile name)">
                         </div>
 
-                        <button type="submit" style="padding: 12px; background: #d4af37; color: #1a472a; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%;">
+                        <button type="submit" class="btn-card-submit">
                             <i class="fas fa-paper-plane"></i> Request Physical Card
                         </button>
                     </form>
@@ -911,17 +911,17 @@ Click 'Manage' in the mobile app or call us at 1-800-HERITAGE
         // Initialize
         checkAuth();
     </script>
-    <footer style="background:#1a2332; padding:20px 0; margin-top:40px; text-align:center;">
-        <div style="max-width:1200px; margin:0 auto; padding:0 20px;">
-            <div style="margin-bottom:10px;">
-                <a href="terms.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Terms</a>
-                <a href="privacy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Privacy</a>
-                <a href="cookie-policy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Cookies</a>
-                <a href="accessibility.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Accessibility</a>
-                <a href="disclosures.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Disclosures</a>
-                <a href="security.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Security</a>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
             </div>
-            <p style="color:#556677; font-size:0.75rem; margin:0;">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
 </body>

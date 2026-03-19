@@ -489,7 +489,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <button class="back-btn" onclick="location.href='dashboard.html'"><i class="fas fa-arrow-left"></i></button>
+            <button class="back-btn" onclick="location.href='dashboard.html'" title="Back to Dashboard"><i class="fas fa-arrow-left"></i></button>
             <h1>Send Money</h1>
         </div>
         
@@ -525,19 +525,19 @@
                     <small>Enter the email address of the Heritage Bank user</small>
                 </div>
                 
-                <div class="form-group" id="accountGroup" style="display: none;">
+                <div class="form-group initially-hidden" id="accountGroup">
                     <label>Recipient Account Number</label>
                     <input type="text" id="toAccountNumber" placeholder="10-digit account number" maxlength="10" oninput="lookupRecipient()">
                     <small>Enter the 10-digit Heritage Bank account number</small>
                 </div>
 
                 <!-- UK Bank Transfer Fields -->
-                <div id="ukBankGroup" style="display: none;">
+                <div id="ukBankGroup" class="initially-hidden">
                     <div class="form-group">
                         <label>Select Bank</label>
                         <div class="bank-selector" id="bankSelector"></div>
                     </div>
-                    <div class="sort-code-display" id="sortCodeDisplay" style="display:none;">
+                    <div class="sort-code-display initially-hidden" id="sortCodeDisplay">
                         <i class="fas fa-building-columns"></i>
                         <span>Sort Code: <span id="selectedSortCode">--</span></span>
                     </div>
@@ -558,18 +558,18 @@
                 </div>
 
                 <!-- US Wire/ACH Transfer Fields -->
-                <div id="usBankGroup" style="display: none;">
+                <div id="usBankGroup" class="initially-hidden">
                     <div class="form-group">
                         <label>Select Bank</label>
                         <div class="bank-selector" id="usBankSelector"></div>
                     </div>
-                    <div class="sort-code-display" id="routingDisplay" style="display:none;">
+                    <div class="sort-code-display initially-hidden" id="routingDisplay">
                         <i class="fas fa-building-columns"></i>
                         <span>Routing Number: <strong id="selectedRouting">-</strong></span>
                     </div>
                     <div class="form-group">
                         <label>Transfer Type</label>
-                        <select id="usTransferMethod" style="width:100%;padding:10px;border-radius:8px;border:2px solid #e0e0e0;font-size:0.95rem;">
+                        <select id="usTransferMethod" class="form-select-styled" title="Transfer Type">
                             <option value="ach">ACH Transfer (1-3 business days)</option>
                             <option value="wire">Wire Transfer (same day)</option>
                         </select>
@@ -581,7 +581,7 @@
                     </div>
                     <div class="form-group">
                         <label>Account Type</label>
-                        <select id="usAccountType" style="width:100%;padding:10px;border-radius:8px;border:2px solid #e0e0e0;font-size:0.95rem;">
+                        <select id="usAccountType" class="form-select-styled" title="Account Type">
                             <option value="checking">Checking</option>
                             <option value="savings">Savings</option>
                         </select>
@@ -656,16 +656,16 @@
                     <textarea id="description" rows="2" placeholder="What's this for?"></textarea>
                 </div>
                 
-                <div class="transfer-summary" id="transferSummary" style="display: none;">
+                <div class="transfer-summary initially-hidden" id="transferSummary">
                     <div class="summary-row">
                         <span>You Send (USD)</span>
                         <span id="summaryAmount">$0.00</span>
                     </div>
-                    <div class="summary-row" id="summaryConvRow" style="display:none;">
+                    <div class="summary-row initially-hidden" id="summaryConvRow">
                         <span>Recipient Receives (<span id="summaryRecvCurrency">USD</span>)</span>
                         <span id="summaryRecvAmount">$0.00</span>
                     </div>
-                    <div class="summary-row" id="summaryRateRow" style="display:none;">
+                    <div class="summary-row initially-hidden" id="summaryRateRow">
                         <span>Exchange Rate</span>
                         <span id="summaryRate">-</span>
                     </div>
@@ -685,13 +685,13 @@
             </form>
         </div>
         
-        <div class="card recent-transfers" id="recentTransfersSection" style="display: none;">
+        <div class="card recent-transfers initially-hidden" id="recentTransfersSection">
             <h3><i class="fas fa-history"></i> Recent Recipients</h3>
             <div id="recentRecipients"></div>
         </div>
 
         <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="beneficiary-header">
                 <h3><i class="fas fa-address-book"></i> Saved Beneficiaries</h3>
                 <button class="btn-action" onclick="showAddBeneficiaryModal()">
                     <i class="fas fa-plus"></i> Add Beneficiary
@@ -717,10 +717,10 @@
                     <div class="label">Amount Sent</div>
                     <div class="amount" id="receiptAmount">$0.00</div>
                 </div>
-                <div id="receiptConversionRow" style="display:none; text-align:center; margin-bottom: 14px;">
-                    <div style="color:#888; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">Recipient Receives</div>
-                    <div style="font-size:1.4rem; font-weight:700; color:#28a745;" id="receiptRecvAmount">$0.00</div>
-                    <div style="font-size:0.72rem; color:#999;" id="receiptExRate">Rate: 1 USD = 0.79 GBP</div>
+                <div id="receiptConversionRow" class="receipt-conversion-row">
+                    <div class="receipt-conversion-label">Recipient Receives</div>
+                    <div class="receipt-conversion-amount" id="receiptRecvAmount">$0.00</div>
+                    <div class="receipt-conversion-rate" id="receiptExRate">Rate: 1 USD = 0.79 GBP</div>
                 </div>
                 <div class="receipt-stamp" id="receiptStamp">SUCCESSFUL</div>
                 <hr class="receipt-divider">
@@ -729,11 +729,11 @@
                 <div class="receipt-row"><span class="rlabel">Date & Time</span><span class="rvalue" id="receiptDate">-</span></div>
                 <div class="receipt-row"><span class="rlabel">Reference</span><span class="rvalue" id="receiptRef">-</span></div>
                 <div class="receipt-row"><span class="rlabel">Description</span><span class="rvalue" id="receiptDesc">-</span></div>
-                <div class="receipt-row" id="receiptCurrencyRow" style="display:none;"><span class="rlabel">Currency</span><span class="rvalue" id="receiptCurrency">-</span></div>
-                <div class="receipt-row"><span class="rlabel">Status</span><span class="rvalue" id="receiptStatus" style="color:#28a745;font-weight:700;">Completed ✓</span></div>
+                <div class="receipt-row initially-hidden" id="receiptCurrencyRow"><span class="rlabel">Currency</span><span class="rvalue" id="receiptCurrency">-</span></div>
+                <div class="receipt-row"><span class="rlabel">Status</span><span class="rvalue receipt-status-success" id="receiptStatus">Completed ✓</span></div>
                 <hr class="receipt-divider">
                 <div class="receipt-row"><span class="rlabel">Transaction Fee</span><span class="rvalue" id="receiptFee">$0.00</span></div>
-                <div class="receipt-row" style="font-weight:700;font-size:1rem;"><span class="rlabel" style="color:#1a472a;">Total Debited</span><span class="rvalue" style="color:#1a472a;" id="receiptTotal">$0.00</span></div>
+                <div class="receipt-row receipt-total-row"><span class="rlabel">Total Debited</span><span class="rvalue" id="receiptTotal">$0.00</span></div>
             </div>
             <div class="receipt-footer">
                 <div class="receipt-actions">
@@ -1615,17 +1615,17 @@
             }
         }
     </script>
-    <footer style="background:#1a2332; padding:20px 0; margin-top:40px; text-align:center;">
-        <div style="max-width:1200px; margin:0 auto; padding:0 20px;">
-            <div style="margin-bottom:10px;">
-                <a href="terms.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Terms</a>
-                <a href="privacy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Privacy</a>
-                <a href="cookie-policy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Cookies</a>
-                <a href="accessibility.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Accessibility</a>
-                <a href="disclosures.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Disclosures</a>
-                <a href="security.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Security</a>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
             </div>
-            <p style="color:#556677; font-size:0.75rem; margin:0;">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
 </body>

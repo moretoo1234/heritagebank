@@ -114,7 +114,7 @@
         <h1><i class="fas fa-chart-line"></i> Investments</h1>
 
         <div class="card">
-            <h2 style="color: #1a472a; margin-top: 0;">Available Investment Products</h2>
+            <h2 class="invest-section-heading">Available Investment Products</h2>
             
             <div class="investment-item">
                 <div class="investment-info">
@@ -122,8 +122,8 @@
                     <p>Low risk, guaranteed returns</p>
                 </div>
                 <div>
-                    <p style="margin: 0; color: #1a472a;">Min: $500</p>
-                    <p style="margin: 0; color: #999; font-size: 12px;">1-5 year terms</p>
+                    <p class="invest-min-amount">Min: $500</p>
+                    <p class="invest-term-info">1-5 year terms</p>
                 </div>
                 <div class="investment-return">3.5% APY</div>
                 <button class="invest-btn" onclick="investNow('Savings Bond', 3.5)">Invest</button>
@@ -135,8 +135,8 @@
                     <p>Moderate risk, diversified portfolio</p>
                 </div>
                 <div>
-                    <p style="margin: 0; color: #1a472a;">Min: $1,000</p>
-                    <p style="margin: 0; color: #999; font-size: 12px;">5+ year horizon</p>
+                    <p class="invest-min-amount">Min: $1,000</p>
+                    <p class="invest-term-info">5+ year horizon</p>
                 </div>
                 <div class="investment-return">7.2% APY*</div>
                 <button class="invest-btn" onclick="investNow('Index Fund', 7.2)">Invest</button>
@@ -148,8 +148,8 @@
                     <p>Flexible terms, competitive rates</p>
                 </div>
                 <div>
-                    <p style="margin: 0; color: #1a472a;">Min: $1,000</p>
-                    <p style="margin: 0; color: #999; font-size: 12px;">3-12 month terms</p>
+                    <p class="invest-min-amount">Min: $1,000</p>
+                    <p class="invest-term-info">3-12 month terms</p>
                 </div>
                 <div class="investment-return">4.8% APY</div>
                 <button class="invest-btn" onclick="investNow('Fixed Deposit', 4.8)">Invest</button>
@@ -161,8 +161,8 @@
                     <p>Higher risk, long-term growth potential</p>
                 </div>
                 <div>
-                    <p style="margin: 0; color: #1a472a;">Min: $2,000</p>
-                    <p style="margin: 0; color: #999; font-size: 12px;">10+ year horizon</p>
+                    <p class="invest-min-amount">Min: $2,000</p>
+                    <p class="invest-term-info">10+ year horizon</p>
                 </div>
                 <div class="investment-return">9.5% APY*</div>
                 <button class="invest-btn" onclick="investNow('Growth Fund', 9.5)">Invest</button>
@@ -170,12 +170,12 @@
         </div>
 
         <div class="card">
-            <h2 style="color: #1a472a; margin-top: 0;">Make an Investment</h2>
+            <h2 class="invest-section-heading">Make an Investment</h2>
             
             <form onsubmit="handleInvestment(event)">
                 <div class="form-group">
                     <label>Investment Product</label>
-                    <select id="product" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" required>
+                    <select id="product" class="invest-select" title="Investment Product" required>
                         <option value="">Select a product...</option>
                         <option value="Savings Bond">Savings Bond (3.5% APY)</option>
                         <option value="Index Fund">Index Fund (7.2% APY)</option>
@@ -194,25 +194,25 @@
                     <input type="number" id="period" placeholder="5" min="1" max="30" step="1" required>
                 </div>
 
-                <button type="submit" style="padding: 12px; background: #d4af37; color: #1a472a; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s; width: 100%;">
+                <button type="submit" class="invest-submit-btn">
                     <i class="fas fa-check"></i> Invest Now
                 </button>
             </form>
         </div>
         
         <!-- My Investments Section -->
-        <div class="card" id="myInvestments" style="display: none;">
-            <h2 style="color: #1a472a; margin-top: 0;"><i class="fas fa-chart-pie"></i> My Investments</h2>
+        <div class="card initially-hidden" id="myInvestments">
+            <h2 class="invest-section-heading"><i class="fas fa-chart-pie"></i> My Investments</h2>
             <!-- Will be populated dynamically -->
         </div>
 
-        <p style="color: #999; font-size: 12px; text-align: center; margin-top: 20px;">
+        <p class="invest-disclaimer">
             * Past performance does not guarantee future results. Please read all investment documents carefully.
         </p>
     </div>
     
     <!-- Notification toast -->
-    <div id="notification" style="display: none; position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 8px; z-index: 1000; min-width: 250px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: 500;"></div>
+    <div id="notification" class="invest-notification"></div>
 
     <script src="script.js"></script>
     <script>
@@ -436,17 +436,17 @@ Funds have been invested immediately.
         checkAuth();
         loadMyInvestments();
     </script>
-    <footer style="background:#1a2332; padding:20px 0; margin-top:40px; text-align:center;">
-        <div style="max-width:1200px; margin:0 auto; padding:0 20px;">
-            <div style="margin-bottom:10px;">
-                <a href="terms.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Terms</a>
-                <a href="privacy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Privacy</a>
-                <a href="cookie-policy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Cookies</a>
-                <a href="accessibility.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Accessibility</a>
-                <a href="disclosures.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Disclosures</a>
-                <a href="security.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Security</a>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
             </div>
-            <p style="color:#556677; font-size:0.75rem; margin:0;">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
 </body>

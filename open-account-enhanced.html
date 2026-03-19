@@ -109,23 +109,23 @@
         <form id="signupForm">
             <!-- Step 1: Personal Information -->
             <div class="form-step active" data-step="1">
-                <h2 style="color: #1a472a; margin-bottom: 25px;">Personal Information</h2>
+                <h2 class="form-step-heading">Personal Information</h2>
                 
                 <div class="form-row">
                     <div class="form-group">
                         <label>First Name <span class="required">*</span></label>
-                        <input type="text" id="firstName" required>
+                        <input type="text" id="firstName" title="First Name" required>
                     </div>
                     <div class="form-group">
                         <label>Last Name <span class="required">*</span></label>
-                        <input type="text" id="lastName" required>
+                        <input type="text" id="lastName" title="Last Name" required>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label>Date of Birth <span class="required">*</span></label>
-                        <input type="date" id="dateOfBirth" required max="2007-01-01">
+                        <input type="date" id="dateOfBirth" title="Date of Birth" required max="2007-01-01">
                         <div class="help-text">You must be 18 years or older</div>
                     </div>
                     <div class="form-group">
@@ -142,7 +142,7 @@
 
             <!-- Step 2: Contact Details -->
             <div class="form-step" data-step="2">
-                <h2 style="color: #1a472a; margin-bottom: 25px;">Contact Information</h2>
+                <h2 class="form-step-heading">Contact Information</h2>
                 
                 <div class="form-group">
                     <label>Email Address <span class="required">*</span></label>
@@ -201,7 +201,7 @@
 
             <!-- Step 3: Account Setup -->
             <div class="form-step" data-step="3">
-                <h2 style="color: #1a472a; margin-bottom: 25px;">Account Setup</h2>
+                <h2 class="form-step-heading">Account Setup</h2>
                 
                 <div class="form-group">
                     <label>Select Account Type <span class="required">*</span></label>
@@ -273,9 +273,9 @@
 
             <!-- Step 4: Review & Terms -->
             <div class="form-step" data-step="4">
-                <h2 style="color: #1a472a; margin-bottom: 25px;">Review & Confirm</h2>
+                <h2 class="form-step-heading">Review & Confirm</h2>
                 
-                <div id="reviewSummary" style="background: #f5f5f5; padding: 20px; border-radius: 12px; margin-bottom: 25px;"></div>
+                <div id="reviewSummary" class="review-summary-box"></div>
 
                 <div class="checkbox-group">
                     <input type="checkbox" id="agreeTerms" required>
@@ -306,22 +306,22 @@
 
         <div class="back-link">
             <p>Already have an account? <a href="signin.html">Sign In</a></p>
-            <p style="margin-top: 10px;"><a href="index.html">← Back to Home</a></p>
+            <p class="signin-back-link"><a href="index.html">← Back to Home</a></p>
         </div>
     </div>
 
     <script src="signup-enhanced.js"></script>
-    <footer style="background:#1a2332; padding:20px 0; margin-top:40px; text-align:center;">
-        <div style="max-width:1200px; margin:0 auto; padding:0 20px;">
-            <div style="margin-bottom:10px;">
-                <a href="terms.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Terms</a>
-                <a href="privacy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Privacy</a>
-                <a href="cookie-policy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Cookies</a>
-                <a href="accessibility.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Accessibility</a>
-                <a href="disclosures.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Disclosures</a>
-                <a href="security.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Security</a>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
             </div>
-            <p style="color:#556677; font-size:0.75rem; margin:0;">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
 </body>

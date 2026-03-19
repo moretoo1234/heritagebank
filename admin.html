@@ -20,6 +20,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
         .logo { font-size: 24px; font-weight: 700; color: #ffd700; }
@@ -274,10 +275,29 @@
             .modal-content { padding: 20px; }
             .user-details-grid { grid-template-columns: 1fr; }
             .detail-item .value { font-size: 14px; }
-            .sidebar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .sidebar { flex-wrap: nowrap; overflow-x: auto; overflow-x: auto; }
             .nav-item { white-space: nowrap; flex-shrink: 0; padding: 8px 12px; font-size: 12px; }
             .quick-actions { flex-direction: column; }
         }
+
+        /* Utility classes */
+        .text-center-muted { text-align: center; color: #888; }
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .btn-filter-all { background: #555; color: #fff; }
+        .check-image-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; align-items: center; flex-direction: column; gap: 20px; padding: 20px; overflow-y: auto; }
+        .check-modal-close { position: fixed; top: 20px; right: 30px; background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; z-index: 10001; }
+        .check-modal-grid { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; align-items: flex-start; max-width: 1200px; }
+        .check-modal-item { text-align: center; }
+        .check-modal-item h3 { color: #fff; margin-bottom: 10px; }
+        .check-modal-item img { max-width: 550px; max-height: 400px; border-radius: 8px; border: 2px solid #c9a84c; }
+        .ticket-filter-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+        .admin-select-filter { padding: 10px; border-radius: 5px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+        .response-card-detail { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .response-body-text { color: #ccc; margin-top: 5px; }
+        .admin-textarea { width: 100%; }
+        .admin-select-full { width: 100%; padding: 10px; }
+        .btn-cancel-ml { margin-left: 10px; }
+        .stats-grid-mt { margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -578,7 +598,7 @@
                             <input type="text" id="lookupEmail" placeholder="Enter email or account number">
                             <button class="btn btn-primary" onclick="lookupUser()"><i class="fas fa-search"></i> Find</button>
                         </div>
-                        <div id="lookupResult" class="user-details-grid" style="display: none;">
+                        <div id="lookupResult" class="user-details-grid initially-hidden">
                             <div class="detail-item"><div class="label">Name</div><div class="value" id="resultName">-</div></div>
                             <div class="detail-item"><div class="label">Email</div><div class="value" id="resultEmail">-</div></div>
                             <div class="detail-item"><div class="label">Account</div><div class="value" id="resultAccount">-</div></div>
@@ -657,8 +677,8 @@
                 <div id="transfer-approvals" class="section">
                     <div class="card">
                         <h2><i class="fas fa-hourglass-half"></i> Pending Transactions</h2>
-                        <p style="color: #888; margin-bottom: 20px;">All user-initiated transfers waiting for admin approval. Approve to complete the transfer or deny with a reason.</p>
-                        <button class="btn btn-info" onclick="loadPendingTransactions()" style="margin-bottom: 20px;"><i class="fas fa-sync"></i> Refresh</button>
+                        <p class="admin-desc">All user-initiated transfers waiting for admin approval. Approve to complete the transfer or deny with a reason.</p>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadPendingTransactions()"><i class="fas fa-sync"></i> Refresh</button>
                         <div class="table-wrapper">
                             <table>
                                 <thead>
@@ -681,8 +701,8 @@
 
                     <div class="card">
                         <h2><i class="fas fa-clock"></i> Pending Transfer Approvals (Restricted Users)</h2>
-                        <p style="color: #888; margin-bottom: 20px;">These are transfers from users with restricted accounts that require your approval.</p>
-                        <button class="btn btn-info" onclick="loadPendingTransfers()" style="margin-bottom: 20px;"><i class="fas fa-sync"></i> Refresh</button>
+                        <p class="admin-desc">These are transfers from users with restricted accounts that require your approval.</p>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadPendingTransfers()"><i class="fas fa-sync"></i> Refresh</button>
                         <div class="table-wrapper">
                             <table>
                                 <thead>
@@ -704,24 +724,24 @@
 
                     <div class="card">
                         <h2><i class="fas fa-user-lock"></i> Manage Transfer Restrictions</h2>
-                        <p style="color: #888; margin-bottom: 20px;">Enable transfer restrictions on specific accounts. Users with restrictions need admin approval for all transfers.</p>
+                        <p class="admin-desc">Enable transfer restrictions on specific accounts. Users with restrictions need admin approval for all transfers.</p>
                         
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>User Email or Account Number</label>
                                 <input type="text" id="restrictionUserInput" placeholder="Enter email or account number">
                             </div>
-                            <div class="form-group" style="display: flex; align-items: flex-end; gap: 10px;">
+                            <div class="form-group admin-restrict-actions">
                                 <button class="btn btn-danger" onclick="toggleTransferRestriction(true)"><i class="fas fa-lock"></i> Enable Restriction</button>
                                 <button class="btn btn-success" onclick="toggleTransferRestriction(false)"><i class="fas fa-unlock"></i> Remove Restriction</button>
                             </div>
                         </div>
-                        <div id="restrictionAlert" class="alert" style="margin-top: 15px;"></div>
+                        <div id="restrictionAlert" class="alert admin-restrict-alert"></div>
                     </div>
 
                     <div class="card">
                         <h2><i class="fas fa-list"></i> Users with Transfer Restrictions</h2>
-                        <button class="btn btn-info" onclick="loadRestrictedUsers()" style="margin-bottom: 20px;"><i class="fas fa-sync"></i> Refresh</button>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadRestrictedUsers()"><i class="fas fa-sync"></i> Refresh</button>
                         <div class="table-wrapper">
                             <table>
                                 <thead>
@@ -734,7 +754,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="restrictedUsersBody">
-                                    <tr><td colspan="5" style="text-align:center;color:#888;">Click refresh to load restricted users</td></tr>
+                                    <tr><td colspan="5" class="text-center-muted">Click refresh to load restricted users</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -745,11 +765,11 @@
                 <div id="check-deposits" class="section">
                     <div class="card">
                         <h2><i class="fas fa-camera"></i> Check Deposit Approvals</h2>
-                        <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+                        <div class="filter-bar">
                             <button class="btn btn-info" onclick="loadCheckDeposits('pending')"><i class="fas fa-clock"></i> Pending</button>
                             <button class="btn btn-success" onclick="loadCheckDeposits('approved')"><i class="fas fa-check"></i> Approved</button>
                             <button class="btn btn-danger" onclick="loadCheckDeposits('rejected')"><i class="fas fa-times"></i> Rejected</button>
-                            <button class="btn" onclick="loadCheckDeposits('')" style="background:#555;color:#fff;"><i class="fas fa-list"></i> All</button>
+                            <button class="btn btn-filter-all" onclick="loadCheckDeposits('')"><i class="fas fa-list"></i> All</button>
                         </div>
                         <div class="table-wrapper">
                             <table>
@@ -776,16 +796,16 @@
                 </div>
 
                 <!-- Check Image Modal -->
-                <div id="checkImageModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10000;justify-content:center;align-items:center;flex-direction:column;gap:20px;padding:20px;overflow-y:auto;">
-                    <button onclick="document.getElementById('checkImageModal').style.display='none'" style="position:fixed;top:20px;right:30px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;z-index:10001;"><i class="fas fa-times"></i></button>
-                    <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;align-items:flex-start;max-width:1200px;">
-                        <div style="text-align:center;">
-                            <h3 style="color:#fff;margin-bottom:10px;">Front of Check</h3>
-                            <img id="modalCheckFront" src="" style="max-width:550px;max-height:400px;border-radius:8px;border:2px solid #c9a84c;" />
+                <div id="checkImageModal" class="check-image-modal">
+                    <button onclick="document.getElementById('checkImageModal').style.display='none'" class="check-modal-close"><i class="fas fa-times"></i></button>
+                    <div class="check-modal-grid">
+                        <div class="check-modal-item">
+                            <h3>Front of Check</h3>
+                            <img id="modalCheckFront" src="" />
                         </div>
-                        <div style="text-align:center;">
-                            <h3 style="color:#fff;margin-bottom:10px;">Back of Check</h3>
-                            <img id="modalCheckBack" src="" style="max-width:550px;max-height:400px;border-radius:8px;border:2px solid #c9a84c;" />
+                        <div class="check-modal-item">
+                            <h3>Back of Check</h3>
+                            <img id="modalCheckBack" src="" />
                         </div>
                     </div>
                 </div>
@@ -794,7 +814,7 @@
                 <div id="loans" class="section">
                     <div class="card">
                         <h2><i class="fas fa-hand-holding-usd"></i> Loan Applications</h2>
-                        <button class="btn btn-info" onclick="loadLoans()" style="margin-bottom: 20px;"><i class="fas fa-sync"></i> Refresh</button>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadLoans()"><i class="fas fa-sync"></i> Refresh</button>
                         <div class="table-wrapper">
                             <table>
                                 <thead>
@@ -820,9 +840,9 @@
                 <div id="support-tickets" class="section">
                     <div class="card">
                         <h2><i class="fas fa-headset"></i> Support Tickets</h2>
-                        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <div class="ticket-filter-bar">
                             <button class="btn btn-info" onclick="loadSupportTickets()"><i class="fas fa-sync"></i> Refresh</button>
-                            <select id="ticketStatusFilter" onchange="loadSupportTickets()" style="padding: 10px; border-radius: 5px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2);">
+                            <select id="ticketStatusFilter" onchange="loadSupportTickets()" class="admin-select-filter">
                                 <option value="">All Status</option>
                                 <option value="open">Open</option>
                                 <option value="pending">Pending</option>
@@ -844,33 +864,33 @@
                                     </tr>
                                 </thead>
                                 <tbody id="supportTicketsTableBody">
-                                    <tr><td colspan="8" style="text-align: center; color: #888;">Loading tickets...</td></tr>
+                                    <tr><td colspan="8" class="text-center-muted">Loading tickets...</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                     
                     <!-- Ticket Response Modal -->
-                    <div id="ticketResponseCard" class="card" style="display: none;">
+                    <div id="ticketResponseCard" class="card initially-hidden">
                         <h3><i class="fas fa-reply"></i> Respond to Ticket #<span id="respondTicketId"></span></h3>
-                        <div id="ticketDetails" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div id="ticketDetails" class="response-card-detail">
                             <p><strong>Subject:</strong> <span id="ticketSubjectDisplay"></span></p>
                             <p><strong>Message:</strong></p>
-                            <p id="ticketMessageDisplay" style="color: #ccc; margin-top: 5px;"></p>
+                            <p id="ticketMessageDisplay" class="response-body-text"></p>
                         </div>
                         <div class="form-group">
                             <label>Your Response</label>
-                            <textarea id="ticketResponse" rows="4" placeholder="Enter your response to the user..." style="width: 100%;"></textarea>
+                            <textarea id="ticketResponse" rows="4" placeholder="Enter your response to the user..." class="admin-textarea"></textarea>
                         </div>
                         <div class="form-group">
                             <label>Update Status</label>
-                            <select id="ticketNewStatus" style="width: 100%; padding: 10px;">
+                            <select id="ticketNewStatus" class="admin-select-full">
                                 <option value="pending">Pending</option>
                                 <option value="resolved">Resolved</option>
                             </select>
                         </div>
                         <button class="btn btn-success" onclick="submitTicketResponse()"><i class="fas fa-paper-plane"></i> Send Response</button>
-                        <button class="btn btn-secondary" onclick="hideTicketResponse()" style="margin-left: 10px;">Cancel</button>
+                        <button class="btn btn-secondary btn-cancel-ml" onclick="hideTicketResponse()">Cancel</button>
                     </div>
                 </div>
                 
@@ -878,7 +898,7 @@
                 <div id="user-messages" class="section">
                     <div class="card">
                         <h2><i class="fas fa-envelope"></i> User Messages</h2>
-                        <button class="btn btn-info" onclick="loadUserMessages()" style="margin-bottom: 20px;"><i class="fas fa-sync"></i> Refresh</button>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadUserMessages()"><i class="fas fa-sync"></i> Refresh</button>
                         <div class="table-wrapper">
                             <table>
                                 <thead>
@@ -892,27 +912,27 @@
                                     </tr>
                                 </thead>
                                 <tbody id="userMessagesTableBody">
-                                    <tr><td colspan="6" style="text-align: center; color: #888;">Loading messages...</td></tr>
+                                    <tr><td colspan="6" class="text-center-muted">Loading messages...</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                     
                     <!-- Message Response Card -->
-                    <div id="messageResponseCard" class="card" style="display: none;">
+                    <div id="messageResponseCard" class="card initially-hidden">
                         <h3><i class="fas fa-reply"></i> Reply to Message #<span id="respondMessageId"></span></h3>
-                        <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div class="response-card-detail">
                             <p><strong>Subject:</strong> <span id="messageSubjectDisplay"></span></p>
                             <p><strong>From:</strong> <span id="messageFromDisplay"></span></p>
                             <p><strong>Message:</strong></p>
-                            <p id="messageBodyDisplay" style="color: #ccc; margin-top: 5px;"></p>
+                            <p id="messageBodyDisplay" class="response-body-text"></p>
                         </div>
                         <div class="form-group">
                             <label>Your Reply</label>
-                            <textarea id="messageReply" rows="4" placeholder="Enter your reply..." style="width: 100%;"></textarea>
+                            <textarea id="messageReply" rows="4" placeholder="Enter your reply..." class="admin-textarea"></textarea>
                         </div>
                         <button class="btn btn-success" onclick="submitMessageReply()"><i class="fas fa-paper-plane"></i> Send Reply</button>
-                        <button class="btn btn-secondary" onclick="hideMessageResponse()" style="margin-left: 10px;">Cancel</button>
+                        <button class="btn btn-secondary btn-cancel-ml" onclick="hideMessageResponse()">Cancel</button>
                     </div>
                 </div>
 
@@ -920,7 +940,7 @@
                 <div id="activity" class="section">
                     <div class="card">
                         <h2><i class="fas fa-history"></i> Activity Logs</h2>
-                        <button class="btn btn-info" onclick="loadActivityLogs()" style="margin-bottom: 20px;"><i class="fas fa-sync"></i> Refresh</button>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadActivityLogs()"><i class="fas fa-sync"></i> Refresh</button>
                         <div class="table-wrapper">
                             <table>
                                 <thead>
@@ -951,7 +971,7 @@
                             </div>
                         </div>
                         <div id="monthlyReportData">
-                            <div class="stats-grid" style="margin-top: 20px;">
+                            <div class="stats-grid stats-grid-mt">
                                 <div class="stat-card">
                                     <i class="fas fa-user-plus"></i>
                                     <div class="value" id="reportNewUsers">0</div>
@@ -2695,17 +2715,17 @@
             setInterval(refreshAllData, 60000);
         }
     </script>
-    <footer style="background:#1a2332; padding:20px 0; margin-top:40px; text-align:center;">
-        <div style="max-width:1200px; margin:0 auto; padding:0 20px;">
-            <div style="margin-bottom:10px;">
-                <a href="terms.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Terms</a>
-                <a href="privacy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Privacy</a>
-                <a href="cookie-policy.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Cookies</a>
-                <a href="accessibility.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Accessibility</a>
-                <a href="disclosures.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Disclosures</a>
-                <a href="security.html" style="color:#8899aa; text-decoration:none; margin:0 10px; font-size:0.8rem;">Security</a>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
             </div>
-            <p style="color:#556677; font-size:0.75rem; margin:0;">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
 </body>
