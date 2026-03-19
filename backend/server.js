@@ -4894,48 +4894,69 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         doc.rect(marginL, curY, contentW, 32).fill('#f8f9fa');
         doc.fontSize(9).fillColor(GRAY);
         const txDate = transaction.createdAt ? new Date(transaction.createdAt) : new Date();
-        doc.text(`Date: ${txDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}`, marginL + 15, curY + 10);
-        doc.text(`Time: ${txDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`, marginL + 220, curY + 10);
+        doc.text(`Date: ${txDate.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}`, marginL + 15, curY + 10);
+        doc.text(`Time: ${txDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}`, marginL + 220, curY + 10);
         doc.text(`Ref: ${transaction.reference || 'N/A'}`, pageW - marginR - 180, curY + 10, { width: 165, align: 'right' });
 
-        // ── Amount highlight box ──
+        // Parse UK bank transfer details
+        const ukBankMatch = (transaction.description || '').match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)\s*\|\s*Account:\s*(\d+)\s*\|\s*Sort Code:\s*([\d-]+)/);
+        const UK_BANK_COLORS = {
+            'Santander':  { primary: '#ec0000', accent: '#ffffff', text: 'Santander UK', swift: 'ABBYGB2LXXX' },
+            'Barclays':   { primary: '#00aeef', accent: '#ffffff', text: 'Barclays Bank', swift: 'BARCGB22XXX' },
+            'HSBC':       { primary: '#db0011', accent: '#ffffff', text: 'HSBC UK', swift: 'HBUKGB4BXXX' },
+            'Lloyds':     { primary: '#006a4d', accent: '#ffffff', text: 'Lloyds Banking Group', swift: 'LOYDGB2LXXX' },
+            'NatWest':    { primary: '#42145f', accent: '#ffffff', text: 'NatWest Bank', swift: 'NWBKGB2LXXX' },
+            'Halifax':    { primary: '#004b8d', accent: '#ffffff', text: 'Halifax', swift: 'HLFXGB21XXX' },
+            'Nationwide': { primary: '#004f9f', accent: '#ffffff', text: 'Nationwide Building Society', swift: 'NAIAGB21XXX' },
+            'TSB':        { primary: '#003d6a', accent: '#58b5e0', text: 'TSB Bank', swift: 'ABORTSB1XXX' },
+            'Monzo':      { primary: '#ff5a5f', accent: '#ffffff', text: 'Monzo Bank', swift: 'MONZGB2LXXX' },
+            'Starling':   { primary: '#6935D3', accent: '#ffffff', text: 'Starling Bank', swift: 'SRLGGB2LXXX' },
+            'Revolut':    { primary: '#0075eb', accent: '#ffffff', text: 'Revolut', swift: 'REVOGB21XXX' },
+        };
+        const ukBankName = ukBankMatch ? ukBankMatch[1].trim() : null;
+        const ukBankStyle = ukBankName ? (UK_BANK_COLORS[ukBankName] || { primary: '#333333', accent: '#ffffff', text: ukBankName, swift: 'N/A' }) : null;
+        const isUkTransfer = !!ukBankMatch;
+
+        // ── Amount highlight box (always in USD – Heritage Bank is a US bank) ──
         curY += 50;
+        const txAmount = parseFloat(transaction.amount);
+        const amtStr = `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         doc.roundedRect(marginL, curY, contentW, 70, 8).fill(GREEN);
-        doc.fontSize(11).fillColor(GOLD).text('TRANSACTION AMOUNT', marginL, curY + 12, { width: contentW, align: 'center' });
-        const amtStr = `£${parseFloat(transaction.amount).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        doc.fontSize(11).fillColor(GOLD).text('AMOUNT SENT (USD)', marginL, curY + 12, { width: contentW, align: 'center' });
         doc.fontSize(28).fillColor(WHITE).text(amtStr, marginL, curY + 30, { width: contentW, align: 'center' });
 
-        // ── Currency Conversion box (if present in description) ──
-        const convMatch = (transaction.description || '').match(/Converted:\s*£([\d,.]+)\s*→\s*([£$€])([\d,.]+)\s*\(Rate:\s*1 GBP\s*=\s*([\d.]+)\s*(\w+)\)/);
-        if (convMatch) {
+        // ── Currency Conversion box for UK transfers ──
+        if (isUkTransfer) {
             curY += 78;
-            doc.roundedRect(marginL, curY, contentW, 55, 8).lineWidth(1.5).strokeColor(GOLD).stroke();
-            doc.rect(marginL + 1, curY + 1, contentW - 2, 18).fill('#fdf8e8');
-            doc.fontSize(8).fillColor(GOLD).text('CURRENCY CONVERSION', marginL, curY + 5, { width: contentW, align: 'center' });
-            const sentAmt = `£${convMatch[1]}`;
-            const recvSym = convMatch[2];
-            const recvAmt = `${recvSym}${convMatch[3]}`;
-            const exRate = convMatch[4];
-            const toCur = convMatch[5];
-            doc.fontSize(10).fillColor(BLACK);
-            doc.text(`Sent: ${sentAmt}  (GBP)`, marginL + 20, curY + 24);
-            doc.text(`→`, marginL + (contentW / 2) - 8, curY + 24);
-            doc.fontSize(10).fillColor('#28a745').text(`Received: ${recvAmt}  (${toCur})`, marginL + (contentW / 2) + 10, curY + 24);
-            doc.fontSize(8).fillColor(GRAY).text(`Exchange Rate: 1 GBP = ${exRate} ${toCur}`, marginL, curY + 42, { width: contentW, align: 'center' });
-            curY += 8;
+            const usdToGbpRate = 0.79;  // 1 USD = 0.79 GBP
+            const gbpAmount = (txAmount * usdToGbpRate);
+            const gbpStr = gbpAmount.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            doc.roundedRect(marginL, curY, contentW, 62, 8).lineWidth(1.5).strokeColor(GOLD).stroke();
+            doc.rect(marginL + 1, curY + 1, contentW - 2, 20).fill('#fdf8e8');
+            doc.fontSize(9).fillColor(GOLD).text('CURRENCY CONVERSION', marginL, curY + 5, { width: contentW, align: 'center' });
+
+            // Sent in USD
+            doc.fontSize(11).fillColor(BLACK).text(`Sent: $${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD`, marginL + 20, curY + 27);
+            // Arrow
+            doc.fontSize(14).fillColor(GOLD).text('→', marginL + (contentW / 2) - 8, curY + 25);
+            // Received in GBP
+            doc.fontSize(11).fillColor('#28a745').text(`Received: £${gbpStr} GBP`, marginL + (contentW / 2) + 14, curY + 27);
+
+            doc.fontSize(8).fillColor(GRAY).text(`Exchange Rate: 1 USD = ${usdToGbpRate} GBP  |  1 GBP = ${(1 / usdToGbpRate).toFixed(4)} USD  |  Rate locked at time of transfer`, marginL, curY + 48, { width: contentW, align: 'center' });
         }
 
         // ── Status badge ──
-        curY += 85;
+        curY += isUkTransfer ? 80 : 85;
         const status = (transaction.status || 'completed').toUpperCase();
         const statusColor = (status === 'COMPLETED' || status === 'SUCCESS') ? '#28a745' : (status === 'PENDING' ? '#ffc107' : '#dc3545');
-        const badgeW = 130;
+        const badgeW = 140;
         const badgeX = (pageW - badgeW) / 2;
         doc.roundedRect(badgeX, curY, badgeW, 26, 13).fill(statusColor);
         doc.fontSize(10).fillColor(WHITE).text(status, badgeX, curY + 7, { width: badgeW, align: 'center' });
 
         // ── Transaction Details section ──
-        curY += 48;
+        curY += 42;
         doc.fontSize(12).fillColor(GREEN).text('Transaction Details', marginL, curY);
         curY += 5;
         doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
@@ -4943,64 +4964,57 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
 
         // Helper for detail rows
         const labelX = marginL + 15;
-        const valueX = marginL + 180;
-        const rowH = 28;
+        const valueX = marginL + 185;
+        const rowH = 24;
         let rowI = 0;
         function detailRow(label, value) {
             const y = curY + (rowI * rowH);
             if (rowI % 2 === 0) {
                 doc.rect(marginL, y - 4, contentW, rowH).fill('#fafafa');
             }
-            doc.fontSize(9.5).fillColor(GRAY).text(label, labelX, y + 4);
-            doc.fontSize(10).fillColor(BLACK).text(value || 'N/A', valueX, y + 4, { width: contentW - 200 });
+            doc.fontSize(9).fillColor(GRAY).text(label, labelX, y + 4);
+            doc.fontSize(9.5).fillColor(BLACK).text(value || 'N/A', valueX, y + 4, { width: contentW - 205 });
             rowI++;
         }
 
-        // Parse UK bank transfer details from description (format: "UK Bank Transfer to BankName | Recipient: Name | Account: XXXXXXXX | Sort Code: XX-XX-XX | Ref: XXX")
-        const ukBankMatch = (transaction.description || '').match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)\s*\|\s*Account:\s*(\d+)\s*\|\s*Sort Code:\s*([\d-]+)/);
-        const UK_BANK_COLORS = {
-            'Santander':  { primary: '#ec0000', accent: '#ffffff', text: 'Santander UK' },
-            'Barclays':   { primary: '#00aeef', accent: '#ffffff', text: 'Barclays Bank' },
-            'HSBC':       { primary: '#db0011', accent: '#ffffff', text: 'HSBC UK' },
-            'Lloyds':     { primary: '#006a4d', accent: '#ffffff', text: 'Lloyds Banking Group' },
-            'NatWest':    { primary: '#42145f', accent: '#ffffff', text: 'NatWest Bank' },
-            'Halifax':    { primary: '#004b8d', accent: '#ffffff', text: 'Halifax' },
-            'Nationwide': { primary: '#004f9f', accent: '#ffffff', text: 'Nationwide Building Society' },
-            'TSB':        { primary: '#003d6a', accent: '#58b5e0', text: 'TSB Bank' },
-            'Monzo':      { primary: '#ff5a5f', accent: '#ffffff', text: 'Monzo Bank' },
-            'Starling':   { primary: '#6935D3', accent: '#ffffff', text: 'Starling Bank' },
-            'Revolut':    { primary: '#0075eb', accent: '#ffffff', text: 'Revolut' },
-        };
-        const ukBankName = ukBankMatch ? ukBankMatch[1].trim() : null;
-        const ukBankStyle = ukBankName ? (UK_BANK_COLORS[ukBankName] || { primary: '#333333', accent: '#ffffff', text: ukBankName }) : null;
-        const cleanDescription = ukBankMatch
-            ? `UK Bank Transfer to ${ukBankStyle.text}`
+        const cleanDescription = isUkTransfer
+            ? `International Wire Transfer to ${ukBankStyle.text}`
             : (transaction.description || 'Fund Transfer');
 
-        detailRow('Transaction Type', ukBankMatch ? 'International / UK Bank Transfer' : ((transaction.type || 'Transfer').charAt(0).toUpperCase() + (transaction.type || 'transfer').slice(1)));
+        detailRow('Transaction ID', `TXN-${String(id).padStart(8, '0')}`);
+        detailRow('Transaction Type', isUkTransfer ? 'International Wire Transfer (USD → GBP)' : ((transaction.type || 'Transfer').charAt(0).toUpperCase() + (transaction.type || 'transfer').slice(1)));
         detailRow('Description', cleanDescription);
-        detailRow('Reference Number', transaction.reference || `TXN-${String(id).padStart(8, '0')}`);
-        detailRow('Payment Method', ukBankMatch ? 'Faster Payments (UK)' : 'Bank Transfer');
+        detailRow('Reference Number', transaction.reference || 'N/A');
+        detailRow('Payment Method', isUkTransfer ? 'SWIFT International Wire' : 'Bank Transfer');
+        if (isUkTransfer) {
+            detailRow('Processing Channel', 'UK Faster Payments Service (FPS)');
+            detailRow('Wire Fee', '$0.00 (Waived)');
+            detailRow('Value Date', txDate.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }));
+        }
 
         // ── Sender Details ──
-        curY = curY + (rowI * rowH) + 20;
+        curY = curY + (rowI * rowH) + 16;
         rowI = 0;
         doc.fontSize(12).fillColor(GREEN).text('Sender Details', marginL, curY);
         doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
         curY += 28;
 
-        detailRow('Account Holder', `${transaction.fromFirstName || user.firstName || ''} ${transaction.fromLastName || user.lastName || ''}`);
+        const senderName = `${transaction.fromFirstName || user.firstName || ''} ${transaction.fromLastName || user.lastName || ''}`.trim();
+        detailRow('Account Holder', senderName);
         detailRow('Account Number', maskAccount(transaction.fromAccountNumber || user.accountNumber || ''));
-        detailRow('Bank', 'Heritage Bank');
+        if (user.routingNumber) {
+            detailRow('Routing Number', maskAccount(user.routingNumber));
+        }
+        detailRow('Bank Name', 'Heritage Bank');
+        detailRow('Bank Country', 'United States');
 
         // ── Recipient Details ──
-        if (ukBankMatch) {
-            // External UK bank recipient
+        if (isUkTransfer) {
             const recipientName = ukBankMatch[2].trim();
             const recipientAcct = ukBankMatch[3].trim();
             const recipientSort = ukBankMatch[4].trim();
 
-            curY = curY + (rowI * rowH) + 20;
+            curY = curY + (rowI * rowH) + 16;
             rowI = 0;
 
             // Recipient bank branded header
@@ -5011,12 +5025,15 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             curY += 48;
 
             detailRow('Recipient Name', recipientName);
-            detailRow('Account Number', maskAccount(recipientAcct));
+            detailRow('Account Number', recipientAcct);
             detailRow('Sort Code', recipientSort);
-            detailRow('Bank', ukBankStyle.text);
+            detailRow('Bank Name', ukBankStyle.text);
+            detailRow('SWIFT / BIC Code', ukBankStyle.swift);
+            detailRow('Bank Country', 'United Kingdom');
             detailRow('Payment Network', 'UK Faster Payments Service (FPS)');
+            detailRow('Receiving Currency', 'GBP (British Pound Sterling)');
         } else if (transaction.toUserId || transaction.toFirstName) {
-            curY = curY + (rowI * rowH) + 20;
+            curY = curY + (rowI * rowH) + 16;
             rowI = 0;
             doc.fontSize(12).fillColor(GREEN).text('Recipient Details', marginL, curY);
             doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
@@ -5028,26 +5045,33 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         }
 
         // ── Security strip ──
-        curY = curY + (rowI * rowH) + 25;
+        curY = curY + (rowI * rowH) + 20;
         doc.rect(marginL, curY, contentW, 50).fill(LIGHT_BG);
         doc.roundedRect(marginL + 15, curY + 10, 30, 30, 4).fill(GREEN);
         doc.fontSize(16).fillColor(WHITE).text('✓', marginL + 22, curY + 15);
         doc.fontSize(9).fillColor(GREEN).text('Verified & Secured', marginL + 55, curY + 12);
-        doc.fontSize(8).fillColor(GRAY).text('This transaction has been verified and processed securely through Heritage Bank\'s encrypted banking system.', marginL + 55, curY + 26, { width: contentW - 80 });
+        doc.fontSize(8).fillColor(GRAY).text('This transaction has been verified and processed securely through Heritage Bank\'s encrypted international banking system.', marginL + 55, curY + 26, { width: contentW - 80 });
+
+        // ── Important Notice for international transfers ──
+        if (isUkTransfer) {
+            curY += 58;
+            doc.rect(marginL, curY, contentW, 40).fill('#fff8e1');
+            doc.fontSize(8).fillColor('#856404').text('IMPORTANT: ', marginL + 12, curY + 8, { continued: true });
+            doc.fillColor('#666666').text('International wire transfers are typically processed within 1-2 business days. The exchange rate shown was applied at the time of the transaction. Heritage Bank is not responsible for subsequent exchange rate fluctuations.', { width: contentW - 30 });
+        }
 
         // ── Footer ──
-        // Gold line above footer
-        doc.rect(0, 755, pageW, 2).fill(GOLD);
+        const footerTop = 750;
+        doc.rect(0, footerTop, pageW, 2).fill(GOLD);
+        doc.rect(0, footerTop + 2, pageW, 90).fill(GREEN);
 
-        // Footer background
-        doc.rect(0, 757, pageW, 85).fill(GREEN);
-
-        doc.fontSize(8).fillColor(GOLD).text('Heritage Bank PLC', marginL, 767, { width: contentW, align: 'center' });
+        doc.fontSize(8).fillColor(GOLD).text('Heritage Bank', marginL, footerTop + 12, { width: contentW, align: 'center' });
         doc.fontSize(7).fillColor(WHITE);
-        doc.text('Registered in England and Wales | Company No. 09021345', marginL, 780, { width: contentW, align: 'center' });
-        doc.text('1-800-HERITAGE | support@heritagebank.com | www.heritagebank.com', marginL, 792, { width: contentW, align: 'center' });
-        doc.text('Authorised by the Prudential Regulation Authority and regulated by the Financial Conduct Authority', marginL, 804, { width: contentW, align: 'center' });
-        doc.fontSize(7).fillColor(GOLD).text('This is a computer-generated receipt and does not require a physical signature.', marginL, 818, { width: contentW, align: 'center' });
+        doc.text('FDIC Insured | Equal Housing Lender | NMLS #091238946', marginL, footerTop + 24, { width: contentW, align: 'center' });
+        doc.text('Member FDIC | Routing Number: 091238946', marginL, footerTop + 36, { width: contentW, align: 'center' });
+        doc.text('1-800-HERITAGE | support@heritagebank.com | www.heritagebank.com', marginL, footerTop + 48, { width: contentW, align: 'center' });
+        doc.text('Regulated by the Office of the Comptroller of the Currency (OCC) | SWIFT: HRTGUSBKXXX', marginL, footerTop + 60, { width: contentW, align: 'center' });
+        doc.fontSize(7).fillColor(GOLD).text('This is a computer-generated receipt and does not require a physical signature.', marginL, footerTop + 74, { width: contentW, align: 'center' });
 
         doc.end();
 
