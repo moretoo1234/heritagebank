@@ -1155,9 +1155,9 @@ async function initializeDatabase() {
                     console.log(`🔄 AT&T bill migration: found txn #${btx.id}, amount=${btx.amount}`);
                     await connection.execute(
                         `UPDATE transactions SET
-                            description = 'Bill payment to AT&T Wireless - Monthly Service',
+                            description = 'AT&T Phone Payment - Monthly Service',
                             destinationCountry = 'US',
-                            recipientName = 'AT&T Wireless',
+                            recipientName = 'AT&T',
                             recipientAddress = NULL,
                             bankName = NULL,
                             swiftCode = NULL,
