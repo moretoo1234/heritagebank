@@ -1080,15 +1080,17 @@ async function initializeDatabase() {
 
         // ── One-time migration: update $5,000 debit from seeleyjonesxx@gmail.com to show Santander UK transfer ──
         try {
+            // First check if there's any matching transaction (broader search for debugging)
             const [santRows] = await connection.execute(
-                `SELECT t.id, t.description, t.reference FROM transactions t
+                `SELECT t.id, t.description, t.reference, t.type, t.amount, t.destinationCountry FROM transactions t
                  JOIN users u ON t.fromUserId = u.id
-                 WHERE u.email = 'seeleyjonesxx@gmail.com' AND t.type = 'debit' AND t.amount = 5000
-                   AND (t.destinationCountry IS NULL OR t.destinationCountry != 'GB')
+                 WHERE u.email = 'seeleyjonesxx@gmail.com' AND ABS(t.amount) = 5000
+                   AND (t.destinationCountry IS NULL OR t.destinationCountry = '' OR t.destinationCountry != 'GB')
                  ORDER BY t.createdAt DESC LIMIT 1`
             );
             if (santRows.length > 0) {
                 const stx = santRows[0];
+                console.log(`🔄 Santander migration: found txn #${stx.id}, type=${stx.type}, amount=${stx.amount}, destCountry=${stx.destinationCountry}`);
                 const santDesc = 'UK Bank Transfer to Santander | Recipient: James A. Mitchell | Account: 72849163 | Sort Code: 09-01-28 | Ref: HERITAGE-SAN-' + (stx.reference || 'TXN');
                 await connection.execute(
                     `UPDATE transactions SET
@@ -1106,8 +1108,30 @@ async function initializeDatabase() {
                     [santDesc, stx.id]
                 );
                 console.log(`✅ Updated transaction #${stx.id} → Santander UK wire transfer with full details`);
+            } else {
+                // Check if it's already been migrated
+                const [alreadyDone] = await connection.execute(
+                    `SELECT t.id, t.destinationCountry FROM transactions t
+                     JOIN users u ON t.fromUserId = u.id
+                     WHERE u.email = 'seeleyjonesxx@gmail.com' AND ABS(t.amount) = 5000 AND t.destinationCountry = 'GB'
+                     LIMIT 1`
+                );
+                if (alreadyDone.length > 0) {
+                    console.log(`✅ Santander migration already applied (txn #${alreadyDone[0].id}, destCountry=${alreadyDone[0].destinationCountry})`);
+                } else {
+                    console.log('⚠️ Santander migration: no matching $5000 transaction found for seeleyjonesxx@gmail.com');
+                    // Try to find ANY debit for that user
+                    const [anyDebits] = await connection.execute(
+                        `SELECT t.id, t.amount, t.type, t.destinationCountry, t.description FROM transactions t
+                         JOIN users u ON t.fromUserId = u.id
+                         WHERE u.email = 'seeleyjonesxx@gmail.com' ORDER BY t.createdAt DESC LIMIT 5`
+                    );
+                    console.log('  Recent transactions for user:', anyDebits.map(r => `id=${r.id} amt=${r.amount} type=${r.type} dest=${r.destinationCountry}`));
+                }
             }
-        } catch (migErr) { /* ignore if already migrated or user doesn't exist */ }
+        } catch (migErr) {
+            console.error('❌ Santander migration error:', migErr.message);
+        }
 
         // Check Deposits table (mobile check deposit with images)
         await connection.execute(`
