@@ -743,7 +743,7 @@ async function initializeDatabase() {
                 blockReason VARCHAR(500),
                 deliveryAddress TEXT NULL,
                 deliveryEtaText VARCHAR(64) NULL,
-                deliveryStatus ENUM('not_applicable','processing','shipped','delivered') DEFAULT 'not_applicable',
+                deliveryStatus ENUM('not_applicable','processing','shipped','in_transit','out_for_delivery','delivered') DEFAULT 'not_applicable',
                 issuedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 activatedAt TIMESTAMP NULL,
                 FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
@@ -766,7 +766,12 @@ async function initializeDatabase() {
         try { await connection.execute('ALTER TABLE cards ADD COLUMN deliveryEtaText VARCHAR(64) NULL'); } catch (e) {}
         try {
             await connection.execute(
-                "ALTER TABLE cards ADD COLUMN deliveryStatus ENUM('not_applicable','processing','shipped','delivered') DEFAULT 'not_applicable'"
+                "ALTER TABLE cards ADD COLUMN deliveryStatus ENUM('not_applicable','processing','shipped','in_transit','out_for_delivery','delivered') DEFAULT 'not_applicable'"
+            );
+        } catch (e) {}
+        try {
+            await connection.execute(
+                "ALTER TABLE cards MODIFY COLUMN deliveryStatus ENUM('not_applicable','processing','shipped','in_transit','out_for_delivery','delivered') DEFAULT 'not_applicable'"
             );
         } catch (e) {}
 
@@ -5987,6 +5992,74 @@ app.put('/api/admin/cards/:id/unpause', requireAuth, requireAdmin, async (req, r
         res.json({ success: true, message: 'Card unpaused', ...result });
     } catch (error) {
         res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+});
+
+// ── Admin: Update card delivery status ──
+app.put('/api/admin/cards/:id/delivery', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deliveryStatus = String(req.body.deliveryStatus || '').trim().toLowerCase();
+        const deliveryEtaText = req.body.deliveryEtaText || null;
+
+        const allowed = ['processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered'];
+        if (!allowed.includes(deliveryStatus)) {
+            return res.status(400).json({ success: false, message: 'Invalid delivery status' });
+        }
+
+        const [rows] = await pool.execute('SELECT * FROM cards WHERE id = ?', [id]);
+        const card = rows?.[0];
+        if (!card) return res.status(404).json({ success: false, message: 'Card not found' });
+
+        const updates = ['deliveryStatus = ?'];
+        const params = [deliveryStatus];
+
+        if (deliveryEtaText) {
+            updates.push('deliveryEtaText = ?');
+            params.push(deliveryEtaText);
+        }
+
+        // Auto-activate card when delivered
+        if (deliveryStatus === 'delivered' && card.status === 'pending') {
+            updates.push('status = ?', 'activatedAt = ?');
+            params.push('active', new Date());
+        }
+
+        params.push(id);
+        await pool.execute(`UPDATE cards SET ${updates.join(', ')} WHERE id = ?`, params);
+
+        // Notify user
+        const statusLabels = {
+            processing: 'Your card is being prepared for shipment.',
+            shipped: 'Your card has been shipped!',
+            in_transit: 'Your card is in transit.',
+            out_for_delivery: 'Your card is out for delivery today!',
+            delivered: 'Your card has been delivered and is now active!'
+        };
+        try {
+            await createNotification(
+                card.userId, 'card', 'Card Delivery Update',
+                `${statusLabels[deliveryStatus] || 'Delivery status updated.'} Card: ${card.cardNumberMasked || '****'}`,
+                { cardId: parseInt(id), deliveryStatus }
+            );
+        } catch (e) {}
+
+        // Audit log
+        try {
+            await logAdminAction(req.auth.id, 'card_delivery_update', card.userId, null, null,
+                { cardId: parseInt(id), from: card.deliveryStatus, to: deliveryStatus },
+                `Card ${id} delivery → ${deliveryStatus}`, null, req
+            );
+        } catch (e) {}
+
+        res.json({
+            success: true,
+            message: `Delivery status updated to ${deliveryStatus}`,
+            deliveryStatus,
+            cardActivated: deliveryStatus === 'delivered' && card.status === 'pending'
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 

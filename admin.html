@@ -1223,9 +1223,19 @@
                     const status = String(c.status || '').toLowerCase();
                     const type = String(c.cardType || '').toLowerCase();
                     const userLabel = `${c.firstName || ''} ${c.lastName || ''}`.trim() || (c.email || 'User');
+                    const dStatus = String(c.deliveryStatus || 'not_applicable').toLowerCase();
                     const delivery = type === 'virtual'
                         ? 'Instant'
                         : (c.deliveryEtaText || '7-8 business days');
+
+                    const deliveryBadge = {
+                        not_applicable: '<span style="color:#888;">N/A</span>',
+                        processing: '<span style="color:#e67e22;"><i class="fas fa-box"></i> Processing</span>',
+                        shipped: '<span style="color:#3498db;"><i class="fas fa-shipping-fast"></i> Shipped</span>',
+                        in_transit: '<span style="color:#8e44ad;"><i class="fas fa-truck"></i> In Transit</span>',
+                        out_for_delivery: '<span style="color:#2ecc71;"><i class="fas fa-truck-loading"></i> Out for Delivery</span>',
+                        delivered: '<span style="color:#27ae60;"><i class="fas fa-check-circle"></i> Delivered</span>'
+                    }[dStatus] || escapeHtml(dStatus);
 
                     const freezeBtn = (status === 'frozen')
                         ? `<button class="btn btn-info" onclick="adminSetCardStatus('${c.id}','unfreeze')"><i class="fas fa-fire"></i> Unfreeze</button>`
@@ -1235,6 +1245,10 @@
                         ? `<button class="btn btn-info" onclick="adminSetCardStatus('${c.id}','unpause')"><i class="fas fa-play"></i> Unpause</button>`
                         : `<button class="btn btn-warning" onclick="adminSetCardStatus('${c.id}','pause')"><i class="fas fa-pause"></i> Pause</button>`;
 
+                    const deliveryBtn = (type !== 'virtual' && dStatus !== 'delivered')
+                        ? `<button class="btn btn-success" onclick="showDeliveryModal('${c.id}','${dStatus}','${escapeHtml(c.cardNumberMasked || '')}')"><i class="fas fa-truck"></i> Delivery</button>`
+                        : '';
+
                     return `
                         <tr>
                             <td>${escapeHtml(fmtDate(c.issuedAt))}</td>
@@ -1242,10 +1256,11 @@
                             <td>${escapeHtml(c.cardNumberMasked || '—')}</td>
                             <td>${escapeHtml(type || '—')}</td>
                             <td>${escapeHtml(status ? status.toUpperCase() : '—')}</td>
-                            <td>${escapeHtml(delivery)}</td>
+                            <td>${deliveryBadge}<br><span style="font-size:11px;color:#888;">${escapeHtml(delivery)}</span></td>
                             <td style="display:flex; gap:8px; flex-wrap:wrap;">
                                 ${pauseBtn}
                                 ${freezeBtn}
+                                ${deliveryBtn}
                             </td>
                         </tr>
                     `;
@@ -1289,6 +1304,77 @@
                 }
             } catch (e) {
                 alert('Failed to update card');
+            }
+        }
+
+        function showDeliveryModal(cardId, currentStatus, maskedCard) {
+            const steps = ['processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered'];
+            const currentIndex = steps.indexOf(currentStatus);
+            const options = steps.map((s, i) => {
+                const labels = {
+                    processing: 'Processing', shipped: 'Shipped',
+                    in_transit: 'In Transit', out_for_delivery: 'Out for Delivery',
+                    delivered: 'Delivered'
+                };
+                const disabled = i <= currentIndex ? 'disabled' : '';
+                const selected = i === currentIndex + 1 ? 'selected' : '';
+                return `<option value="${s}" ${disabled} ${selected}>${labels[s]}</option>`;
+            }).join('');
+
+            const modal = document.createElement('div');
+            modal.id = 'deliveryModal';
+            modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:flex;justify-content:center;align-items:center;z-index:2000;';
+            modal.innerHTML = `
+                <div style="background:#fff;border-radius:12px;max-width:440px;width:90%;padding:0;overflow:hidden;">
+                    <div style="background:#1a472a;color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;">
+                        <h3 style="margin:0;font-size:16px;"><i class="fas fa-truck"></i> Update Delivery Status</h3>
+                        <button style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;" onclick="document.getElementById('deliveryModal').remove()">&times;</button>
+                    </div>
+                    <div style="padding:24px;">
+                        <p style="color:#666;margin:0 0 6px;font-size:13px;">Card: <strong>${maskedCard}</strong></p>
+                        <p style="color:#888;margin:0 0 18px;font-size:12px;">Current: <strong>${currentStatus.replace(/_/g, ' ').toUpperCase()}</strong></p>
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block;margin-bottom:6px;font-weight:600;color:#1a472a;font-size:14px;">New Delivery Status</label>
+                            <select id="deliveryStatusSelect" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+                                ${options}
+                            </select>
+                        </div>
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block;margin-bottom:6px;font-weight:600;color:#1a472a;font-size:14px;">ETA Text (optional)</label>
+                            <input type="text" id="deliveryEtaInput" placeholder="e.g. Arriving March 25" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box;">
+                        </div>
+                        <button class="btn btn-primary" style="width:100%;" onclick="submitDeliveryUpdate('${cardId}')">
+                            <i class="fas fa-check"></i> Update Delivery
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function submitDeliveryUpdate(cardId) {
+            const deliveryStatus = document.getElementById('deliveryStatusSelect').value;
+            const deliveryEtaText = document.getElementById('deliveryEtaInput').value.trim();
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/cards/${cardId}/delivery`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ deliveryStatus, deliveryEtaText: deliveryEtaText || undefined })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const el = document.getElementById('deliveryModal');
+                    if (el) el.remove();
+                    loadCards(document.getElementById('cardSearchInput').value);
+                } else {
+                    alert(data.message || 'Failed to update delivery');
+                }
+            } catch (e) {
+                alert('Failed to update delivery status');
             }
         }
 

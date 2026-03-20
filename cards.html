@@ -206,6 +206,93 @@
         .toast-error { background: #c0392b; }
         .toast-info { background: #2c3e50; }
 
+        /* ── Delivery Tracker ── */
+        .delivery-tracker {
+            margin-top: 12px;
+            padding: 14px 16px;
+            background: #f8faf8;
+            border-radius: 10px;
+            border: 1px solid #e0e8e0;
+        }
+        .delivery-tracker-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1a472a;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .delivery-steps {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            position: relative;
+        }
+        .delivery-steps::before {
+            content: '';
+            position: absolute;
+            top: 14px;
+            left: 20px;
+            right: 20px;
+            height: 3px;
+            background: #ddd;
+            z-index: 0;
+        }
+        .delivery-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            min-width: 0;
+        }
+        .delivery-step-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 6px;
+            transition: all 0.3s;
+        }
+        .delivery-step.completed .delivery-step-dot {
+            background: #27ae60;
+            color: #fff;
+        }
+        .delivery-step.active .delivery-step-dot {
+            background: #d4af37;
+            color: #fff;
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.25);
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.25); }
+            50% { box-shadow: 0 0 0 8px rgba(212, 175, 55, 0.1); }
+        }
+        .delivery-step-label {
+            font-size: 10px;
+            color: #999;
+            text-align: center;
+            line-height: 1.2;
+        }
+        .delivery-step.completed .delivery-step-label,
+        .delivery-step.active .delivery-step-label {
+            color: #1a472a;
+            font-weight: 600;
+        }
+        .delivery-eta {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        .delivery-eta i { color: #d4af37; margin-right: 4px; }
+
         @media (max-width: 768px) {
             .container { margin: 20px auto; padding: 15px; }
             .card-item { grid-template-columns: 1fr; gap: 12px; }
@@ -371,29 +458,66 @@
                 const statusIcon = status === 'active' ? 'fa-check-circle' : status === 'frozen' ? 'fa-snowflake' : status === 'paused' ? 'fa-pause-circle' : 'fa-ban';
 
                 const masked = card.cardNumberMasked || '****-****-****-****';
-                const last4 = masked.slice(-4);
                 const expiry = card.expirationDate || '-';
                 const kindLabel = String(card.cardType || '').toLowerCase() === 'virtual' ? 'Virtual' : 'Physical';
-                const deliveryNote = (String(card.cardType || '').toLowerCase() !== 'virtual')
-                    ? ` • Delivery: ${card.deliveryEtaText || '7–8 business days'}`
-                    : '';
+                const isPhysical = kindLabel === 'Physical';
+                const dStatus = String(card.deliveryStatus || 'not_applicable').toLowerCase();
+
+                // Build delivery tracker for physical cards
+                let deliveryHTML = '';
+                if (isPhysical && dStatus !== 'not_applicable') {
+                    const steps = [
+                        { key: 'processing', icon: 'fa-box', label: 'Processing' },
+                        { key: 'shipped', icon: 'fa-shipping-fast', label: 'Shipped' },
+                        { key: 'in_transit', icon: 'fa-truck', label: 'In Transit' },
+                        { key: 'out_for_delivery', icon: 'fa-truck-loading', label: 'Out for Delivery' },
+                        { key: 'delivered', icon: 'fa-check-circle', label: 'Delivered' }
+                    ];
+                    const currentIdx = steps.findIndex(s => s.key === dStatus);
+
+                    const stepsHTML = steps.map((step, i) => {
+                        let cls = '';
+                        if (i < currentIdx) cls = 'completed';
+                        else if (i === currentIdx) cls = 'active';
+                        const dotIcon = i < currentIdx ? 'fa-check' : step.icon;
+                        return `<div class="delivery-step ${cls}">
+                            <div class="delivery-step-dot"><i class="fas ${dotIcon}"></i></div>
+                            <span class="delivery-step-label">${step.label}</span>
+                        </div>`;
+                    }).join('');
+
+                    const etaText = card.deliveryEtaText || '';
+                    const etaLine = etaText ? `<div class="delivery-eta"><i class="fas fa-clock"></i> ${escapeHtml(etaText)}</div>` : '';
+
+                    deliveryHTML = `
+                        <div class="delivery-tracker">
+                            <div class="delivery-tracker-title"><i class="fas fa-truck"></i> Card Delivery Tracking</div>
+                            <div class="delivery-steps">${stepsHTML}</div>
+                            ${etaLine}
+                        </div>
+                    `;
+                }
                 
                 const cardEl = document.createElement('div');
                 cardEl.className = 'card-item';
+                cardEl.style.gridTemplateColumns = '1fr';
                 cardEl.innerHTML = `
-                    <div class="card-name">
-                        <h3><i class="fas fa-credit-card"></i> ${kindLabel} Card</h3>
-                        <p>${masked.replace(/-/g, '  ')}</p>
-                        <p style="font-size: 11px; color: #666;">Expires: ${expiry}${deliveryNote}</p>
+                    <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:20px; align-items:center;">
+                        <div class="card-name">
+                            <h3><i class="fas fa-credit-card"></i> ${kindLabel} Card</h3>
+                            <p>${masked.replace(/-/g, '  ')}</p>
+                            <p style="font-size: 11px; color: #666;">Expires: ${expiry}</p>
+                        </div>
+                        <div class="card-status ${statusClass}">
+                            <i class="fas ${statusIcon}"></i> ${status ? status.toUpperCase() : 'UNKNOWN'}
+                        </div>
+                        <div>
+                            <button class="btn btn-small" onclick="showCardMenu(${card.id}, '${kindLabel.toLowerCase()}', '${status}')">
+                                <i class="fas fa-cog"></i> Manage
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-status ${statusClass}">
-                        <i class="fas ${statusIcon}"></i> ${status ? status.toUpperCase() : 'UNKNOWN'}
-                    </div>
-                    <div>
-                        <button class="btn btn-small" onclick="showCardMenu(${card.id}, '${kindLabel.toLowerCase()}', '${status}')">
-                            <i class="fas fa-cog"></i> Manage
-                        </button>
-                    </div>
+                    ${deliveryHTML}
                 `;
                 container.appendChild(cardEl);
             });
