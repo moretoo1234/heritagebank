@@ -109,8 +109,7 @@ function checkLogin() {
 
 // Logout Function
 function logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.clear();
     window.location.href = 'signin.html';
 }
 

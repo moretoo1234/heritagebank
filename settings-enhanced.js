@@ -1327,7 +1327,7 @@ function showAlert(message, type) {
 }
 
 function logout() {
-    localStorage.removeItem('token');
+    localStorage.clear();
     window.location.href = 'signin.html';
 }
 

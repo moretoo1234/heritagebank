@@ -1,6 +1,21 @@
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
     ? 'http://localhost:3001' 
     : '';
+
+// Redirect authenticated users to dashboard
+(function() {
+    const token = localStorage.getItem('token');
+    if (token) {
+        fetch(`${API_URL}/api/auth/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        }).then(r => r.json()).then(data => {
+            if (data.success && data.user) {
+                window.location.href = data.user.isAdmin ? 'admin.html' : 'dashboard.html';
+            }
+        }).catch(() => {});
+    }
+})();
+
 let currentStep = 1;
 const formData = {};
 
