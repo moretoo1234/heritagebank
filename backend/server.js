@@ -1084,14 +1084,28 @@ async function initializeDatabase() {
                 `SELECT t.id, t.description, t.reference FROM transactions t
                  JOIN users u ON t.fromUserId = u.id
                  WHERE u.email = 'seeleyjonesxx@gmail.com' AND t.type = 'debit' AND t.amount = 5000
-                   AND (t.description IS NULL OR t.description NOT LIKE '%UK Bank Transfer to Santander%')
+                   AND (t.destinationCountry IS NULL OR t.destinationCountry != 'GB')
                  ORDER BY t.createdAt DESC LIMIT 1`
             );
             if (santRows.length > 0) {
                 const stx = santRows[0];
                 const santDesc = 'UK Bank Transfer to Santander | Recipient: James A. Mitchell | Account: 72849163 | Sort Code: 09-01-28 | Ref: HERITAGE-SAN-' + (stx.reference || 'TXN');
-                await connection.execute('UPDATE transactions SET description = ? WHERE id = ?', [santDesc, stx.id]);
-                console.log(`✅ Updated transaction #${stx.id} → Santander UK transfer`);
+                await connection.execute(
+                    `UPDATE transactions SET
+                        description = ?,
+                        destinationCountry = 'GB',
+                        recipientName = 'Santander Mortga',
+                        recipientAddress = 'Floor 1\n33 Princeway\nRedhill\nRH1 1SR',
+                        bankName = 'SANTANDER UK PLC',
+                        swiftCode = 'ABBYGB2LXXX',
+                        iban = 'GB10ABBY09009290004049',
+                        exchangeRate = '1 USD = 0.78610 GBP',
+                        recipientCurrency = 'GBP',
+                        recipientAmount = 3930.50
+                    WHERE id = ?`,
+                    [santDesc, stx.id]
+                );
+                console.log(`✅ Updated transaction #${stx.id} → Santander UK wire transfer with full details`);
             }
         } catch (migErr) { /* ignore if already migrated or user doesn't exist */ }
 
@@ -3967,11 +3981,25 @@ app.post('/api/admin/toggle-transfer-restriction', requireAuth, requireAdmin, as
     }
 });
 
-// Admin: Edit transaction details (description, status, amount)
+// Admin: Edit transaction details (description, status, amount, and wire transfer fields)
 app.put('/api/admin/edit-transaction/:id', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { description, status, amount } = req.body;
+        const allowedFields = {
+            description: 'string',
+            status: 'string',
+            amount: 'number',
+            fee: 'number',
+            destinationCountry: 'string',
+            recipientName: 'string',
+            recipientAddress: 'string',
+            bankName: 'string',
+            swiftCode: 'string',
+            iban: 'string',
+            exchangeRate: 'string',
+            recipientCurrency: 'string',
+            recipientAmount: 'number'
+        };
 
         const [rows] = await pool.execute('SELECT * FROM transactions WHERE id = ?', [id]);
         if (rows.length === 0) {
@@ -3981,21 +4009,18 @@ app.put('/api/admin/edit-transaction/:id', requireAuth, requireAdmin, async (req
         const updates = [];
         const params = [];
 
-        if (description !== undefined) {
-            updates.push('description = ?');
-            params.push(description);
-        }
-        if (status !== undefined) {
-            updates.push('status = ?');
-            params.push(status);
-        }
-        if (amount !== undefined) {
-            const amt = parseFloat(amount);
-            if (!Number.isFinite(amt) || amt < 0) {
-                return res.status(400).json({ success: false, message: 'Invalid amount' });
+        for (const [field, type] of Object.entries(allowedFields)) {
+            if (req.body[field] !== undefined) {
+                if (type === 'number') {
+                    const val = parseFloat(req.body[field]);
+                    if (!Number.isFinite(val) || val < 0) continue;
+                    updates.push(`${field} = ?`);
+                    params.push(val);
+                } else {
+                    updates.push(`${field} = ?`);
+                    params.push(String(req.body[field]).trim());
+                }
             }
-            updates.push('amount = ?');
-            params.push(amt);
         }
 
         if (updates.length === 0) {

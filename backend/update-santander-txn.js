@@ -49,18 +49,33 @@ const dbPassword = process.argv[2] ?? process.env.DB_PASSWORD ?? '';
         console.log('Found transaction(s):');
         console.log(JSON.stringify(rows, null, 2));
 
-        // Update the first matching transaction with Santander UK transfer details
+        // Update the first matching transaction with full Santander UK wire transfer details
         const txn = rows[0];
         const newDescription = 'UK Bank Transfer to Santander | Recipient: James A. Mitchell | Account: 72849163 | Sort Code: 09-01-28 | Ref: HERITAGE-SAN-' + txn.reference;
 
         const [result] = await pool.execute(
-            'UPDATE transactions SET description = ? WHERE id = ?',
+            `UPDATE transactions SET
+                description = ?,
+                destinationCountry = 'GB',
+                recipientName = 'Santander Mortga',
+                recipientAddress = 'Floor 1\n33 Princeway\nRedhill\nRH1 1SR',
+                bankName = 'SANTANDER UK PLC',
+                swiftCode = 'ABBYGB2LXXX',
+                iban = 'GB10ABBY09009290004049',
+                exchangeRate = '1 USD = 0.78610 GBP',
+                recipientCurrency = 'GBP',
+                recipientAmount = 3930.50
+            WHERE id = ?`,
             [newDescription, txn.id]
         );
 
-        console.log(`\n✅ Updated transaction ID ${txn.id}:`);
-        console.log(`  Old description: ${txn.description}`);
-        console.log(`  New description: ${newDescription}`);
+        console.log(`\n✅ Updated transaction ID ${txn.id} with full wire transfer details:`);
+        console.log(`  Description: ${newDescription}`);
+        console.log(`  Destination: GB (United Kingdom)`);
+        console.log(`  Bank: SANTANDER UK PLC (ABBYGB2LXXX)`);
+        console.log(`  IBAN: GB10ABBY09009290004049`);
+        console.log(`  Exchange: 1 USD = 0.78610 GBP`);
+        console.log(`  Recipient: £3,930.50 GBP`);
         console.log(`  Rows affected: ${result.affectedRows}`);
     } catch (e) {
         console.error('Error:', e.message);
