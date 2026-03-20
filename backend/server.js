@@ -5274,10 +5274,11 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         doc.text(`Time: ${txDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}`, marginL + 220, curY + 10);
         doc.text(`Ref: ${transaction.reference || 'N/A'}`, pageW - marginR - 180, curY + 10, { width: 165, align: 'right' });
 
-        // Parse UK bank transfer details
+        // Parse UK bank transfer details (legacy description-based) + new DB columns
         const ukBankMatch = (transaction.description || '').match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)\s*\|\s*Account:\s*(\d+)\s*\|\s*Sort Code:\s*([\d-]+)/);
         const UK_BANK_COLORS = {
             'Santander':  { primary: '#ec0000', accent: '#ffffff', text: 'Santander UK', swift: 'ABBYGB2LXXX' },
+            'SANTANDER':  { primary: '#ec0000', accent: '#ffffff', text: 'Santander UK', swift: 'ABBYGB2LXXX' },
             'Barclays':   { primary: '#00aeef', accent: '#ffffff', text: 'Barclays Bank', swift: 'BARCGB22XXX' },
             'HSBC':       { primary: '#db0011', accent: '#ffffff', text: 'HSBC UK', swift: 'HBUKGB4BXXX' },
             'Lloyds':     { primary: '#006a4d', accent: '#ffffff', text: 'Lloyds Banking Group', swift: 'LOYDGB2LXXX' },
@@ -5289,9 +5290,46 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             'Starling':   { primary: '#6935D3', accent: '#ffffff', text: 'Starling Bank', swift: 'SRLGGB2LXXX' },
             'Revolut':    { primary: '#0075eb', accent: '#ffffff', text: 'Revolut', swift: 'REVOGB21XXX' },
         };
-        const ukBankName = ukBankMatch ? ukBankMatch[1].trim() : null;
-        const ukBankStyle = ukBankName ? (UK_BANK_COLORS[ukBankName] || { primary: '#333333', accent: '#ffffff', text: ukBankName, swift: 'N/A' }) : null;
-        const isUkTransfer = !!ukBankMatch;
+
+        // Determine international transfer from DB columns OR legacy description
+        const isUkTransfer = (transaction.destinationCountry && transaction.destinationCountry !== 'US') || !!ukBankMatch;
+
+        // Resolve wire details: prefer DB columns, fall back to description regex
+        const wireRecipientName = transaction.recipientName || (ukBankMatch ? ukBankMatch[2].trim() : null);
+        const wireRecipientAddress = transaction.recipientAddress || null;
+        const wireBankNameRaw = transaction.bankName || (ukBankMatch ? ukBankMatch[1].trim() : null);
+        const wireSwiftCode = transaction.swiftCode || null;
+        const wireIban = transaction.iban || null;
+        const wireSortCode = ukBankMatch ? ukBankMatch[4].trim() : null;
+        const wireAcctNum = ukBankMatch ? ukBankMatch[3].trim() : null;
+        const wireExchangeRate = transaction.exchangeRate || null;
+        const wireRecipientCurrency = transaction.recipientCurrency || (isUkTransfer ? 'GBP' : null);
+        const wireRecipientAmount = transaction.recipientAmount ? parseFloat(transaction.recipientAmount) : null;
+
+        // Look up bank brand style
+        function findBankStyle(name) {
+            if (!name) return null;
+            const upper = name.toUpperCase();
+            for (const [key, style] of Object.entries(UK_BANK_COLORS)) {
+                if (upper.includes(key.toUpperCase())) return style;
+            }
+            return { primary: '#333333', accent: '#ffffff', text: name, swift: wireSwiftCode || 'N/A' };
+        }
+        const ukBankStyle = findBankStyle(wireBankNameRaw) || (ukBankMatch ? (UK_BANK_COLORS[ukBankMatch[1].trim()] || { primary: '#333333', accent: '#ffffff', text: ukBankMatch[1].trim(), swift: 'N/A' }) : null);
+
+        // Exchange rate number for computations
+        let numericRate = null;
+        if (wireExchangeRate) {
+            const rateMatch = wireExchangeRate.match(/[\d.]+\s*[A-Z]{3}\s*$/i) || wireExchangeRate.match(/=\s*([\d.]+)/);
+            if (rateMatch) numericRate = parseFloat(rateMatch[1] || rateMatch[0]);
+        }
+        if (!numericRate && isUkTransfer && !wireRecipientAmount) numericRate = 0.79;
+        const computedRecipientAmount = wireRecipientAmount || (numericRate ? txAmount * numericRate : null);
+        const CURRENCY_SYMBOLS = { GBP: '\u00a3', EUR: '\u20ac', JPY: '\u00a5', CNY: '\u00a5', INR: '\u20b9', BRL: 'R$', KRW: '\u20a9', AED: 'AED', NGN: '\u20a6', GHS: '\u20b5', CAD: 'C$', MXN: 'MX$', AUD: 'A$', CHF: 'CHF', PHP: '\u20b1', JMD: 'J$' };
+        const CURRENCY_NAMES = { GBP: 'British Pound Sterling', EUR: 'Euro', CAD: 'Canadian Dollar', MXN: 'Mexican Peso', JPY: 'Japanese Yen', CNY: 'Chinese Yuan', INR: 'Indian Rupee', AUD: 'Australian Dollar', BRL: 'Brazilian Real', AED: 'UAE Dirham', NGN: 'Nigerian Naira', GHS: 'Ghanaian Cedi', PHP: 'Philippine Peso', JMD: 'Jamaican Dollar', KRW: 'South Korean Won', CHF: 'Swiss Franc' };
+        const COUNTRY_NAMES = { US: 'United States', GB: 'United Kingdom', CA: 'Canada', MX: 'Mexico', DE: 'Germany', FR: 'France', ES: 'Spain', IT: 'Italy', CH: 'Switzerland', NG: 'Nigeria', GH: 'Ghana', IN: 'India', CN: 'China', JP: 'Japan', AU: 'Australia', BR: 'Brazil', AE: 'United Arab Emirates', PH: 'Philippines', JM: 'Jamaica', KR: 'South Korea' };
+        const destCountryName = COUNTRY_NAMES[transaction.destinationCountry] || (isUkTransfer ? 'United Kingdom' : 'United States');
+        const curSym = CURRENCY_SYMBOLS[wireRecipientCurrency] || wireRecipientCurrency || '';
 
         // ── Fee & total calculation ──
         const txAmount = parseFloat(transaction.amount);
@@ -5313,12 +5351,14 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             curY += 30; // extra space for fee line
         }
 
-        // ── Currency Conversion box for UK transfers ──
+        // ── Currency Conversion box for international transfers ──
         if (isUkTransfer) {
             curY += 78;
-            const usdToGbpRate = 0.79;  // 1 USD = 0.79 GBP
-            const gbpAmount = (txAmount * usdToGbpRate);
-            const gbpStr = gbpAmount.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const recvCur = wireRecipientCurrency || 'GBP';
+            const recvSym = curSym || '\u00a3';
+            const recvAmt = computedRecipientAmount || (txAmount * 0.79);
+            const recvStr = recvAmt.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const displayRate = numericRate || 0.79;
 
             doc.roundedRect(marginL, curY, contentW, 62, 8).lineWidth(1.5).strokeColor(GOLD).stroke();
             doc.rect(marginL + 1, curY + 1, contentW - 2, 20).fill('#fdf8e8');
@@ -5327,11 +5367,12 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             // Sent in USD
             doc.fontSize(11).fillColor(BLACK).text(`Sent: $${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD`, marginL + 20, curY + 27);
             // Arrow
-            doc.fontSize(14).fillColor(GOLD).text('→', marginL + (contentW / 2) - 8, curY + 25);
-            // Received in GBP
-            doc.fontSize(11).fillColor('#28a745').text(`Received: £${gbpStr} GBP`, marginL + (contentW / 2) + 14, curY + 27);
+            doc.fontSize(14).fillColor(GOLD).text('\u2192', marginL + (contentW / 2) - 8, curY + 25);
+            // Received in destination currency
+            doc.fontSize(11).fillColor('#28a745').text(`Received: ${recvSym}${recvStr} ${recvCur}`, marginL + (contentW / 2) + 14, curY + 27);
 
-            doc.fontSize(8).fillColor(GRAY).text(`Exchange Rate: 1 USD = ${usdToGbpRate} GBP  |  1 GBP = ${(1 / usdToGbpRate).toFixed(4)} USD  |  Rate locked at time of transfer`, marginL, curY + 48, { width: contentW, align: 'center' });
+            const rateLabel = wireExchangeRate || `1 USD = ${displayRate} ${recvCur}`;
+            doc.fontSize(8).fillColor(GRAY).text(`Exchange Rate: ${rateLabel}  |  Rate locked at time of transfer`, marginL, curY + 48, { width: contentW, align: 'center' });
         }
 
         // ── Status badge ──
@@ -5366,11 +5407,11 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         }
 
         const receiptDesc = isUkTransfer
-            ? `International Wire Transfer to ${ukBankStyle.text}`
+            ? `International Wire Transfer to ${destCountryName}${ukBankStyle ? ' - ' + ukBankStyle.text : ''}`
             : (cleanDescription(transaction.description) || 'Fund Transfer');
 
         detailRow('Transaction ID', `TXN-${String(id).padStart(8, '0')}`);
-        detailRow('Transaction Type', isUkTransfer ? 'International Wire Transfer (USD → GBP)' : cleanTxType(transaction.type));
+        detailRow('Transaction Type', isUkTransfer ? `International Wire Transfer (USD \u2192 ${wireRecipientCurrency || 'GBP'})` : cleanTxType(transaction.type));
         detailRow('Description', receiptDesc);
         detailRow('Reference Number', transaction.reference || 'N/A');
         detailRow('Payment Method', isUkTransfer ? 'SWIFT International Wire' : 'Bank Transfer');
@@ -5380,11 +5421,13 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const totalDisplay = `$${totalDeducted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         detailRow('Total Debited', totalDisplay);
         if (isUkTransfer) {
-            const usdToGbpRateDetail = 0.79;
-            const gbpReceived = (txAmount * usdToGbpRateDetail);
+            const recvCurD = wireRecipientCurrency || 'GBP';
+            const recvSymD = curSym || '\u00a3';
+            const recvAmtD = computedRecipientAmount || (txAmount * 0.79);
             detailRow('Amount Sent (USD)', `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-            detailRow('Amount Received (GBP)', `£${gbpReceived.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`);
-            detailRow('Processing Channel', 'UK Faster Payments Service (FPS)');
+            detailRow(`Amount Received (${recvCurD})`, `${recvSymD}${recvAmtD.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`);
+            detailRow('Destination Country', destCountryName);
+            detailRow('Processing Channel', isUkTransfer && (transaction.destinationCountry === 'GB' || !transaction.destinationCountry) ? 'UK Faster Payments Service (FPS)' : 'SWIFT Network');
             detailRow('Value Date', txDate.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }));
         }
 
@@ -5406,28 +5449,33 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
 
         // ── Recipient Details ──
         if (isUkTransfer) {
-            const recipientName = ukBankMatch[2].trim();
-            const recipientAcct = ukBankMatch[3].trim();
-            const recipientSort = ukBankMatch[4].trim();
+            const recipientName = wireRecipientName || 'N/A';
+            const recipientAcct = wireAcctNum || null;
+            const recipientSort = wireSortCode || null;
 
             curY = curY + (rowI * rowH) + 16;
             rowI = 0;
 
             // Recipient bank branded header
-            doc.roundedRect(marginL, curY, contentW, 38, 6).fill(ukBankStyle.primary);
-            doc.fontSize(12).fillColor(ukBankStyle.accent).text('Recipient Details', marginL + 15, curY + 6);
-            doc.fontSize(9).fillColor(ukBankStyle.accent).text(ukBankStyle.text, pageW - marginR - 180, curY + 8, { width: 165, align: 'right' });
-            doc.fontSize(8).fillColor(ukBankStyle.accent).text('External UK Bank Account', marginL + 15, curY + 23);
+            const brandStyle = ukBankStyle || { primary: '#333333', accent: '#ffffff', text: wireBankNameRaw || 'International Bank' };
+            doc.roundedRect(marginL, curY, contentW, 38, 6).fill(brandStyle.primary);
+            doc.fontSize(12).fillColor(brandStyle.accent).text('Recipient Details', marginL + 15, curY + 6);
+            doc.fontSize(9).fillColor(brandStyle.accent).text(brandStyle.text, pageW - marginR - 180, curY + 8, { width: 165, align: 'right' });
+            doc.fontSize(8).fillColor(brandStyle.accent).text(`External ${destCountryName} Bank Account`, marginL + 15, curY + 23);
             curY += 48;
 
             detailRow('Recipient Name', recipientName);
-            detailRow('Account Number', recipientAcct);
-            detailRow('Sort Code', recipientSort);
-            detailRow('Bank Name', ukBankStyle.text);
-            detailRow('SWIFT / BIC Code', ukBankStyle.swift);
-            detailRow('Bank Country', 'United Kingdom');
-            detailRow('Payment Network', 'UK Faster Payments Service (FPS)');
-            detailRow('Receiving Currency', 'GBP (British Pound Sterling)');
+            if (wireRecipientAddress) detailRow('Recipient Address', wireRecipientAddress);
+            if (wireIban) detailRow('IBAN', wireIban);
+            if (recipientAcct) detailRow('Account Number', recipientAcct);
+            if (recipientSort) detailRow('Sort Code', recipientSort);
+            detailRow('Bank Name', (ukBankStyle ? ukBankStyle.text : wireBankNameRaw) || 'N/A');
+            detailRow('SWIFT / BIC Code', wireSwiftCode || (ukBankStyle ? ukBankStyle.swift : 'N/A'));
+            detailRow('Bank Country', destCountryName);
+            detailRow('Payment Network', (transaction.destinationCountry === 'GB' || !transaction.destinationCountry) ? 'UK Faster Payments Service (FPS)' : 'SWIFT Network');
+            const recvCurLabel = wireRecipientCurrency || 'GBP';
+            const recvCurName = CURRENCY_NAMES[recvCurLabel] || recvCurLabel;
+            detailRow('Receiving Currency', `${recvCurLabel} (${recvCurName})`);
         } else if (transaction.toUserId || transaction.toFirstName) {
             curY = curY + (rowI * rowH) + 16;
             rowI = 0;
