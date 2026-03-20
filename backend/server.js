@@ -9734,59 +9734,101 @@ app.put('/api/admin/support-tickets/:id', requireAuth, requireAdmin, async (req,
 // Get spending by category
 app.get('/api/user/spending-analytics', requireAuth, async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
-        
+        const { period, startDate, endDate } = req.query;
+
+        // --- date filter from period or explicit dates ---
         let dateFilter = '';
-        const params = [req.auth.id];
-        
+        const dateParams = [];
         if (startDate && endDate) {
             dateFilter = 'AND t.createdAt BETWEEN ? AND ?';
-            params.push(startDate, endDate);
+            dateParams.push(startDate, endDate);
         } else {
-            // Default to last 30 days
-            dateFilter = 'AND t.createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
+            const intervals = { week: 7, month: 30, quarter: 90, year: 365 };
+            const days = intervals[period] || intervals.month;
+            if (period === 'all') {
+                dateFilter = '';
+            } else {
+                dateFilter = `AND t.createdAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
+            }
         }
 
-        // Get spending by category
-        const [categories] = await pool.execute(`
-            SELECT 
-                COALESCE(t.category, 'uncategorized') as category,
-                COUNT(*) as transactionCount,
-                SUM(t.amount) as totalAmount
-            FROM transactions t
-            WHERE t.fromUserId = ? ${dateFilter}
-            GROUP BY COALESCE(t.category, 'uncategorized')
-            ORDER BY totalAmount DESC
-        `, params);
+        // --- auto-categorize helper (keyword → category) ---
+        function guessCategory(desc) {
+            if (!desc) return 'other';
+            const d = desc.toLowerCase();
+            if (/electric|gas|water|internet|cable|phone|at&t|verizon|comcast|utility|utilit/.test(d)) return 'bills';
+            if (/groceries|restaurant|pizza|burger|coffee|starbucks|mcdonald|food|dining|uber eats|doordash/.test(d)) return 'food';
+            if (/amazon|walmart|target|shop|store|purchase|ebay|best buy/.test(d)) return 'shopping';
+            if (/uber|lyft|gas station|fuel|parking|transit|metro|bus|airline|flight/.test(d)) return 'transport';
+            if (/netflix|spotify|hulu|disney|movie|concert|ticket|gaming|entertainment/.test(d)) return 'entertainment';
+            if (/doctor|hospital|pharmacy|health|dental|medical|insurance/.test(d)) return 'health';
+            if (/tuition|school|university|course|book|education/.test(d)) return 'education';
+            if (/hotel|airbnb|travel|vacation|booking/.test(d)) return 'travel';
+            if (/salary|payroll|deposit|income|dividend|refund|cashback/.test(d)) return 'income';
+            if (/savings|save|goal/.test(d)) return 'savings';
+            if (/invest|stock|bond|crypto|etf|mutual fund/.test(d)) return 'investment';
+            if (/transfer|wire|sent|payment/.test(d)) return 'transfer';
+            return 'other';
+        }
 
-        // Get daily spending trend
-        const [daily] = await pool.execute(`
-            SELECT 
-                DATE(t.createdAt) as date,
-                SUM(t.amount) as totalAmount,
-                COUNT(*) as transactionCount
-            FROM transactions t
-            WHERE t.fromUserId = ? ${dateFilter}
-            GROUP BY DATE(t.createdAt)
-            ORDER BY date ASC
-        `, params);
+        const uid = req.auth.id;
 
-        // Get total in/out
-        const [totals] = await pool.execute(`
-            SELECT 
-                SUM(CASE WHEN fromUserId = ? THEN amount ELSE 0 END) as totalOut,
-                SUM(CASE WHEN toUserId = ? THEN amount ELSE 0 END) as totalIn
-            FROM transactions
-            WHERE (fromUserId = ? OR toUserId = ?) ${dateFilter.replace(/t\./g, '')}
-        `, [req.auth.id, req.auth.id, req.auth.id, req.auth.id, ...(startDate && endDate ? [startDate, endDate] : [])]);
+        // 1. All transactions for this user in the period
+        const [rows] = await pool.execute(`
+            SELECT t.id, t.amount, t.type, t.description, t.category,
+                   t.fromUserId, t.toUserId, DATE(t.createdAt) as txDate
+            FROM transactions t
+            WHERE (t.fromUserId = ? OR t.toUserId = ?) ${dateFilter}
+            ORDER BY t.createdAt ASC
+        `, [uid, uid, ...dateParams]);
+
+        // 2. Build aggregates in JS (income/expense split, categories, trend)
+        let totalIncome = 0, totalExpenses = 0, txCount = rows.length;
+        const trendMap = {};   // date → { income, expenses }
+        const catMap = {};     // category → total expense amount
+
+        for (const r of rows) {
+            const amt = parseFloat(r.amount) || 0;
+            const isIncome = r.toUserId === uid && r.fromUserId !== uid;
+            const dateKey = r.txDate instanceof Date
+                ? r.txDate.toISOString().slice(0, 10)
+                : String(r.txDate).slice(0, 10);
+
+            if (isIncome) {
+                totalIncome += amt;
+            } else {
+                totalExpenses += amt;
+                // categorize expenses
+                const cat = r.category || guessCategory(r.description);
+                catMap[cat] = (catMap[cat] || 0) + amt;
+            }
+
+            if (!trendMap[dateKey]) trendMap[dateKey] = { income: 0, expenses: 0 };
+            if (isIncome) trendMap[dateKey].income += amt;
+            else trendMap[dateKey].expenses += amt;
+        }
+
+        // 3. Build trend array (sorted by date) with human-readable labels
+        const sortedDates = Object.keys(trendMap).sort();
+        const trend = sortedDates.map(d => {
+            const dt = new Date(d + 'T00:00:00');
+            const label = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return { label, income: trendMap[d].income, expenses: trendMap[d].expenses };
+        });
+
+        // 4. Build categories array sorted by total desc
+        const categories = Object.entries(catMap)
+            .map(([category, total]) => ({ category, total }))
+            .sort((a, b) => b.total - a.total);
 
         res.json({
             success: true,
-            analytics: {
-                byCategory: categories,
-                dailyTrend: daily,
-                totals: totals[0]
-            }
+            totalIncome,
+            totalExpenses,
+            netFlow: totalIncome - totalExpenses,
+            transactionCount: txCount,
+            trend,
+            categories
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

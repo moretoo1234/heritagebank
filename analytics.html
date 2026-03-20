@@ -486,9 +486,12 @@
         }
         
         function updateStats(data) {
-            document.getElementById('totalIncome').textContent = '$' + (data.totalIncome || 0).toLocaleString();
-            document.getElementById('totalExpenses').textContent = '$' + (data.totalExpenses || 0).toLocaleString();
-            document.getElementById('netFlow').textContent = '$' + (data.netFlow || 0).toLocaleString();
+            const fmt = v => '$' + Math.abs(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('totalIncome').textContent = fmt(data.totalIncome);
+            document.getElementById('totalExpenses').textContent = fmt(data.totalExpenses);
+            const nf = data.netFlow || 0;
+            document.getElementById('netFlow').textContent = (nf < 0 ? '-' : '') + fmt(nf);
+            document.getElementById('netFlow').style.color = nf >= 0 ? '#28a745' : '#dc3545';
             document.getElementById('totalTransactions').textContent = data.transactionCount || 0;
         }
         
@@ -550,15 +553,19 @@
             if (categoryChart) categoryChart.destroy();
             
             const categories = data.categories || [];
-            const categoryColors = ['#1a472a', '#d4af37', '#dc3545', '#007bff', '#28a745', '#f57c00', '#9c27b0'];
+            const categoryColors = ['#1a472a', '#d4af37', '#dc3545', '#007bff', '#28a745', '#f57c00', '#9c27b0', '#e91e63', '#00bcd4', '#ff5722', '#607d8b', '#795548'];
+            const catColorMap2 = { food:'#e74c3c', shopping:'#9b59b6', transport:'#3498db', bills:'#f39c12',
+                entertainment:'#e91e63', health:'#4caf50', education:'#00bcd4', travel:'#ff5722',
+                income:'#28a745', savings:'#1a472a', investment:'#d4af37', transfer:'#607d8b', other:'#999' };
+            const chartColors = categories.map((c, i) => catColorMap2[c.category] || categoryColors[i % categoryColors.length]);
             
             categoryChart = new Chart(categoryCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: categories.map(c => c.category || 'Other'),
+                    labels: categories.map(c => (c.category || 'Other').replace(/^\w/, ch => ch.toUpperCase())),
                     datasets: [{
                         data: categories.map(c => c.total || 0),
-                        backgroundColor: categoryColors.slice(0, categories.length),
+                        backgroundColor: chartColors,
                         borderWidth: 0
                     }]
                 },
@@ -571,14 +578,19 @@
             });
             
             // Category List
+            const catColorMap = { food:'#e74c3c', shopping:'#9b59b6', transport:'#3498db', bills:'#f39c12',
+                entertainment:'#e91e63', health:'#4caf50', education:'#00bcd4', travel:'#ff5722',
+                income:'#28a745', savings:'#1a472a', investment:'#d4af37', transfer:'#607d8b', other:'#999' };
             const listContainer = document.getElementById('categoryList');
-            listContainer.innerHTML = categories.map((c, i) => `
-                <div class="category-item">
-                    <div class="category-color" style="background: ${categoryColors[i % categoryColors.length]}"></div>
-                    <span>${c.category || 'Other'}</span>
-                    <strong>$${(c.total || 0).toLocaleString()}</strong>
-                </div>
-            `).join('');
+            listContainer.innerHTML = categories.map((c, i) => {
+                const color = catColorMap[c.category] || categoryColors[i % categoryColors.length];
+                const name = (c.category || 'Other').replace(/^\w/, ch => ch.toUpperCase());
+                return `<div class="category-item">
+                    <div class="category-color" style="background: ${color}"></div>
+                    <span>${name}</span>
+                    <strong>$${(c.total || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</strong>
+                </div>`;
+            }).join('');
         }
         
         function renderTransactions(transactions) {
