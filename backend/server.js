@@ -9527,6 +9527,45 @@ app.put('/api/messages/:messageId/read', requireAuth, async (req, res) => {
     }
 });
 
+// Get single message
+app.get('/api/messages/:messageId', requireAuth, async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const [rows] = await pool.execute(`
+            SELECT m.*, m.message AS body,
+                   u.firstName AS senderFirstName, u.lastName AS senderLastName, u.email AS senderEmail
+            FROM internal_messages m
+            LEFT JOIN users u ON m.fromUserId = u.id
+            WHERE m.id = ? AND (m.toUserId = ? OR m.fromUserId = ?)
+        `, [messageId, req.auth.id, req.auth.id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Message not found' });
+        }
+
+        const msg = rows[0];
+
+        // Load any admin replies (child messages)
+        const [replies] = await pool.execute(`
+            SELECT r.*, r.message AS body,
+                   u.firstName AS senderFirstName, u.lastName AS senderLastName, u.isAdmin AS senderIsAdmin
+            FROM internal_messages r
+            LEFT JOIN users u ON r.fromUserId = u.id
+            WHERE r.parentMessageId = ? AND r.isDeleted = FALSE
+            ORDER BY r.createdAt ASC
+        `, [messageId]);
+
+        // Build adminReply from the latest admin reply
+        const adminReplyMsg = replies.find(r => r.senderIsAdmin);
+        msg.adminReply = adminReplyMsg ? adminReplyMsg.body : null;
+        msg.replies = replies;
+
+        res.json({ success: true, message: msg });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Delete message
 app.delete('/api/messages/:messageId', requireAuth, async (req, res) => {
     try {
@@ -10518,6 +10557,66 @@ app.get('/api/investments/:id', requireAuth, async (req, res) => {
     }
 });
 
+// Withdraw / liquidate an investment
+app.post('/api/investments/:id/withdraw', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.auth.id;
+
+        const [rows] = await pool.execute(
+            'SELECT * FROM investments WHERE id = ? AND user_id = ? AND status = ?',
+            [id, userId, 'active']
+        );
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Active investment not found' });
+        }
+
+        const inv = rows[0];
+        const investedAmt = parseFloat(inv.amount);
+        const maturity = new Date(inv.maturity_date);
+        const isMatured = maturity <= new Date();
+
+        // If matured, return principal + estimated return; otherwise just principal (early withdrawal)
+        let payout = investedAmt;
+        let penalty = 0;
+        if (isMatured) {
+            payout = investedAmt + parseFloat(inv.estimated_return || 0);
+        } else {
+            // Early withdrawal penalty: 10% of invested amount
+            penalty = Math.round(investedAmt * 0.10 * 100) / 100;
+            payout = investedAmt - penalty;
+        }
+
+        // Credit user's balance
+        await pool.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [payout, userId]);
+
+        // Mark investment as withdrawn
+        await pool.execute(
+            'UPDATE investments SET status = ? WHERE id = ?',
+            [isMatured ? 'matured' : 'withdrawn', id]
+        );
+
+        // Log the transaction
+        await pool.execute(`
+            INSERT INTO transactions (fromUserId, toUserId, amount, type, description, status, category)
+            VALUES (NULL, ?, ?, 'credit', ?, 'completed', 'investment')
+        `, [userId, payout, `Investment withdrawal: ${inv.product_name}${penalty > 0 ? ` (early penalty: $${penalty})` : ''}`]);
+
+        const [balRow] = await pool.execute('SELECT balance FROM users WHERE id = ?', [userId]);
+
+        res.json({
+            success: true,
+            message: isMatured ? 'Investment matured and funds returned' : 'Investment withdrawn early',
+            payout,
+            penalty,
+            isMatured,
+            newBalance: parseFloat(balRow[0].balance)
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // ==================== LIVE CHAT ENDPOINTS ====================
 
 // Start a chat session
@@ -10896,7 +10995,12 @@ app.get('/api/messages', requireAuth, async (req, res) => {
     req.url = `/api/messages/${type}`;
     app.handle(req, res);
 });
-app.post('/api/messages', requireAuth, async (req, res) => { req.url = '/api/messages/send'; app.handle(req, res); });
+app.post('/api/messages', requireAuth, async (req, res) => {
+    // Frontend sends 'body', backend expects 'message'
+    if (req.body.body && !req.body.message) req.body.message = req.body.body;
+    req.url = '/api/messages/send';
+    app.handle(req, res);
+});
 
 // Analytics: frontend uses /api/analytics, backend uses /api/user/spending-analytics
 app.get('/api/analytics', requireAuth, async (req, res) => {

@@ -328,15 +328,27 @@
     <!-- Compose Modal -->
     <div class="compose-modal" id="composeModal">
         <div class="compose-form">
-            <h3><i class="fas fa-pen"></i> New Message</h3>
+            <h3><i class="fas fa-pen"></i> New Support Message</h3>
             <form onsubmit="sendMessage(event)">
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="msgCategory">
+                        <option value="general">General Inquiry</option>
+                        <option value="account">Account Issue</option>
+                        <option value="card">Card Issue</option>
+                        <option value="transfer">Transfer Issue</option>
+                        <option value="technical">Technical Support</option>
+                        <option value="fraud">Report Fraud</option>
+                        <option value="feedback">Feedback</option>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label>Subject</label>
                     <input type="text" id="msgSubject" placeholder="Enter subject" required>
                 </div>
                 <div class="form-group">
                     <label>Message</label>
-                    <textarea id="msgBody" rows="6" placeholder="Type your message here..." required></textarea>
+                    <textarea id="msgBody" rows="6" placeholder="Describe your issue or question in detail..." required></textarea>
                 </div>
                 <div class="compose-actions">
                     <button type="button" class="btn btn-cancel" onclick="hideCompose()">Cancel</button>
@@ -447,29 +459,54 @@
                 `;
                 return;
             }
+
+            const fromAdmin = selectedMessage.senderIsAdmin;
+            const senderLabel = fromAdmin 
+                ? 'From: Heritage Bank Support' 
+                : (currentTab === 'sent' ? 'To: Bank Support' : `From: ${escapeHtml(selectedMessage.senderFirstName || '')} ${escapeHtml(selectedMessage.senderLastName || '')}`);
+
+            // Build replies thread
+            let repliesHtml = '';
+            const replies = selectedMessage.replies || [];
+            if (selectedMessage.adminReply) {
+                repliesHtml += `
+                    <div style="margin-top: 20px; padding: 15px; background: #f0f7f2; border-left: 3px solid #1a472a; border-radius: 8px;">
+                        <strong style="color: #1a472a;"><i class="fas fa-headset"></i> Heritage Bank Support</strong>
+                        <p style="margin-top: 8px;">${escapeHtml(selectedMessage.adminReply).replace(/\n/g, '<br>')}</p>
+                    </div>
+                `;
+            }
+            if (replies.length > 0) {
+                replies.forEach(r => {
+                    const isAdmin = r.senderIsAdmin;
+                    repliesHtml += `
+                        <div style="margin-top: 12px; padding: 12px; background: ${isAdmin ? '#f0f7f2' : '#f8f9fa'}; border-left: 3px solid ${isAdmin ? '#1a472a' : '#d4af37'}; border-radius: 8px;">
+                            <strong style="color: ${isAdmin ? '#1a472a' : '#333'};">
+                                <i class="fas ${isAdmin ? 'fa-headset' : 'fa-user'}"></i>
+                                ${isAdmin ? 'Heritage Bank Support' : 'You'}
+                            </strong>
+                            <span style="float:right; color:#999; font-size:12px;">${formatDate(r.createdAt)}</span>
+                            <p style="margin-top: 8px;">${escapeHtml(r.body || r.message || '').replace(/\n/g, '<br>')}</p>
+                        </div>
+                    `;
+                });
+            }
             
             container.innerHTML = `
                 <div class="message-header">
                     <h3>${escapeHtml(selectedMessage.subject)}</h3>
-                    <span>${currentTab === 'inbox' ? 'From: Bank Support' : 'To: Bank Support'} • ${formatDate(selectedMessage.createdAt)}</span>
+                    <span>${senderLabel} • ${formatDate(selectedMessage.createdAt)}</span>
                 </div>
                 <div class="message-body">
-                    <p>${escapeHtml(selectedMessage.body).replace(/\n/g, '<br>')}</p>
-                    ${selectedMessage.adminReply ? `
-                        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
-                            <strong style="color: #1a472a;"><i class="fas fa-reply"></i> Bank Response:</strong>
-                            <p style="margin-top: 10px;">${escapeHtml(selectedMessage.adminReply).replace(/\n/g, '<br>')}</p>
-                        </div>
-                    ` : ''}
+                    <p>${escapeHtml(selectedMessage.body || selectedMessage.message || '').replace(/\n/g, '<br>')}</p>
+                    ${repliesHtml}
                 </div>
-                ${currentTab === 'inbox' && !selectedMessage.adminReply ? `
-                    <div class="message-reply">
-                        <form class="reply-form" onsubmit="replyMessage(event)">
-                            <textarea id="replyText" rows="2" placeholder="Type your reply..."></textarea>
-                            <button type="submit" class="btn btn-primary"><i class="fas fa-reply"></i></button>
-                        </form>
-                    </div>
-                ` : ''}
+                <div class="message-reply">
+                    <form class="reply-form" onsubmit="replyMessage(event)">
+                        <textarea id="replyText" rows="2" placeholder="Type your reply..."></textarea>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-reply"></i> Reply</button>
+                    </form>
+                </div>
             `;
         }
         
@@ -478,10 +515,9 @@
             const reply = document.getElementById('replyText').value.trim();
             if (!reply) return;
             
-            // Send as a new message (reply)
             const token = localStorage.getItem('token');
             try {
-                const res = await fetch(`${API_URL}/api/messages`, {
+                const res = await fetch(`${API_URL}/api/messages/send`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -489,20 +525,22 @@
                     },
                     body: JSON.stringify({
                         subject: 'Re: ' + selectedMessage.subject,
-                        body: reply
+                        message: reply,
+                        parentMessageId: selectedMessage.id
                     })
                 });
                 
                 const data = await res.json();
                 if (data.success) {
-                    alert('Reply sent successfully!');
+                    showToast('Reply sent!');
                     document.getElementById('replyText').value = '';
+                    viewMessage(selectedMessage.id);
                     loadMessages();
                 } else {
-                    alert(data.message || 'Failed to send reply');
+                    showToast(data.message || 'Failed to send reply', 'error');
                 }
             } catch (e) {
-                alert('Error sending reply');
+                showToast('Error sending reply', 'error');
             }
         }
         
@@ -527,10 +565,13 @@
         
         async function sendMessage(e) {
             e.preventDefault();
+            const category = document.getElementById('msgCategory').value;
             const subject = document.getElementById('msgSubject').value.trim();
             const body = document.getElementById('msgBody').value.trim();
             
             if (!subject || !body) return;
+            
+            const fullSubject = `[${category.charAt(0).toUpperCase() + category.slice(1)}] ${subject}`;
             
             const token = localStorage.getItem('token');
             try {
@@ -540,20 +581,36 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ subject, body })
+                    body: JSON.stringify({ subject: fullSubject, body })
                 });
                 
                 const data = await res.json();
                 if (data.success) {
-                    alert('Message sent successfully!');
+                    showToast('Message sent to support!');
                     hideCompose();
+                    document.getElementById('msgSubject').value = '';
+                    document.getElementById('msgBody').value = '';
                     switchTab('sent');
                 } else {
-                    alert(data.message || 'Failed to send message');
+                    showToast(data.message || 'Failed to send message', 'error');
                 }
             } catch (e) {
-                alert('Error sending message');
+                showToast('Error sending message', 'error');
             }
+        }
+        
+        function showToast(msg, type = 'success') {
+            let toast = document.getElementById('msgToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'msgToast';
+                toast.style.cssText = 'position:fixed;bottom:30px;right:30px;padding:14px 24px;border-radius:10px;color:#fff;font-weight:600;z-index:9999;transition:opacity 0.3s;';
+                document.body.appendChild(toast);
+            }
+            toast.style.background = type === 'error' ? '#dc3545' : '#28a745';
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
         }
         
         function formatDate(dateStr) {

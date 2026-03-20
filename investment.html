@@ -385,13 +385,22 @@ Funds have been invested immediately.
             `;
             
             data.investments.forEach(inv => {
-                const status = inv.status === 'active' ? 
-                    '<span style="background: #d4edda; color: #155724; padding: 3px 8px; border-radius: 4px; font-size: 11px;">Active</span>' :
-                    `<span style="background: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-size: 11px;">${inv.status}</span>`;
+                const isMatured = new Date(inv.maturityDate) <= new Date();
+                const statusMap = {
+                    active: `<span style="background: #d4edda; color: #155724; padding: 3px 8px; border-radius: 4px; font-size: 11px;">${isMatured ? 'Matured' : 'Active'}</span>`,
+                    matured: '<span style="background: #cce5ff; color: #004085; padding: 3px 8px; border-radius: 4px; font-size: 11px;">Matured - Collected</span>',
+                    withdrawn: '<span style="background: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 4px; font-size: 11px;">Withdrawn Early</span>',
+                    cancelled: '<span style="background: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-size: 11px;">Cancelled</span>'
+                };
+                const status = statusMap[inv.status] || statusMap.active;
+                const withdrawBtn = inv.status === 'active' ? `
+                    <button onclick="withdrawInvestment(${inv.id}, ${isMatured})" class="invest-btn" style="font-size:12px; padding:6px 14px; margin-top:6px;${isMatured ? 'background:#28a745;color:#fff;' : ''}">
+                        <i class="fas fa-${isMatured ? 'check-circle' : 'undo'}"></i> ${isMatured ? 'Collect Returns' : 'Withdraw'}
+                    </button>` : '';
                     
                 html += `
                     <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                             <div>
                                 <strong>${inv.product}</strong> ${status}
                                 <p style="margin: 5px 0 0; color: #666; font-size: 13px;">
@@ -401,6 +410,7 @@ Funds have been invested immediately.
                             <div style="text-align: right;">
                                 <p style="margin: 0; color: #d4af37; font-weight: bold;">+$${parseFloat(inv.estimatedReturn).toLocaleString()}</p>
                                 <p style="margin: 3px 0 0; color: #999; font-size: 12px;">Matures: ${new Date(inv.maturityDate).toLocaleDateString()}</p>
+                                ${withdrawBtn}
                             </div>
                         </div>
                     </div>
@@ -409,6 +419,38 @@ Funds have been invested immediately.
             
             container.innerHTML = html;
             container.style.display = 'block';
+        }
+        
+        async function withdrawInvestment(investmentId, isMatured) {
+            const msg = isMatured 
+                ? 'Your investment has matured! You will receive your principal + estimated returns.'
+                : 'WARNING: Early withdrawal incurs a 10% penalty on your principal. Continue?';
+            
+            if (!confirm(msg)) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/investments/${investmentId}/withdraw`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    let detail = `Payout: $${data.payout.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+                    if (data.penalty > 0) detail += `\nEarly withdrawal penalty: -$${data.penalty.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+                    detail += `\nNew balance: $${data.newBalance.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+                    alert(detail);
+                    showNotification('Investment withdrawn successfully!', 'success');
+                    loadMyInvestments();
+                } else {
+                    showNotification('Error: ' + data.message, 'error');
+                }
+            } catch (err) {
+                showNotification('Error: ' + err.message, 'error');
+            }
         }
         
         // Show notification toast

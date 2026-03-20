@@ -65,7 +65,8 @@
         .app-status.pending { background: #fff3cd; color: #856404; }
         .app-status.approved { background: #d4edda; color: #155724; }
         .app-status.rejected { background: #f8d7da; color: #721c24; }
-        .app-status.under_review { background: #cce5ff; color: #004085; }
+        .app-status.under_review, .app-status.under-review { background: #cce5ff; color: #004085; }
+        .app-status.disbursed { background: #d4edda; color: #155724; }
 
         @media (max-width: 768px) {
             .loan-hero { padding: 70px 0 40px; }
@@ -471,25 +472,31 @@
 
             let html = `<h3><i class="fas fa-history"></i> My Loan Applications</h3>`;
             
-            applications.slice(0, 5).forEach(app => {
+            applications.forEach(app => {
                 const loanType = app.loanType || app.loan_type || 'personal';
                 const amount = app.amount || app.loan_amount || 0;
                 const term = app.term || app.loan_duration_months || 12;
                 const status = app.status || 'pending';
+                const statusLabels = { pending: 'Pending Review', under_review: 'Under Review', approved: 'Approved', rejected: 'Rejected', disbursed: 'Funds Disbursed' };
                 const statusClass = status.replace('_', '-');
+                const monthlyPmt = app.monthlyPayment ? `$${parseFloat(app.monthlyPayment).toLocaleString()}/mo` : '';
+                const createdAt = app.createdAt ? new Date(app.createdAt).toLocaleDateString() : '';
+                const adminNotes = app.adminNotes || '';
                 
                 html += `
-                    <div class="application-item">
-                        <div>
-                            <strong>${loanType.charAt(0).toUpperCase() + loanType.slice(1)} Loan</strong>
-                            <p style="color: #666; font-size: 0.9rem; margin: 5px 0 0;">
-                                $${parseFloat(amount).toLocaleString()} • ${term} months
-                            </p>
+                    <div class="application-item" style="flex-direction:column; align-items:stretch;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <strong>${loanType.charAt(0).toUpperCase() + loanType.slice(1)} Loan</strong>
+                                <p style="color: #666; font-size: 0.9rem; margin: 5px 0 0;">
+                                    $${parseFloat(amount).toLocaleString()} • ${term} months ${monthlyPmt ? '• ' + monthlyPmt : ''} • Applied: ${createdAt}
+                                </p>
+                            </div>
+                            <span class="app-status ${statusClass}">${statusLabels[status] || status}</span>
                         </div>
-                        <span class="app-status ${statusClass}">${status.replace('_', ' ')}</span>
+                        ${adminNotes ? `<p style="margin:8px 0 0; padding:8px 12px; background:#e8f4f8; border-radius:6px; font-size:0.85rem; color:#333;"><i class="fas fa-comment-dots" style="color:#1a5f7a;"></i> <strong>Bank Note:</strong> ${adminNotes}</p>` : ''}
                     </div>
-                `;
-            });
+                `;\n            });
 
             container.innerHTML = html;
             container.style.display = 'block';
