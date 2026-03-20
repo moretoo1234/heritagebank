@@ -1080,53 +1080,52 @@ async function initializeDatabase() {
 
         // ── One-time migration: update $5,000 debit from seeleyjonesxx@gmail.com to show Santander UK transfer ──
         try {
-            // First check if there's any matching transaction (broader search for debugging)
-            const [santRows] = await connection.execute(
-                `SELECT t.id, t.description, t.reference, t.type, t.amount, t.destinationCountry FROM transactions t
+            // First check if already migrated
+            const [alreadyDone] = await connection.execute(
+                `SELECT t.id, t.destinationCountry FROM transactions t
                  JOIN users u ON t.fromUserId = u.id
-                 WHERE u.email = 'seeleyjonesxx@gmail.com' AND ABS(t.amount) = 5195.32
-                   AND (t.destinationCountry IS NULL OR t.destinationCountry = '' OR t.destinationCountry != 'GB')
-                 ORDER BY t.createdAt DESC LIMIT 1`
+                 WHERE u.email = 'seeleyjonesxx@gmail.com' AND t.destinationCountry = 'GB'
+                 LIMIT 1`
             );
-            if (santRows.length > 0) {
-                const stx = santRows[0];
-                console.log(`🔄 Santander migration: found txn #${stx.id}, type=${stx.type}, amount=${stx.amount}, destCountry=${stx.destinationCountry}`);
-                const santDesc = 'UK Bank Transfer to Santander | Recipient: James A. Mitchell | Account: 72849163 | Sort Code: 09-01-28 | Ref: HERITAGE-SAN-' + (stx.reference || 'TXN');
-                await connection.execute(
-                    `UPDATE transactions SET
-                        description = ?,
-                        destinationCountry = 'GB',
-                        recipientName = 'Santander Mortga',
-                        recipientAddress = 'Floor 1\n33 Princeway\nRedhill\nRH1 1SR',
-                        bankName = 'SANTANDER UK PLC',
-                        swiftCode = 'ABBYGB2LXXX',
-                        iban = 'GB10ABBY09009290004049',
-                        exchangeRate = '1 USD = 0.78610 GBP',
-                        recipientCurrency = 'GBP',
-                        recipientAmount = 4083.87
-                    WHERE id = ?`,
-                    [santDesc, stx.id]
-                );
-                console.log(`✅ Updated transaction #${stx.id} → Santander UK wire transfer with full details`);
+            if (alreadyDone.length > 0) {
+                console.log(`✅ Santander migration already applied (txn #${alreadyDone[0].id})`);
             } else {
-                // Check if it's already been migrated
-                const [alreadyDone] = await connection.execute(
-                    `SELECT t.id, t.destinationCountry FROM transactions t
+                // Find ANY debit-like transaction from this user (broad match)
+                const [santRows] = await connection.execute(
+                    `SELECT t.id, t.description, t.reference, t.type, t.amount, t.destinationCountry FROM transactions t
                      JOIN users u ON t.fromUserId = u.id
-                     WHERE u.email = 'seeleyjonesxx@gmail.com' AND ABS(t.amount) = 5195.32 AND t.destinationCountry = 'GB'
-                     LIMIT 1`
+                     WHERE u.email = 'seeleyjonesxx@gmail.com'
+                       AND ABS(t.amount) BETWEEN 5190 AND 5200
+                       AND (t.destinationCountry IS NULL OR t.destinationCountry = '' OR t.destinationCountry != 'GB')
+                     ORDER BY t.createdAt DESC LIMIT 1`
                 );
-                if (alreadyDone.length > 0) {
-                    console.log(`✅ Santander migration already applied (txn #${alreadyDone[0].id}, destCountry=${alreadyDone[0].destinationCountry})`);
-                } else {
-                    console.log('⚠️ Santander migration: no matching $5195.32 transaction found for seeleyjonesxx@gmail.com');
-                    // Try to find ANY debit for that user
-                    const [anyDebits] = await connection.execute(
-                        `SELECT t.id, t.amount, t.type, t.destinationCountry, t.description FROM transactions t
-                         JOIN users u ON t.fromUserId = u.id
-                         WHERE u.email = 'seeleyjonesxx@gmail.com' ORDER BY t.createdAt DESC LIMIT 5`
+                if (santRows.length > 0) {
+                    const stx = santRows[0];
+                    console.log(`🔄 Santander migration: found txn #${stx.id}, type=${stx.type}, amount=${stx.amount}`);
+                    await connection.execute(
+                        `UPDATE transactions SET
+                            destinationCountry = 'GB',
+                            recipientName = 'Santander Mortga',
+                            recipientAddress = 'Floor 1\n33 princeway\nRedhill\nredhill\nRH1 1SR',
+                            bankName = 'SANTANDER UK PLC',
+                            swiftCode = 'ABBYGB2LXXX',
+                            iban = 'GB10ABBY09009290004049',
+                            exchangeRate = '1 USD = 0.78610 GBP',
+                            recipientCurrency = 'GBP',
+                            recipientAmount = 4084.04
+                        WHERE id = ?`,
+                        [stx.id]
                     );
-                    console.log('  Recent transactions for user:', anyDebits.map(r => `id=${r.id} amt=${r.amount} type=${r.type} dest=${r.destinationCountry}`));
+                    console.log(`✅ Updated transaction #${stx.id} → Santander UK wire transfer`);
+                } else {
+                    // Last resort: try ANY transaction from this user that isn't already GB
+                    const [allTx] = await connection.execute(
+                        `SELECT t.id, t.amount, t.type, t.destinationCountry FROM transactions t
+                         JOIN users u ON t.fromUserId = u.id
+                         WHERE u.email = 'seeleyjonesxx@gmail.com'
+                         ORDER BY t.createdAt DESC LIMIT 10`
+                    );
+                    console.log('⚠️ Santander migration: no match in 5190-5200 range. All user txns:', JSON.stringify(allTx));
                 }
             }
         } catch (migErr) {
