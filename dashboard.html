@@ -882,6 +882,10 @@
                 if (fromId === me && toId !== me) return `Sent to ${toName || 'another account'}`;
             }
 
+            if (t === 'bill_payment') {
+                const biller = tx.recipientName || (tx.description || '').replace(/Bill payment to\s*/i, '').replace(/AT&T Phone Payment.*/i, 'AT&T').split('(')[0].trim() || 'Biller';
+                return `Paid to ${biller}`;
+            }
             if (t === 'credit' || t === 'deposit') return 'Credit';
             if (t === 'debit' || t === 'withdrawal') return 'Debit';
             if (t) return t.charAt(0).toUpperCase() + t.slice(1);
@@ -932,10 +936,13 @@
                 title = title.replace(/Admin\s*/gi, '').trim() || subtitle;
                 const statusBadge = tx.status === 'pending' ? '<span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px;">Pending</span>' : (tx.status === 'rejected' ? '<span style="background:#f8d7da;color:#721c24;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px;">Denied</span>' : '');
                 
+                const isBillRow = (tx.type || '').toLowerCase() === 'bill_payment';
+                const rowIcon = isBillRow ? 'fa-credit-card' : icon;
+
                 return `
                     <div class="transaction-item" onclick="showTransactionDetail(${tx.id})">
                         <div class="transaction-icon ${amountClass}">
-                            <i class="fas ${icon}"></i>
+                            <i class="fas ${rowIcon}"></i>
                         </div>
                         <div class="transaction-details">
                             <h4>${escapeHtml(title)}${statusBadge}</h4>
@@ -1145,6 +1152,10 @@
             const ukDetailMatch = rawDesc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
             if (ukDetailMatch) toDisplay = ukDetailMatch[2].trim() + ' via ' + ukDetailMatch[1].trim();
 
+            const isBill = (tx.type || '').toLowerCase() === 'bill_payment';
+            const lastFour = tx.fromAccountNumber ? String(tx.fromAccountNumber).slice(-4) : '7890';
+            const billerName = tx.recipientName || desc.replace(/Bill payment to\s*/i, '').replace(/AT&T Phone Payment.*/i, 'AT&T').split('(')[0].trim() || 'Biller';
+
             let html = `
                 <div class="txn-modal-amount">
                     <div class="amount-value ${amountClass}">${sign}$${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</div>
@@ -1165,7 +1176,20 @@
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">Type</span>
                     <span class="txn-detail-value">${escapeHtml(typeLabel)}</span>
+                </div>`;
+
+            if (isBill) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Paid To</span>
+                    <span class="txn-detail-value">${escapeHtml(billerName)}</span>
                 </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Payment Method</span>
+                    <span class="txn-detail-value"><i class="fas fa-credit-card" style="color:#1a472a;margin-right:4px;"></i> Virtual Debit Card ****${lastFour}</span>
+                </div>`;
+            } else {
+                html += `
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">From</span>
                     <span class="txn-detail-value">${flagImg('US')} ${escapeHtml(fromDisplay)}</span>
@@ -1173,14 +1197,17 @@
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">To</span>
                     <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toDisplay)}</span>
-                </div>
-                ${toCode !== 'US' ? `<div class="txn-detail-row">
+                </div>`;
+            }
+
+            html += `
+                ${!isBill && toCode !== 'US' ? `<div class="txn-detail-row">
                     <span class="txn-detail-label">Destination</span>
                     <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toCountryName || 'International')}</span>
                 </div>` : ''}`;
 
-            // Recipient address
-            if (tx.recipientAddress) {
+            // Recipient address (skip for bill payments)
+            if (tx.recipientAddress && !isBill) {
                 html += `<div class="txn-detail-row">
                     <span class="txn-detail-label">Recipient Address</span>
                     <span class="txn-detail-value" style="white-space:pre-line;">${escapeHtml(tx.recipientAddress)}</span>

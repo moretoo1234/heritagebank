@@ -5359,8 +5359,13 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             'Revolut':    { primary: '#0075eb', accent: '#ffffff', text: 'Revolut', swift: 'REVOGB21XXX' },
         };
 
+        // Determine bill payment
+        const isBillPayment = (transaction.type || '').toLowerCase() === 'bill_payment';
+        const billLastFour = transaction.fromAccountNumber ? String(transaction.fromAccountNumber).slice(-4) : '7890';
+        const billerName = transaction.recipientName || (transaction.description || '').replace(/Bill payment to\s*/i, '').replace(/AT&T Phone Payment.*/i, 'AT&T').split('(')[0].trim() || 'Biller';
+
         // Determine international transfer from DB columns OR legacy description
-        const isUkTransfer = (transaction.destinationCountry && transaction.destinationCountry !== 'US') || !!ukBankMatch;
+        const isUkTransfer = !isBillPayment && ((transaction.destinationCountry && transaction.destinationCountry !== 'US') || !!ukBankMatch);
 
         // Resolve wire details: prefer DB columns, fall back to description regex
         const wireRecipientName = transaction.recipientName || (ukBankMatch ? ukBankMatch[2].trim() : null);
@@ -5411,7 +5416,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const amtStr = `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         const amtBoxHeight = txFee > 0 ? 100 : 70;
         doc.roundedRect(marginL, curY, contentW, amtBoxHeight, 8).fill(GREEN);
-        doc.fontSize(11).fillColor(GOLD).text('AMOUNT SENT (USD)', marginL, curY + 12, { width: contentW, align: 'center' });
+        doc.fontSize(11).fillColor(GOLD).text(isBillPayment ? 'AMOUNT PAID (USD)' : 'AMOUNT SENT (USD)', marginL, curY + 12, { width: contentW, align: 'center' });
         doc.fontSize(28).fillColor(WHITE).text(amtStr, marginL, curY + 30, { width: contentW, align: 'center' });
 
         if (txFee > 0) {
@@ -5476,15 +5481,17 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             rowI++;
         }
 
-        const receiptDesc = isUkTransfer
+        const receiptDesc = isBillPayment
+            ? (transaction.description || `Bill Payment - ${billerName}`)
+            : isUkTransfer
             ? `International Wire Transfer to ${destCountryName}${ukBankStyle ? ' - ' + ukBankStyle.text : ''}`
             : (cleanDescription(transaction.description) || 'Fund Transfer');
 
         detailRow('Transaction ID', `TXN-${String(id).padStart(8, '0')}`);
-        detailRow('Transaction Type', isUkTransfer ? `International Wire Transfer (USD \u2192 ${wireRecipientCurrency || 'GBP'})` : cleanTxType(transaction.type));
+        detailRow('Transaction Type', isBillPayment ? 'Bill Payment' : isUkTransfer ? `International Wire Transfer (USD \u2192 ${wireRecipientCurrency || 'GBP'})` : cleanTxType(transaction.type));
         detailRow('Description', receiptDesc);
         detailRow('Reference Number', transaction.reference || 'N/A');
-        detailRow('Payment Method', isUkTransfer ? 'SWIFT International Wire' : 'Bank Transfer');
+        detailRow('Payment Method', isBillPayment ? `Virtual Debit Card ****${billLastFour}` : isUkTransfer ? 'SWIFT International Wire' : 'Bank Transfer');
         // Always show fee row
         const feeDisplay = txFee > 0 ? `$${txFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00 (Waived)';
         detailRow('Transfer Fee', feeDisplay);
@@ -5501,23 +5508,36 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             detailRow('Value Date', txDate.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }));
         }
 
-        // ── Sender Details ──
+        // ── Sender / Payment Details ──
         curY = curY + (rowI * rowH) + 16;
         rowI = 0;
-        doc.fontSize(12).fillColor(GREEN).text('Sender Details', marginL, curY);
-        doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
-        curY += 28;
 
-        const senderName = `${transaction.fromFirstName || user.firstName || ''} ${transaction.fromLastName || user.lastName || ''}`.trim();
-        detailRow('Account Holder', senderName);
-        detailRow('Account Number', maskAccount(transaction.fromAccountNumber || user.accountNumber || ''));
-        if (user.routingNumber) {
-            detailRow('Routing Number', maskAccount(user.routingNumber));
+        if (isBillPayment) {
+            doc.fontSize(12).fillColor(GREEN).text('Payment Details', marginL, curY);
+            doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
+            curY += 28;
+
+            detailRow('Payment Method', `Virtual Debit Card ****${billLastFour}`);
+            detailRow('Card Type', 'Visa Debit');
+            detailRow('Paid To', billerName);
+            detailRow('Billing Category', 'Recurring Bill Payment');
+            detailRow('Amount Charged', `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+        } else {
+            doc.fontSize(12).fillColor(GREEN).text('Sender Details', marginL, curY);
+            doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
+            curY += 28;
+
+            const senderName = `${transaction.fromFirstName || user.firstName || ''} ${transaction.fromLastName || user.lastName || ''}`.trim();
+            detailRow('Account Holder', senderName);
+            detailRow('Account Number', maskAccount(transaction.fromAccountNumber || user.accountNumber || ''));
+            if (user.routingNumber) {
+                detailRow('Routing Number', maskAccount(user.routingNumber));
+            }
+            detailRow('Bank Name', 'Heritage Bank');
+            detailRow('Bank Country', 'United States');
         }
-        detailRow('Bank Name', 'Heritage Bank');
-        detailRow('Bank Country', 'United States');
 
-        // ── Recipient Details ──
+        // ── Recipient Details (skip for bill payments) ──
         if (isUkTransfer) {
             const recipientName = wireRecipientName || 'N/A';
             const recipientAcct = wireAcctNum || null;

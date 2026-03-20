@@ -142,9 +142,13 @@
         }
 
         function cleanType(type) {
-            const map = { 'direct_deposit': 'Direct Deposit', 'admin_transfer': 'Transfer', 'admin_debit': 'Debit', 'admin_credit': 'Credit', 'wire_transfer': 'Wire Transfer', 'bank_transfer': 'Bank Transfer' };
+            const map = { 'direct_deposit': 'Direct Deposit', 'admin_transfer': 'Transfer', 'admin_debit': 'Debit', 'admin_credit': 'Credit', 'wire_transfer': 'Wire Transfer', 'bank_transfer': 'Bank Transfer', 'bill_payment': 'Bill Payment' };
             if (map[(type || '').toLowerCase()]) return map[(type || '').toLowerCase()];
             return (type || 'Transfer').replace(/_/g, ' ').replace(/\badmin\b\s*/gi, '').replace(/\b\w/g, c => c.toUpperCase()).trim() || 'Transfer';
+        }
+
+        function isBillPayment(tx) {
+            return (tx.type || '').toLowerCase() === 'bill_payment';
         }
 
         function formatDate(d) {
@@ -300,12 +304,18 @@
                             const toCode = getCountryCode(tx);
                             let toName = formatNameAcct(tx.toFirstName, tx.toLastName, tx.toAccountNumber);
                             if (toName === '-' && tx.recipientName) toName = tx.recipientName;
-                            let fromTo = `${flagImg('US')} From: ${fromDisp} &bull; ${flagImg(toCode)} To: ${toName}`;
-                            if (ukMatch) {
+                            let fromTo;
+                            if (isBillPayment(tx)) {
+                                const lastFour = tx.fromAccountNumber ? String(tx.fromAccountNumber).slice(-4) : '7890';
+                                const billerName = tx.recipientName || desc.replace(/Bill payment to\s*/i, '').split('(')[0].trim() || 'Biller';
+                                fromTo = `<i class="fas fa-credit-card" style="color:#1a472a;margin-right:4px;"></i> Paid via Virtual Debit Card ****${lastFour} &bull; To: ${billerName}`;
+                            } else if (ukMatch) {
                                 const bankName = ukMatch[1].trim();
                                 const recipientName = ukMatch[2].trim();
                                 desc = `UK Transfer to ${bankName}`;
                                 fromTo = `${flagImg('US')} From: ${fromDisp} &bull; ${flagImg('GB')} To: ${recipientName} &bull; via ${bankName}`;
+                            } else {
+                                fromTo = `${flagImg('US')} From: ${fromDisp} &bull; ${flagImg(toCode)} To: ${toName}`;
                             }
                             return `
                                 <tr onclick="showTransactionDetail(${tx.id})">
@@ -415,6 +425,10 @@
             const ukDetailMatch = rawDesc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
             if (ukDetailMatch) toDisplay = ukDetailMatch[2].trim() + ' via ' + ukDetailMatch[1].trim();
 
+            const isBill = isBillPayment(tx);
+            const lastFour = tx.fromAccountNumber ? String(tx.fromAccountNumber).slice(-4) : '7890';
+            const billerName = tx.recipientName || desc.replace(/Bill payment to\s*/i, '').replace(/AT&T Phone Payment.*/i, 'AT&T').split('(')[0].trim() || 'Biller';
+
             let html = `
                 <div class="txn-modal-amount">
                     <div class="amount-value ${amountClass}">${sign}$${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</div>
@@ -435,7 +449,20 @@
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">Type</span>
                     <span class="txn-detail-value">${escapeHtml(typeLabel)}</span>
+                </div>`;
+
+            if (isBill) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Paid To</span>
+                    <span class="txn-detail-value">${escapeHtml(billerName)}</span>
                 </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Payment Method</span>
+                    <span class="txn-detail-value"><i class="fas fa-credit-card" style="color:#1a472a;margin-right:4px;"></i> Virtual Debit Card ****${lastFour}</span>
+                </div>`;
+            } else {
+                html += `
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">From</span>
                     <span class="txn-detail-value">${flagImg('US')} ${escapeHtml(fromDisplay)}</span>
@@ -443,14 +470,17 @@
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">To</span>
                     <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toDisplay)}</span>
-                </div>
-                ${toCode !== 'US' ? `<div class="txn-detail-row">
+                </div>`;
+            }
+
+            html += `
+                ${!isBill && toCode !== 'US' ? `<div class="txn-detail-row">
                     <span class="txn-detail-label">Destination</span>
                     <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toCountryName || 'International')}</span>
                 </div>` : ''}`;
 
-            // Recipient address
-            if (tx.recipientAddress) {
+            // Recipient address (skip for bill payments)
+            if (tx.recipientAddress && !isBill) {
                 html += `<div class="txn-detail-row">
                     <span class="txn-detail-label">Recipient Address</span>
                     <span class="txn-detail-value" style="white-space:pre-line;">${escapeHtml(tx.recipientAddress)}</span>
