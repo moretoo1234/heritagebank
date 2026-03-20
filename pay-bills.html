@@ -287,6 +287,14 @@
                 </div>
                 
                 <div class="form-group">
+                    <label>Payment Card</label>
+                    <select id="paymentCard">
+                        <option value="">Loading cards...</option>
+                    </select>
+                    <small>Select the card to use for this payment</small>
+                </div>
+
+                <div class="form-group">
                     <label>Account Number / Reference</label>
                     <input type="text" id="accountNumber" placeholder="Enter your account number" required>
                     <small>Enter your account number with the biller</small>
@@ -363,6 +371,7 @@
                     currentBalance = data.user.balance || 0;
                     document.getElementById('currentBalance').textContent = '$' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
                     loadBillers();
+                    loadPaymentCards();
                 } else {
                     window.location.href = 'signin.html';
                 }
@@ -479,7 +488,8 @@
                         userId: userId,
                         billerId: selectedBiller.id,
                         amount: amount,
-                        accountNumber: document.getElementById('accountNumber').value
+                        accountNumber: document.getElementById('accountNumber').value,
+                        cardId: document.getElementById('paymentCard').value || undefined
                     })
                 });
                 
@@ -510,6 +520,30 @@
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Pay Bill';
         });
         
+        async function loadPaymentCards() {
+            const token = localStorage.getItem('token');
+            const sel = document.getElementById('paymentCard');
+            try {
+                const res = await fetch(`${API_URL}/api/cards`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success && data.cards && data.cards.length) {
+                    const active = data.cards.filter(c => c.status === 'active');
+                    sel.innerHTML = active.map(c => {
+                        const kind = String(c.cardType || '').toLowerCase() === 'virtual' ? 'Virtual' : 'Physical';
+                        const last4 = (c.cardNumberMasked || '').slice(-4);
+                        return `<option value="${c.id}">${kind} Card ****${last4}</option>`;
+                    }).join('');
+                    if (!active.length) sel.innerHTML = '<option value="">No active cards</option>';
+                } else {
+                    sel.innerHTML = '<option value="">No cards found</option>';
+                }
+            } catch (e) {
+                sel.innerHTML = '<option value="">Could not load cards</option>';
+            }
+        }
+
         // Initialize
         init();
     </script>

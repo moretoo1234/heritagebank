@@ -5003,7 +5003,7 @@ app.post('/api/bills/pay', async (req, res) => {
         const token = req.headers.authorization?.split(' ')[1];
         const decoded = jwt.verify(token, JWT_SECRET);
         
-        const { billerId, accountNumber, amount } = req.body;
+        const { billerId, accountNumber, amount, cardId } = req.body;
         
         const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [decoded.id]);
         const user = users[0];
@@ -5012,19 +5012,44 @@ app.post('/api/bills/pay', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Insufficient funds' });
         }
 
+        // Look up the card used for payment
+        let cardLastFour = null;
+        if (cardId) {
+            const [cards] = await pool.execute(
+                'SELECT cardNumberMasked FROM cards WHERE id = ? AND userId = ?',
+                [cardId, decoded.id]
+            );
+            if (cards[0]?.cardNumberMasked) {
+                cardLastFour = String(cards[0].cardNumberMasked).slice(-4);
+            }
+        }
+        if (!cardLastFour) {
+            // Fallback: pick most recent active virtual card
+            const [cards] = await pool.execute(
+                "SELECT cardNumberMasked FROM cards WHERE userId = ? AND cardType = 'virtual' AND status = 'active' ORDER BY issuedAt DESC LIMIT 1",
+                [decoded.id]
+            );
+            if (cards[0]?.cardNumberMasked) {
+                cardLastFour = String(cards[0].cardNumberMasked).slice(-4);
+            }
+        }
+        // Use account number as final fallback
+        const fromAcctNum = cardLastFour || (user.accountNumber ? String(user.accountNumber).slice(-4) : null);
+
         await pool.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amount, user.id]);
 
         // Record bill payment transaction
         const biller = BILLERS.find(b => String(b.id) === String(billerId));
         const referenceId = generateReferenceId('BILL');
         await pool.execute(
-            `INSERT INTO transactions (fromUserId, toUserId, type, amount, description, status, reference)
-             VALUES (?, NULL, 'bill_payment', ?, ?, 'completed', ?)`,
+            `INSERT INTO transactions (fromUserId, toUserId, type, amount, description, status, reference, fromAccountNumber)
+             VALUES (?, NULL, 'bill_payment', ?, ?, 'completed', ?, ?)`,
             [
                 user.id,
                 parseFloat(amount),
                 `Bill payment to ${biller?.name || 'Biller'} (${accountNumber})`,
-                referenceId
+                referenceId,
+                fromAcctNum
             ]
         );
 
