@@ -109,7 +109,9 @@ function checkLogin() {
 
 // Logout Function
 function logout() {
+    const consent = localStorage.getItem('cookieConsent');
     localStorage.clear();
+    if (consent) localStorage.setItem('cookieConsent', consent);
     window.location.href = 'signin.html';
 }
 
