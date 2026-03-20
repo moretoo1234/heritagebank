@@ -8328,32 +8328,32 @@ app.get('/api/admin/impersonate/dashboard', requireAuth, async (req, res) => {
         // Get beneficiaries
         const [beneficiaries] = await pool.execute(
             `SELECT * FROM beneficiaries WHERE userId = ?`,
-            [decoded.id]
+            [req.auth.id]
         );
 
         // Get cards
         const [cards] = await pool.execute(
             `SELECT id, cardNumber, expirationDate, status, cardType, createdAt FROM cards WHERE userId = ?`,
-            [decoded.id]
+            [req.auth.id]
         );
 
         // Get compliance flags
         const [flags] = await pool.execute(
             `SELECT * FROM compliance_flags WHERE userId = ? AND status = 'active'`,
-            [decoded.id]
+            [req.auth.id]
         );
 
         // Get login history
         const [logins] = await pool.execute(
             `SELECT * FROM login_history WHERE userId = ? ORDER BY loginAt DESC LIMIT 10`,
-            [decoded.id]
+            [req.auth.id]
         );
 
         res.json({
             success: true,
             isImpersonation: true,
             readOnly: true,
-            impersonatedBy: decoded.impersonatedBy,
+            impersonatedBy: req.auth.impersonatedBy,
             user: {
                 id: user.id,
                 firstName: user.firstName,

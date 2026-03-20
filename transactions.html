@@ -173,14 +173,41 @@
             return name;
         }
 
+        const COUNTRY_MAP = {
+            US: { flag: '🇺🇸', name: 'United States' },
+            GB: { flag: '🇬🇧', name: 'United Kingdom' },
+            CA: { flag: '🇨🇦', name: 'Canada' },
+            MX: { flag: '🇲🇽', name: 'Mexico' },
+            DE: { flag: '🇩🇪', name: 'Germany' },
+            FR: { flag: '🇫🇷', name: 'France' },
+            ES: { flag: '🇪🇸', name: 'Spain' },
+            IT: { flag: '🇮🇹', name: 'Italy' },
+            CH: { flag: '🇨🇭', name: 'Switzerland' },
+            NG: { flag: '🇳🇬', name: 'Nigeria' },
+            GH: { flag: '🇬🇭', name: 'Ghana' },
+            IN: { flag: '🇮🇳', name: 'India' },
+            CN: { flag: '🇨🇳', name: 'China' },
+            JP: { flag: '🇯🇵', name: 'Japan' },
+            AU: { flag: '🇦🇺', name: 'Australia' },
+            BR: { flag: '🇧🇷', name: 'Brazil' },
+            AE: { flag: '🇦🇪', name: 'United Arab Emirates' },
+            PH: { flag: '🇵🇭', name: 'Philippines' },
+            JM: { flag: '🇯🇲', name: 'Jamaica' },
+            KR: { flag: '🇰🇷', name: 'South Korea' }
+        };
+
         function getCountryFlag(tx) {
-            if (tx && tx.destinationCountry) {
-                if (tx.destinationCountry === 'GB') return '🇬🇧';
-                if (tx.destinationCountry === 'US') return '🇺🇸';
-            }
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return COUNTRY_MAP[code].flag;
             const d = String((tx && tx.description) || '').toLowerCase();
-            if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return '🇬🇧';
-            return '🇺🇸';
+            if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return COUNTRY_MAP.GB.flag;
+            return COUNTRY_MAP.US.flag;
+        }
+
+        function getCountryName(tx) {
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return COUNTRY_MAP[code].name;
+            return null;
         }
 
         async function init() {
