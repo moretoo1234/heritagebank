@@ -376,6 +376,12 @@
             .logout-btn { padding: 7px 12px; font-size: 0.8rem; }
             .sidebar-menu li { padding: 12px 15px; font-size: 0.9rem; }
         }
+        .app-footer { background: #1a2332; padding: 20px 0; margin-top: 40px; text-align: center; }
+        .app-footer-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .app-footer-links { margin-bottom: 10px; }
+        .app-footer-links a { color: #8899aa; text-decoration: none; margin: 0 10px; font-size: 0.8rem; }
+        .app-footer-links a:hover { color: #aabbcc; }
+        .app-footer-copy { color: #556677; font-size: 0.75rem; margin: 0; }
     </style>
 </head>
 <body>
@@ -698,11 +704,12 @@
         async function markAllRead() {
             const token = localStorage.getItem('token');
             try {
-                await fetch(`${API_URL}/api/notifications/mark-read`, {
-                    method: 'POST',
+                await fetch(`${API_URL}/api/notifications/read-all`, {
+                    method: 'PUT',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 document.getElementById('notifBadge').textContent = '0';
+                document.getElementById('notifBadge').style.display = 'none';
                 document.querySelectorAll('#notifList > div').forEach(d => d.style.background = '');
             } catch (e) { console.error(e); }
         }
@@ -1323,7 +1330,7 @@
                 <a href="disclosures.html">Disclosures</a>
                 <a href="security.html">Security</a>
             </div>
-            <p class="app-footer-copy">&copy; 2024 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
     <script src="cookie-consent.js"></script>
