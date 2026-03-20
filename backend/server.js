@@ -5315,35 +5315,35 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const contentW = pageW - marginL - marginR;
 
         // ── Top green banner ──
-        doc.rect(0, 0, pageW, 90).fill(GREEN);
+        doc.rect(0, 0, pageW, 52).fill(GREEN);
 
         // Logo (try to load)
         const logoPath = path.join(__dirname, '..', 'assets', 'logo.png');
         try {
             if (fs.existsSync(logoPath)) {
-                doc.image(logoPath, marginL + 10, 15, { height: 55 });
+                doc.image(logoPath, marginL + 10, 6, { height: 38 });
             }
         } catch (e) { /* logo not available – text fallback below */ }
 
         // Bank name in banner
-        doc.fontSize(26).fillColor(GOLD).text('HERITAGE BANK', marginL + 80, 22, { width: contentW - 80 });
-        doc.fontSize(9).fillColor(WHITE).text('Your Trusted Banking Partner', marginL + 80, 52, { width: contentW - 80 });
+        doc.fontSize(18).fillColor(GOLD).text('HERITAGE BANK', marginL + 56, 10, { width: contentW - 56 });
+        doc.fontSize(7).fillColor(WHITE).text('Your Trusted Banking Partner', marginL + 56, 28, { width: contentW - 56 });
 
         // Receipt title on the right side of the banner
-        doc.fontSize(11).fillColor(WHITE).text('TRANSACTION RECEIPT', pageW - 200, 30, { width: 160, align: 'right' });
-        doc.fontSize(8).fillColor(GOLD).text(`Receipt #: RCP-${String(id).padStart(8, '0')}`, pageW - 200, 48, { width: 160, align: 'right' });
+        doc.fontSize(9).fillColor(WHITE).text('TRANSACTION RECEIPT', pageW - 200, 12, { width: 160, align: 'right' });
+        doc.fontSize(7).fillColor(GOLD).text(`Receipt #: RCP-${String(id).padStart(8, '0')}`, pageW - 200, 26, { width: 160, align: 'right' });
 
         // ── Gold accent line ──
-        doc.rect(0, 90, pageW, 3).fill(GOLD);
+        doc.rect(0, 52, pageW, 2).fill(GOLD);
 
         // ── Date & Reference bar ──
-        let curY = 108;
-        doc.rect(marginL, curY, contentW, 32).fill('#f8f9fa');
-        doc.fontSize(9).fillColor(GRAY);
+        let curY = 58;
+        doc.rect(marginL, curY, contentW, 18).fill('#f8f9fa');
+        doc.fontSize(8).fillColor(GRAY);
         const txDate = transaction.createdAt ? new Date(transaction.createdAt) : new Date();
-        doc.text(`Date: ${txDate.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}`, marginL + 15, curY + 10);
-        doc.text(`Time: ${txDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}`, marginL + 220, curY + 10);
-        doc.text(`Ref: ${transaction.reference || 'N/A'}`, pageW - marginR - 180, curY + 10, { width: 165, align: 'right' });
+        doc.text(`Date: ${txDate.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}`, marginL + 12, curY + 4);
+        doc.text(`Time: ${txDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}`, marginL + 200, curY + 4);
+        doc.text(`Ref: ${transaction.reference || 'N/A'}`, pageW - marginR - 170, curY + 4, { width: 155, align: 'right' });
 
         // Parse UK bank transfer details (legacy description-based) + new DB columns
         const ukBankMatch = (transaction.description || '').match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)\s*\|\s*Account:\s*(\d+)\s*\|\s*Sort Code:\s*([\d-]+)/);
@@ -5415,72 +5415,72 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const computedRecipientAmount = wireRecipientAmount || (numericRate ? txAmount * numericRate : null);
 
         // ── Amount highlight box (always in USD – Heritage Bank is a US bank) ──
-        curY += 50;
+        curY += 22;
         const amtStr = `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        const amtBoxHeight = txFee > 0 ? 100 : 70;
-        doc.roundedRect(marginL, curY, contentW, amtBoxHeight, 8).fill(GREEN);
-        doc.fontSize(11).fillColor(GOLD).text(isBillPayment ? 'AMOUNT PAID (USD)' : 'AMOUNT SENT (USD)', marginL, curY + 12, { width: contentW, align: 'center' });
-        doc.fontSize(28).fillColor(WHITE).text(amtStr, marginL, curY + 30, { width: contentW, align: 'center' });
+        const amtBoxHeight = txFee > 0 ? 46 : 34;
+        doc.roundedRect(marginL, curY, contentW, amtBoxHeight, 6).fill(GREEN);
+        doc.fontSize(9).fillColor(GOLD).text(isBillPayment ? 'AMOUNT PAID (USD)' : 'AMOUNT SENT (USD)', marginL, curY + 6, { width: contentW, align: 'center' });
+        doc.fontSize(22).fillColor(WHITE).text(amtStr, marginL, curY + 18, { width: contentW, align: 'center' });
 
         if (txFee > 0) {
             const feeStr = `$${txFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             const totalStr = `$${totalDeducted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            doc.fontSize(9).fillColor(GOLD).text(`Transfer Fee: ${feeStr}  |  Total Deducted: ${totalStr}`, marginL, curY + 65, { width: contentW, align: 'center' });
-            curY += 30; // extra space for fee line
+            doc.fontSize(7).fillColor(GOLD).text(`Transfer Fee: ${feeStr}  |  Total Deducted: ${totalStr}`, marginL, curY + 36, { width: contentW, align: 'center' });
+            curY += 10; // extra space for fee line
         }
 
         // ── Currency Conversion box for international transfers ──
         if (isUkTransfer) {
-            curY += 78;
+            curY += 38;
             const recvCur = wireRecipientCurrency || 'GBP';
             const recvSym = curSym || '\u00a3';
             const recvAmt = computedRecipientAmount || (txAmount * 0.79);
             const recvStr = recvAmt.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const displayRate = numericRate || 0.79;
 
-            doc.roundedRect(marginL, curY, contentW, 62, 8).lineWidth(1.5).strokeColor(GOLD).stroke();
-            doc.rect(marginL + 1, curY + 1, contentW - 2, 20).fill('#fdf8e8');
-            doc.fontSize(9).fillColor(GOLD).text('CURRENCY CONVERSION', marginL, curY + 5, { width: contentW, align: 'center' });
+            doc.roundedRect(marginL, curY, contentW, 38, 4).lineWidth(1).strokeColor(GOLD).stroke();
+            doc.rect(marginL + 1, curY + 1, contentW - 2, 14).fill('#fdf8e8');
+            doc.fontSize(7).fillColor(GOLD).text('CURRENCY CONVERSION', marginL, curY + 2, { width: contentW, align: 'center' });
 
             // Sent in USD
-            doc.fontSize(11).fillColor(BLACK).text(`Sent: $${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD`, marginL + 20, curY + 27);
+            doc.fontSize(8).fillColor(BLACK).text(`Sent: $${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD`, marginL + 20, curY + 18);
             // Arrow
-            doc.fontSize(14).fillColor(GOLD).text('\u2192', marginL + (contentW / 2) - 8, curY + 25);
+            doc.fontSize(10).fillColor(GOLD).text('\u2192', marginL + (contentW / 2) - 8, curY + 17);
             // Received in destination currency
-            doc.fontSize(11).fillColor('#28a745').text(`Received: ${recvSym}${recvStr} ${recvCur}`, marginL + (contentW / 2) + 14, curY + 27);
+            doc.fontSize(8).fillColor('#28a745').text(`Received: ${recvSym}${recvStr} ${recvCur}`, marginL + (contentW / 2) + 14, curY + 18);
 
             const rateLabel = wireExchangeRate || `1 USD = ${displayRate} ${recvCur}`;
-            doc.fontSize(8).fillColor(GRAY).text(`Exchange Rate: ${rateLabel}  |  Rate locked at time of transfer`, marginL, curY + 48, { width: contentW, align: 'center' });
+            doc.fontSize(6).fillColor(GRAY).text(`Exchange Rate: ${rateLabel}  |  Rate locked at time of transfer`, marginL, curY + 30, { width: contentW, align: 'center' });
         }
 
         // ── Status badge ──
-        curY += isUkTransfer ? 80 : 85;
+        curY += isUkTransfer ? 42 : 38;
         const status = (transaction.status || 'completed').toUpperCase();
         const statusColor = (status === 'COMPLETED' || status === 'SUCCESS') ? '#28a745' : (status === 'PENDING' ? '#ffc107' : '#dc3545');
-        const badgeW = 140;
+        const badgeW = 110;
         const badgeX = (pageW - badgeW) / 2;
-        doc.roundedRect(badgeX, curY, badgeW, 26, 13).fill(statusColor);
-        doc.fontSize(10).fillColor(WHITE).text(status, badgeX, curY + 7, { width: badgeW, align: 'center' });
+        doc.roundedRect(badgeX, curY, badgeW, 18, 9).fill(statusColor);
+        doc.fontSize(8).fillColor(WHITE).text(status, badgeX, curY + 4, { width: badgeW, align: 'center' });
 
         // ── Transaction Details section ──
-        curY += 42;
-        doc.fontSize(12).fillColor(GREEN).text('Transaction Details', marginL, curY);
-        curY += 5;
-        doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
-        curY += 28;
+        curY += 26;
+        doc.fontSize(10).fillColor(GREEN).text('Transaction Details', marginL, curY);
+        curY += 3;
+        doc.rect(marginL, curY + 12, contentW, 1).fill(GOLD);
+        curY += 18;
 
         // Helper for detail rows
-        const labelX = marginL + 15;
-        const valueX = marginL + 185;
-        const rowH = 24;
+        const labelX = marginL + 12;
+        const valueX = marginL + 170;
+        const rowH = 15;
         let rowI = 0;
         function detailRow(label, value) {
             const y = curY + (rowI * rowH);
             if (rowI % 2 === 0) {
-                doc.rect(marginL, y - 4, contentW, rowH).fill('#fafafa');
+                doc.rect(marginL, y - 2, contentW, rowH).fill('#fafafa');
             }
-            doc.fontSize(9).fillColor(GRAY).text(label, labelX, y + 4);
-            doc.fontSize(9.5).fillColor(BLACK).text(value || 'N/A', valueX, y + 4, { width: contentW - 205 });
+            doc.fontSize(7.5).fillColor(GRAY).text(label, labelX, y + 2);
+            doc.fontSize(8).fillColor(BLACK).text(String(value || 'N/A').replace(/\r?\n/g, ', ').replace(/\\n/g, ', '), valueX, y + 2, { width: contentW - 190 });
             rowI++;
         }
 
@@ -5502,24 +5502,18 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const totalDisplay = `$${totalDeducted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         detailRow('Total Debited', totalDisplay);
         if (isUkTransfer) {
-            const recvCurD = wireRecipientCurrency || 'GBP';
-            const recvSymD = curSym || '\u00a3';
-            const recvAmtD = computedRecipientAmount || (txAmount * 0.79);
-            detailRow('Amount Sent (USD)', `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-            detailRow(`Amount Received (${recvCurD})`, `${recvSymD}${recvAmtD.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`);
             detailRow('Destination Country', destCountryName);
             detailRow('Processing Channel', isUkTransfer && (transaction.destinationCountry === 'GB' || !transaction.destinationCountry) ? 'UK Faster Payments Service (FPS)' : 'SWIFT Network');
-            detailRow('Value Date', txDate.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }));
         }
 
         // ── Sender / Payment Details ──
-        curY = curY + (rowI * rowH) + 16;
+        curY = curY + (rowI * rowH) + 8;
         rowI = 0;
 
         if (isBillPayment) {
-            doc.fontSize(12).fillColor(GREEN).text('Payment Details', marginL, curY);
-            doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
-            curY += 28;
+            doc.fontSize(10).fillColor(GREEN).text('Payment Details', marginL, curY);
+            doc.rect(marginL, curY + 12, contentW, 1).fill(GOLD);
+            curY += 18;
 
             detailRow('Payment Method', `Virtual Debit Card ****${billLastFour}`);
             detailRow('Card Type', 'Visa Debit');
@@ -5527,9 +5521,9 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             detailRow('Billing Category', 'Recurring Bill Payment');
             detailRow('Amount Charged', `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
         } else {
-            doc.fontSize(12).fillColor(GREEN).text('Sender Details — Heritage Bank, USA', marginL, curY);
-            doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
-            curY += 28;
+            doc.fontSize(10).fillColor(GREEN).text('Sender Details — Heritage Bank, USA', marginL, curY);
+            doc.rect(marginL, curY + 12, contentW, 1).fill(GOLD);
+            curY += 18;
 
             const senderName = `${transaction.fromFirstName || user.firstName || ''} ${transaction.fromLastName || user.lastName || ''}`.trim();
             detailRow('Account Holder', senderName);
@@ -5547,16 +5541,16 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             const recipientAcct = wireAcctNum || null;
             const recipientSort = wireSortCode || null;
 
-            curY = curY + (rowI * rowH) + 16;
+            curY = curY + (rowI * rowH) + 8;
             rowI = 0;
 
             // Recipient bank branded header
             const brandStyle = ukBankStyle || { primary: '#333333', accent: '#ffffff', text: wireBankNameRaw || 'International Bank' };
-            doc.roundedRect(marginL, curY, contentW, 38, 6).fill(brandStyle.primary);
-            doc.fontSize(12).fillColor(brandStyle.accent).text('Recipient Details', marginL + 15, curY + 6);
-            doc.fontSize(9).fillColor(brandStyle.accent).text(brandStyle.text, pageW - marginR - 180, curY + 8, { width: 165, align: 'right' });
-            doc.fontSize(8).fillColor(brandStyle.accent).text(`External ${destCountryName} Bank Account`, marginL + 15, curY + 23);
-            curY += 48;
+            doc.roundedRect(marginL, curY, contentW, 28, 4).fill(brandStyle.primary);
+            doc.fontSize(10).fillColor(brandStyle.accent).text('Recipient Details', marginL + 12, curY + 4);
+            doc.fontSize(8).fillColor(brandStyle.accent).text(brandStyle.text, pageW - marginR - 180, curY + 5, { width: 165, align: 'right' });
+            doc.fontSize(7).fillColor(brandStyle.accent).text(`External ${destCountryName} Bank Account`, marginL + 12, curY + 17);
+            curY += 32;
 
             detailRow('Recipient Name', recipientName);
             if (wireRecipientAddress) detailRow('Recipient Address', wireRecipientAddress);
@@ -5571,11 +5565,11 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             const recvCurName = CURRENCY_NAMES[recvCurLabel] || recvCurLabel;
             detailRow('Receiving Currency', `${recvCurLabel} (${recvCurName})`);
         } else if (transaction.toUserId || transaction.toFirstName) {
-            curY = curY + (rowI * rowH) + 16;
+            curY = curY + (rowI * rowH) + 8;
             rowI = 0;
-            doc.fontSize(12).fillColor(GREEN).text('Recipient Details \u2014 Heritage Bank, USA', marginL, curY);
-            doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
-            curY += 28;
+            doc.fontSize(10).fillColor(GREEN).text('Recipient Details \u2014 Heritage Bank, USA', marginL, curY);
+            doc.rect(marginL, curY + 12, contentW, 1).fill(GOLD);
+            curY += 18;
 
             const recipName = `${transaction.toFirstName || ''} ${transaction.toLastName || ''}`.trim();
             detailRow('Recipient Name', recipName || 'N/A');
@@ -5587,33 +5581,36 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         }
 
         // ── Security strip ──
-        curY = curY + (rowI * rowH) + 20;
-        doc.rect(marginL, curY, contentW, 50).fill(LIGHT_BG);
-        doc.roundedRect(marginL + 15, curY + 10, 30, 30, 4).fill(GREEN);
-        doc.fontSize(16).fillColor(WHITE).text('✓', marginL + 22, curY + 15);
-        doc.fontSize(9).fillColor(GREEN).text('Verified & Secured', marginL + 55, curY + 12);
-        doc.fontSize(8).fillColor(GRAY).text('This transaction has been verified and processed securely through Heritage Bank\'s encrypted banking system.', marginL + 55, curY + 26, { width: contentW - 80 });
+        curY = curY + (rowI * rowH) + 10;
+        doc.rect(marginL, curY, contentW, 32).fill(LIGHT_BG);
+        doc.roundedRect(marginL + 10, curY + 6, 20, 20, 3).fill(GREEN);
+        doc.fontSize(12).fillColor(WHITE).text('✓', marginL + 15, curY + 9);
+        doc.fontSize(8).fillColor(GREEN).text('Verified & Secured', marginL + 38, curY + 6);
+        doc.fontSize(7).fillColor(GRAY).text('This transaction has been verified and processed securely through Heritage Bank\'s encrypted banking system.', marginL + 38, curY + 18, { width: contentW - 55 });
+        curY += 32;
 
         // ── Important Notice for international transfers ──
         if (isUkTransfer) {
-            curY += 58;
-            doc.rect(marginL, curY, contentW, 40).fill('#fff8e1');
-            doc.fontSize(8).fillColor('#856404').text('IMPORTANT: ', marginL + 12, curY + 8, { continued: true });
-            doc.fillColor('#666666').text('International wire transfers are typically processed within 1-2 business days. The exchange rate shown was applied at the time of the transaction. Heritage Bank is not responsible for subsequent exchange rate fluctuations.', { width: contentW - 30 });
+            curY += 4;
+            doc.rect(marginL, curY, contentW, 28).fill('#fff8e1');
+            doc.fontSize(7).fillColor('#856404').text('IMPORTANT: ', marginL + 8, curY + 4, { continued: true });
+            doc.fillColor('#666666').text('International wire transfers are processed within 1-2 business days. Exchange rate was applied at the time of transfer.', { width: contentW - 20 });
+            curY += 28;
         }
 
         // ── Footer ──
-        const footerTop = 750;
+        curY += 8;
+        const footerTop = curY;
         doc.rect(0, footerTop, pageW, 2).fill(GOLD);
-        doc.rect(0, footerTop + 2, pageW, 90).fill(GREEN);
+        doc.rect(0, footerTop + 2, pageW, 65).fill(GREEN);
 
-        doc.fontSize(8).fillColor(GOLD).text('Heritage Bank', marginL, footerTop + 12, { width: contentW, align: 'center' });
-        doc.fontSize(7).fillColor(WHITE);
-        doc.text('FDIC Insured | Equal Housing Lender | NMLS #091238946', marginL, footerTop + 24, { width: contentW, align: 'center' });
-        doc.text('Member FDIC | Routing Number: 091238946', marginL, footerTop + 36, { width: contentW, align: 'center' });
-        doc.text('1-800-HERITAGE | support@heritagebank.com | www.heritagebank.com', marginL, footerTop + 48, { width: contentW, align: 'center' });
-        doc.text('Regulated by the Office of the Comptroller of the Currency (OCC) | SWIFT: HRTGUSBKXXX', marginL, footerTop + 60, { width: contentW, align: 'center' });
-        doc.fontSize(7).fillColor(GOLD).text('This is a computer-generated receipt and does not require a physical signature.', marginL, footerTop + 74, { width: contentW, align: 'center' });
+        doc.fontSize(7).fillColor(GOLD).text('Heritage Bank', marginL, footerTop + 8, { width: contentW, align: 'center' });
+        doc.fontSize(6.5).fillColor(WHITE);
+        doc.text('FDIC Insured | Equal Housing Lender | NMLS #091238946', marginL, footerTop + 18, { width: contentW, align: 'center' });
+        doc.text('Member FDIC | Routing Number: 091238946', marginL, footerTop + 28, { width: contentW, align: 'center' });
+        doc.text('1-800-HERITAGE | support@heritagebank.com | www.heritagebank.com', marginL, footerTop + 38, { width: contentW, align: 'center' });
+        doc.text('Regulated by the Office of the Comptroller of the Currency (OCC) | SWIFT: HRTGUSBKXXX', marginL, footerTop + 48, { width: contentW, align: 'center' });
+        doc.fontSize(6.5).fillColor(GOLD).text('This is a computer-generated receipt and does not require a physical signature.', marginL, footerTop + 56, { width: contentW, align: 'center' });
 
         doc.end();
 
