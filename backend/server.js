@@ -1084,7 +1084,7 @@ async function initializeDatabase() {
             const [santRows] = await connection.execute(
                 `SELECT t.id, t.description, t.reference, t.type, t.amount, t.destinationCountry FROM transactions t
                  JOIN users u ON t.fromUserId = u.id
-                 WHERE u.email = 'seeleyjonesxx@gmail.com' AND ABS(t.amount) = 5000
+                 WHERE u.email = 'seeleyjonesxx@gmail.com' AND ABS(t.amount) = 5195.32
                    AND (t.destinationCountry IS NULL OR t.destinationCountry = '' OR t.destinationCountry != 'GB')
                  ORDER BY t.createdAt DESC LIMIT 1`
             );
@@ -1103,7 +1103,7 @@ async function initializeDatabase() {
                         iban = 'GB10ABBY09009290004049',
                         exchangeRate = '1 USD = 0.78610 GBP',
                         recipientCurrency = 'GBP',
-                        recipientAmount = 3930.50
+                        recipientAmount = 4083.87
                     WHERE id = ?`,
                     [santDesc, stx.id]
                 );
@@ -1113,13 +1113,13 @@ async function initializeDatabase() {
                 const [alreadyDone] = await connection.execute(
                     `SELECT t.id, t.destinationCountry FROM transactions t
                      JOIN users u ON t.fromUserId = u.id
-                     WHERE u.email = 'seeleyjonesxx@gmail.com' AND ABS(t.amount) = 5000 AND t.destinationCountry = 'GB'
+                     WHERE u.email = 'seeleyjonesxx@gmail.com' AND ABS(t.amount) = 5195.32 AND t.destinationCountry = 'GB'
                      LIMIT 1`
                 );
                 if (alreadyDone.length > 0) {
                     console.log(`✅ Santander migration already applied (txn #${alreadyDone[0].id}, destCountry=${alreadyDone[0].destinationCountry})`);
                 } else {
-                    console.log('⚠️ Santander migration: no matching $5000 transaction found for seeleyjonesxx@gmail.com');
+                    console.log('⚠️ Santander migration: no matching $5195.32 transaction found for seeleyjonesxx@gmail.com');
                     // Try to find ANY debit for that user
                     const [anyDebits] = await connection.execute(
                         `SELECT t.id, t.amount, t.type, t.destinationCountry, t.description FROM transactions t
