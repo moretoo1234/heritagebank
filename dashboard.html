@@ -1124,6 +1124,7 @@
 
             const fromDisplay = formatNameAcct(tx.fromFirstName, tx.fromLastName, tx.fromAccountNumber);
             let toDisplay = formatNameAcct(tx.toFirstName, tx.toLastName, tx.toAccountNumber);
+            if (toDisplay === '-' && tx.recipientName) toDisplay = tx.recipientName;
             const rawDesc = String(tx.description || '');
             const toFlag = getCountryFlag(tx);
             const ukDetailMatch = rawDesc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);

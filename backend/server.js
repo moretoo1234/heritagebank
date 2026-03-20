@@ -1051,6 +1051,8 @@ async function initializeDatabase() {
         try { await connection.execute('ALTER TABLE transactions ADD COLUMN category VARCHAR(50) DEFAULT NULL'); } catch (e) {}
         // Add destination country column for flag display
         try { await connection.execute("ALTER TABLE transactions ADD COLUMN destinationCountry VARCHAR(2) DEFAULT NULL"); } catch (e) {}
+        // Add recipient name column for admin-created debits (where toUserId is NULL)
+        try { await connection.execute("ALTER TABLE transactions ADD COLUMN recipientName VARCHAR(255) DEFAULT NULL"); } catch (e) {}
 
         // Check if admin exists
         const [adminCheck] = await connection.execute(
@@ -3863,10 +3865,12 @@ app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res)
         const txDescription = description || (reason ? `${reason}${notes ? `: ${notes}` : ''}` : 'Debit');
         const destCountry = req.body.destinationCountry || detectCountryFromDescription(txDescription);
 
+        const recipientName = req.body.recipientName ? String(req.body.recipientName).trim() : null;
+
         await connection.execute(
-            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry)
-             VALUES (?, NULL, ?, ?, 'debit', 'completed', ?, ?, ?)`,
-            [user.id, amountValue, feeValue, txDescription, reference, destCountry]
+            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry, recipientName)
+             VALUES (?, NULL, ?, ?, 'debit', 'completed', ?, ?, ?, ?)`,
+            [user.id, amountValue, feeValue, txDescription, reference, destCountry, recipientName]
         );
 
         try {
