@@ -787,6 +787,8 @@
     </div>
     
     <script>
+        // Auth guard – redirect immediately if not logged in
+        if (!localStorage.getItem('token')) { window.location.href = 'signin.html'; }
         // Check dark mode on page load
         if (localStorage.getItem('darkMode') === 'true') {
             document.body.classList.add('dark-mode');

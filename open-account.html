@@ -42,6 +42,11 @@
             : window.location.origin;
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const password = document.getElementById('password').value;
+            if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
+                document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger">Password must be at least 8 characters with uppercase, lowercase, and a number</div>`;
+                return;
+            }
             try {
                 const res = await fetch(`${API_URL}/api/auth/register`, {
                     method: 'POST',
