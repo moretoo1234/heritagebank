@@ -313,9 +313,12 @@
                                 const bankName = ukMatch[1].trim();
                                 const recipientName = ukMatch[2].trim();
                                 desc = `UK Transfer to ${bankName}`;
-                                fromTo = `${flagImg('US')} From: ${fromDisp} &bull; ${flagImg('GB')} To: ${recipientName} &bull; via ${bankName}`;
+                                fromTo = `${flagImg('US')} Heritage Bank, USA &rarr; ${flagImg('GB')} ${recipientName} &bull; ${bankName}, United Kingdom`;
+                            } else if (toCode !== 'US') {
+                                const destName = getCountryName(tx) || 'International';
+                                fromTo = `${flagImg('US')} Heritage Bank, USA &rarr; ${flagImg(toCode)} ${toName} &bull; ${destName}`;
                             } else {
-                                fromTo = `${flagImg('US')} From: ${fromDisp} &bull; ${flagImg(toCode)} To: ${toName}`;
+                                fromTo = `${flagImg('US')} ${fromDisp} &rarr; ${flagImg('US')} ${toName} &bull; Heritage Bank, USA`;
                             }
                             return `
                                 <tr onclick="showTransactionDetail(${tx.id})">
@@ -465,17 +468,17 @@
                 html += `
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">From</span>
-                    <span class="txn-detail-value">${flagImg('US')} ${escapeHtml(fromDisplay)}</span>
+                    <span class="txn-detail-value">${flagImg('US')} ${escapeHtml(fromDisplay)} &mdash; Heritage Bank, USA</span>
                 </div>
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">To</span>
-                    <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toDisplay)}</span>
+                    <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toDisplay)}${toCode !== 'US' ? ' &mdash; ' + escapeHtml(toCountryName || 'International') : ' &mdash; Heritage Bank, USA'}</span>
                 </div>`;
             }
 
             html += `
                 ${!isBill && toCode !== 'US' ? `<div class="txn-detail-row">
-                    <span class="txn-detail-label">Destination</span>
+                    <span class="txn-detail-label">Destination Country</span>
                     <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toCountryName || 'International')}</span>
                 </div>` : ''}`;
 

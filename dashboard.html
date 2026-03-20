@@ -879,7 +879,12 @@
                     if (incomingTypeLabel[t]) return incomingTypeLabel[t];
                     return fromName ? `Received from ${fromName}` : 'Incoming transfer';
                 }
-                if (fromId === me && toId !== me) return `Sent to ${toName || 'another account'}`;
+                if (fromId === me && toId !== me) {
+                    const destCode = getCountryCode(tx);
+                    const destName = getCountryName(tx);
+                    if (destCode !== 'US' && destName) return `Sent to ${toName || destName} — ${destName}`;
+                    return `Sent to ${toName || 'another account'}`;
+                }
             }
 
             if (t === 'bill_payment') {
@@ -1192,17 +1197,17 @@
                 html += `
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">From</span>
-                    <span class="txn-detail-value">${flagImg('US')} ${escapeHtml(fromDisplay)}</span>
+                    <span class="txn-detail-value">${flagImg('US')} ${escapeHtml(fromDisplay)} &mdash; Heritage Bank, USA</span>
                 </div>
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">To</span>
-                    <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toDisplay)}</span>
+                    <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toDisplay)}${toCode !== 'US' ? ' &mdash; ' + escapeHtml(toCountryName || 'International') : ' &mdash; Heritage Bank, USA'}</span>
                 </div>`;
             }
 
             html += `
                 ${!isBill && toCode !== 'US' ? `<div class="txn-detail-row">
-                    <span class="txn-detail-label">Destination</span>
+                    <span class="txn-detail-label">Destination Country</span>
                     <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toCountryName || 'International')}</span>
                 </div>` : ''}`;
 

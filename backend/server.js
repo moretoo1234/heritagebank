@@ -5484,14 +5484,15 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const receiptDesc = isBillPayment
             ? (transaction.description || `Bill Payment - ${billerName}`)
             : isUkTransfer
-            ? `International Wire Transfer to ${destCountryName}${ukBankStyle ? ' - ' + ukBankStyle.text : ''}`
-            : (cleanDescription(transaction.description) || 'Fund Transfer');
+            ? `International Wire Transfer — Heritage Bank, USA to ${destCountryName}${ukBankStyle ? ' — ' + ukBankStyle.text : ''}`
+            : (cleanDescription(transaction.description) || 'Domestic Fund Transfer');
 
         detailRow('Transaction ID', `TXN-${String(id).padStart(8, '0')}`);
-        detailRow('Transaction Type', isBillPayment ? 'Bill Payment' : isUkTransfer ? `International Wire Transfer (USD \u2192 ${wireRecipientCurrency || 'GBP'})` : cleanTxType(transaction.type));
+        detailRow('Transaction Type', isBillPayment ? 'Bill Payment' : isUkTransfer ? `International Wire Transfer (USD \u2192 ${wireRecipientCurrency || 'GBP'})` : 'Domestic Transfer (USA)');
         detailRow('Description', receiptDesc);
         detailRow('Reference Number', transaction.reference || 'N/A');
-        detailRow('Payment Method', isBillPayment ? `Virtual Debit Card ****${billLastFour}` : isUkTransfer ? 'SWIFT International Wire' : 'Bank Transfer');
+        detailRow('Payment Method', isBillPayment ? `Virtual Debit Card ****${billLastFour}` : isUkTransfer ? 'SWIFT International Wire' : 'Bank Transfer (USA)');
+        detailRow('Origin', 'Heritage Bank — United States of America');
         // Always show fee row
         const feeDisplay = txFee > 0 ? `$${txFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00 (Waived)';
         detailRow('Transfer Fee', feeDisplay);
@@ -5523,7 +5524,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             detailRow('Billing Category', 'Recurring Bill Payment');
             detailRow('Amount Charged', `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
         } else {
-            doc.fontSize(12).fillColor(GREEN).text('Sender Details', marginL, curY);
+            doc.fontSize(12).fillColor(GREEN).text('Sender Details — Heritage Bank, USA', marginL, curY);
             doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
             curY += 28;
 
@@ -5534,7 +5535,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
                 detailRow('Routing Number', maskAccount(user.routingNumber));
             }
             detailRow('Bank Name', 'Heritage Bank');
-            detailRow('Bank Country', 'United States');
+            detailRow('Bank Country', 'United States of America');
         }
 
         // ── Recipient Details (skip for bill payments) ──
@@ -5569,7 +5570,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         } else if (transaction.toUserId || transaction.toFirstName) {
             curY = curY + (rowI * rowH) + 16;
             rowI = 0;
-            doc.fontSize(12).fillColor(GREEN).text('Recipient Details', marginL, curY);
+            doc.fontSize(12).fillColor(GREEN).text('Recipient Details \u2014 Heritage Bank, USA', marginL, curY);
             doc.rect(marginL, curY + 15, contentW, 1).fill(GOLD);
             curY += 28;
 
@@ -5577,7 +5578,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             detailRow('Recipient Name', recipName || 'N/A');
             detailRow('Account Number', maskAccount(transaction.toAccountNumber || ''));
             detailRow('Bank Name', 'Heritage Bank');
-            detailRow('Bank Country', 'United States');
+            detailRow('Bank Country', 'United States of America');
             detailRow('Receiving Currency', 'USD (US Dollar)');
             detailRow('Amount Received', `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
         }
@@ -5588,7 +5589,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         doc.roundedRect(marginL + 15, curY + 10, 30, 30, 4).fill(GREEN);
         doc.fontSize(16).fillColor(WHITE).text('✓', marginL + 22, curY + 15);
         doc.fontSize(9).fillColor(GREEN).text('Verified & Secured', marginL + 55, curY + 12);
-        doc.fontSize(8).fillColor(GRAY).text('This transaction has been verified and processed securely through Heritage Bank\'s encrypted international banking system.', marginL + 55, curY + 26, { width: contentW - 80 });
+        doc.fontSize(8).fillColor(GRAY).text('This transaction has been verified and processed securely through Heritage Bank\'s encrypted banking system.', marginL + 55, curY + 26, { width: contentW - 80 });
 
         // ── Important Notice for international transfers ──
         if (isUkTransfer) {
