@@ -449,6 +449,54 @@
                     <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toCountryName || 'International')}</span>
                 </div>` : ''}`;
 
+            // Recipient address
+            if (tx.recipientAddress) {
+                html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Recipient Address</span>
+                    <span class="txn-detail-value" style="white-space:pre-line;">${escapeHtml(tx.recipientAddress)}</span>
+                </div>`;
+            }
+
+            // Recipient bank information
+            if (tx.bankName || tx.swiftCode || tx.iban) {
+                html += `<div class="txn-detail-row" style="margin-top:8px;border-top:1px solid var(--border-color,#eee);padding-top:8px;">
+                    <span class="txn-detail-label" style="font-weight:700;">Recipient Bank</span>
+                    <span class="txn-detail-value"></span>
+                </div>`;
+                if (tx.bankName) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Bank Name</span>
+                    <span class="txn-detail-value">${escapeHtml(tx.bankName)}</span>
+                </div>`;
+                if (tx.swiftCode) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Bank ID (SWIFT)</span>
+                    <span class="txn-detail-value" style="font-family:monospace;">${escapeHtml(tx.swiftCode)}</span>
+                </div>`;
+                if (tx.iban) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Account / IBAN</span>
+                    <span class="txn-detail-value" style="font-family:monospace;font-size:0.85rem;">${escapeHtml(tx.iban)}</span>
+                </div>`;
+            }
+
+            // Exchange rate & recipient amount
+            if (tx.exchangeRate || tx.recipientAmount) {
+                html += `<div class="txn-detail-row" style="margin-top:8px;border-top:1px solid var(--border-color,#eee);padding-top:8px;">
+                    <span class="txn-detail-label" style="font-weight:700;">Exchange</span>
+                    <span class="txn-detail-value"></span>
+                </div>`;
+                if (tx.exchangeRate) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Exchange Rate</span>
+                    <span class="txn-detail-value">${escapeHtml(tx.exchangeRate)}</span>
+                </div>`;
+                if (tx.recipientAmount) {
+                    const cur = tx.recipientCurrency || '';
+                    const sym = {'GBP':'£','EUR':'€','JPY':'¥','CNY':'¥','INR':'₹','BRL':'R$','KRW':'₩','AED':'AED','NGN':'₦','GHS':'₵','CAD':'C$','MXN':'MX$','AUD':'A$','CHF':'CHF','PHP':'₱','JMD':'J$'}[cur] || cur;
+                    html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Recipient Receives</span>
+                    <span class="txn-detail-value" style="font-weight:700;">${sym ? sym : ''}${parseFloat(tx.recipientAmount).toLocaleString(undefined, {minimumFractionDigits:2})} ${cur}</span>
+                </div>`;
+                }
+            }
+
             if (tx.reference) {
                 html += `
                 <div class="txn-detail-row">

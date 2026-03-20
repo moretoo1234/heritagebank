@@ -689,12 +689,8 @@
                                     <input type="number" id="debitFee" min="0" step="0.01" value="0" placeholder="0.00">
                                 </div>
                                 <div class="form-group">
-                                    <label>Recipient Name</label>
-                                    <input type="text" id="debitRecipientName" placeholder="e.g., Mark Phillips">
-                                </div>
-                                <div class="form-group">
-                                    <label>Reason</label>
-                                    <input type="text" id="debitDescription" placeholder="e.g., Fee, Adjustment, Correction">
+                                    <label>Reason / Description</label>
+                                    <input type="text" id="debitDescription" placeholder="e.g., Wire Transfer, Mortgage Payment">
                                 </div>
                                 <div class="form-group">
                                     <label>Destination Country</label>
@@ -722,6 +718,53 @@
                                     </select>
                                 </div>
                             </div>
+                            <hr style="margin:16px 0;border-color:var(--border-color);">
+                            <h3 style="margin-bottom:12px;"><i class="fas fa-user"></i> Recipient Information</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Recipient Name</label>
+                                    <input type="text" id="debitRecipientName" placeholder="e.g., Santander Mortga">
+                                </div>
+                                <div class="form-group">
+                                    <label>Recipient Address</label>
+                                    <textarea id="debitRecipientAddress" rows="3" placeholder="Floor 1&#10;33 Princeway&#10;Redhill, RH1 1SR" style="resize:vertical;"></textarea>
+                                </div>
+                            </div>
+
+                            <hr style="margin:16px 0;border-color:var(--border-color);">
+                            <h3 style="margin-bottom:12px;"><i class="fas fa-university"></i> Recipient Bank Information</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Bank Name</label>
+                                    <input type="text" id="debitBankName" placeholder="e.g., SANTANDER UK PLC">
+                                </div>
+                                <div class="form-group">
+                                    <label>Bank ID (SWIFT/BIC)</label>
+                                    <input type="text" id="debitSwiftCode" placeholder="e.g., ABBYGB2LXXX" maxlength="20">
+                                </div>
+                                <div class="form-group">
+                                    <label>Account Number / IBAN</label>
+                                    <input type="text" id="debitIban" placeholder="e.g., GB10ABBY09009290004049" maxlength="50">
+                                </div>
+                            </div>
+
+                            <hr style="margin:16px 0;border-color:var(--border-color);">
+                            <h3 style="margin-bottom:12px;"><i class="fas fa-exchange-alt"></i> Exchange Rate & Recipient Amount</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Exchange Rate</label>
+                                    <input type="text" id="debitExchangeRate" placeholder="e.g., 1 USD = 0.78610 GBP">
+                                </div>
+                                <div class="form-group">
+                                    <label>Recipient Currency</label>
+                                    <input type="text" id="debitRecipientCurrency" placeholder="e.g., GBP" maxlength="10">
+                                </div>
+                                <div class="form-group">
+                                    <label>Recipient Amount</label>
+                                    <input type="number" id="debitRecipientAmount" min="0" step="0.01" placeholder="e.g., 8000.00">
+                                </div>
+                            </div>
+
                             <button type="submit" class="btn btn-danger"><i class="fas fa-minus"></i> Debit Account</button>
                         </form>
                     </div>
@@ -1875,9 +1918,16 @@
                         recipient: document.getElementById('debitRecipient').value,
                         amount: parseFloat(document.getElementById('debitAmount').value),
                         fee: parseFloat(document.getElementById('debitFee').value) || 0,
-                        recipientName: document.getElementById('debitRecipientName').value || '',
                         description: document.getElementById('debitDescription').value || 'Account Debit',
-                        destinationCountry: document.getElementById('debitDestinationCountry').value || 'US'
+                        destinationCountry: document.getElementById('debitDestinationCountry').value || 'US',
+                        recipientName: document.getElementById('debitRecipientName').value || '',
+                        recipientAddress: document.getElementById('debitRecipientAddress').value || '',
+                        bankName: document.getElementById('debitBankName').value || '',
+                        swiftCode: document.getElementById('debitSwiftCode').value || '',
+                        iban: document.getElementById('debitIban').value || '',
+                        exchangeRate: document.getElementById('debitExchangeRate').value || '',
+                        recipientCurrency: document.getElementById('debitRecipientCurrency').value || '',
+                        recipientAmount: parseFloat(document.getElementById('debitRecipientAmount').value) || 0
                     })
                 });
                 const raw = await res.text();
@@ -1889,8 +1939,15 @@
                     showAlert('debitAlert', `✓ Debited $${document.getElementById('debitAmount').value} successfully!${debitFee > 0 ? ` (Fee: $${debitFee.toFixed(2)})` : ''}`, true);
                     document.getElementById('debitAmount').value = '';
                     document.getElementById('debitFee').value = '0';
-                    document.getElementById('debitRecipientName').value = '';
                     document.getElementById('debitDescription').value = '';
+                    document.getElementById('debitRecipientName').value = '';
+                    document.getElementById('debitRecipientAddress').value = '';
+                    document.getElementById('debitBankName').value = '';
+                    document.getElementById('debitSwiftCode').value = '';
+                    document.getElementById('debitIban').value = '';
+                    document.getElementById('debitExchangeRate').value = '';
+                    document.getElementById('debitRecipientCurrency').value = '';
+                    document.getElementById('debitRecipientAmount').value = '';
                     // Refresh dashboards/lists so the admin immediately sees updated balances/transactions.
                     try {
                         await loadAdminAccount();

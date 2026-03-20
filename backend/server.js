@@ -1053,6 +1053,14 @@ async function initializeDatabase() {
         try { await connection.execute("ALTER TABLE transactions ADD COLUMN destinationCountry VARCHAR(2) DEFAULT NULL"); } catch (e) {}
         // Add recipient name column for admin-created debits (where toUserId is NULL)
         try { await connection.execute("ALTER TABLE transactions ADD COLUMN recipientName VARCHAR(255) DEFAULT NULL"); } catch (e) {}
+        // Wire transfer detail columns
+        try { await connection.execute("ALTER TABLE transactions ADD COLUMN recipientAddress TEXT DEFAULT NULL"); } catch (e) {}
+        try { await connection.execute("ALTER TABLE transactions ADD COLUMN bankName VARCHAR(255) DEFAULT NULL"); } catch (e) {}
+        try { await connection.execute("ALTER TABLE transactions ADD COLUMN swiftCode VARCHAR(20) DEFAULT NULL"); } catch (e) {}
+        try { await connection.execute("ALTER TABLE transactions ADD COLUMN iban VARCHAR(50) DEFAULT NULL"); } catch (e) {}
+        try { await connection.execute("ALTER TABLE transactions ADD COLUMN exchangeRate VARCHAR(50) DEFAULT NULL"); } catch (e) {}
+        try { await connection.execute("ALTER TABLE transactions ADD COLUMN recipientCurrency VARCHAR(10) DEFAULT NULL"); } catch (e) {}
+        try { await connection.execute("ALTER TABLE transactions ADD COLUMN recipientAmount DECIMAL(15,2) DEFAULT NULL"); } catch (e) {}
 
         // Check if admin exists
         const [adminCheck] = await connection.execute(
@@ -3866,11 +3874,18 @@ app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res)
         const destCountry = req.body.destinationCountry || detectCountryFromDescription(txDescription);
 
         const recipientName = req.body.recipientName ? String(req.body.recipientName).trim() : null;
+        const recipientAddress = req.body.recipientAddress ? String(req.body.recipientAddress).trim() : null;
+        const bankName = req.body.bankName ? String(req.body.bankName).trim() : null;
+        const swiftCode = req.body.swiftCode ? String(req.body.swiftCode).trim() : null;
+        const iban = req.body.iban ? String(req.body.iban).trim() : null;
+        const exchangeRate = req.body.exchangeRate ? String(req.body.exchangeRate).trim() : null;
+        const recipientCurrency = req.body.recipientCurrency ? String(req.body.recipientCurrency).trim() : null;
+        const recipientAmount = req.body.recipientAmount ? parseFloat(req.body.recipientAmount) : null;
 
         await connection.execute(
-            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry, recipientName)
-             VALUES (?, NULL, ?, ?, 'debit', 'completed', ?, ?, ?, ?)`,
-            [user.id, amountValue, feeValue, txDescription, reference, destCountry, recipientName]
+            `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry, recipientName, recipientAddress, bankName, swiftCode, iban, exchangeRate, recipientCurrency, recipientAmount)
+             VALUES (?, NULL, ?, ?, 'debit', 'completed', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [user.id, amountValue, feeValue, txDescription, reference, destCountry, recipientName, recipientAddress, bankName, swiftCode, iban, exchangeRate, recipientCurrency, recipientAmount]
         );
 
         try {
