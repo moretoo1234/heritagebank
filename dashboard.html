@@ -800,14 +800,41 @@
             return name;
         }
 
+        const COUNTRY_MAP = {
+            US: { flag: '\ud83c\uddfa\ud83c\uddf8', name: 'United States' },
+            GB: { flag: '\ud83c\uddec\ud83c\udde7', name: 'United Kingdom' },
+            CA: { flag: '\ud83c\udde8\ud83c\udde6', name: 'Canada' },
+            MX: { flag: '\ud83c\uddf2\ud83c\uddfd', name: 'Mexico' },
+            DE: { flag: '\ud83c\udde9\ud83c\uddea', name: 'Germany' },
+            FR: { flag: '\ud83c\uddeb\ud83c\uddf7', name: 'France' },
+            ES: { flag: '\ud83c\uddea\ud83c\uddf8', name: 'Spain' },
+            IT: { flag: '\ud83c\uddee\ud83c\uddf9', name: 'Italy' },
+            CH: { flag: '\ud83c\udde8\ud83c\udded', name: 'Switzerland' },
+            NG: { flag: '\ud83c\uddf3\ud83c\uddec', name: 'Nigeria' },
+            GH: { flag: '\ud83c\uddec\ud83c\udded', name: 'Ghana' },
+            IN: { flag: '\ud83c\uddee\ud83c\uddf3', name: 'India' },
+            CN: { flag: '\ud83c\udde8\ud83c\uddf3', name: 'China' },
+            JP: { flag: '\ud83c\uddef\ud83c\uddf5', name: 'Japan' },
+            AU: { flag: '\ud83c\udde6\ud83c\uddfa', name: 'Australia' },
+            BR: { flag: '\ud83c\udde7\ud83c\uddf7', name: 'Brazil' },
+            AE: { flag: '\ud83c\udde6\ud83c\uddea', name: 'United Arab Emirates' },
+            PH: { flag: '\ud83c\uddf5\ud83c\udded', name: 'Philippines' },
+            JM: { flag: '\ud83c\uddef\ud83c\uddf2', name: 'Jamaica' },
+            KR: { flag: '\ud83c\uddf0\ud83c\uddf7', name: 'South Korea' }
+        };
+
         function getCountryFlag(tx) {
-            if (tx && tx.destinationCountry) {
-                if (tx.destinationCountry === 'GB') return '\ud83c\uddec\ud83c\udde7';
-                if (tx.destinationCountry === 'US') return '\ud83c\uddfa\ud83c\uddf8';
-            }
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return COUNTRY_MAP[code].flag;
             const d = String((tx && tx.description) || '').toLowerCase();
-            if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return '\ud83c\uddec\ud83c\udde7';
-            return '\ud83c\uddfa\ud83c\uddf8';
+            if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return COUNTRY_MAP.GB.flag;
+            return COUNTRY_MAP.US.flag;
+        }
+
+        function getCountryName(tx) {
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return COUNTRY_MAP[code].name;
+            return null;
         }
 
         function txnTimestamp(tx) {
@@ -1133,7 +1160,7 @@
                 </div>
                 ${toFlag !== '\ud83c\uddfa\ud83c\uddf8' ? `<div class="txn-detail-row">
                     <span class="txn-detail-label">Destination</span>
-                    <span class="txn-detail-value">${toFlag} ${toFlag === '\ud83c\uddec\ud83c\udde7' ? 'United Kingdom' : 'International'}</span>
+                    <span class="txn-detail-value">${toFlag} ${escapeHtml(getCountryName(tx) || 'International')}</span>
                 </div>` : ''}`;
 
             if (tx.reference) {

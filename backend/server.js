@@ -1288,6 +1288,24 @@ function normalizeTransactionRow(row) {
 function detectCountryFromDescription(desc) {
     const d = String(desc || '').toLowerCase();
     if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return 'GB';
+    if (d.includes('canada') || d.includes('canadian')) return 'CA';
+    if (d.includes('nigeria') || d.includes('nigerian')) return 'NG';
+    if (d.includes('ghana') || d.includes('ghanaian')) return 'GH';
+    if (d.includes('india') || d.includes('indian')) return 'IN';
+    if (d.includes('japan') || d.includes('japanese')) return 'JP';
+    if (d.includes('china') || d.includes('chinese')) return 'CN';
+    if (d.includes('australia') || d.includes('australian')) return 'AU';
+    if (d.includes('brazil') || d.includes('brazilian')) return 'BR';
+    if (d.includes('germany') || d.includes('german')) return 'DE';
+    if (d.includes('france') || d.includes('french')) return 'FR';
+    if (d.includes('spain') || d.includes('spanish')) return 'ES';
+    if (d.includes('italy') || d.includes('italian')) return 'IT';
+    if (d.includes('switzerland') || d.includes('swiss')) return 'CH';
+    if (d.includes('mexico') || d.includes('mexican')) return 'MX';
+    if (d.includes('emirates') || d.includes('uae') || d.includes('dubai')) return 'AE';
+    if (d.includes('philippines') || d.includes('filipino')) return 'PH';
+    if (d.includes('jamaica') || d.includes('jamaican')) return 'JM';
+    if (d.includes('korea') || d.includes('korean')) return 'KR';
     return 'US';
 }
 

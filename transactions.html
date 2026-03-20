@@ -399,9 +399,9 @@
                     <span class="txn-detail-label">To</span>
                     <span class="txn-detail-value">${toFlag} ${escapeHtml(toDisplay)}</span>
                 </div>
-                ${toFlag !== '\ud83c\uddfa\ud83c\uddf8' ? `<div class="txn-detail-row">
+                ${toFlag !== COUNTRY_MAP.US.flag ? `<div class="txn-detail-row">
                     <span class="txn-detail-label">Destination</span>
-                    <span class="txn-detail-value">${toFlag} ${toFlag === '\ud83c\uddec\ud83c\udde7' ? 'United Kingdom' : 'International'}</span>
+                    <span class="txn-detail-value">${toFlag} ${escapeHtml(getCountryName(tx) || 'International')}</span>
                 </div>` : ''}`;
 
             if (tx.reference) {
