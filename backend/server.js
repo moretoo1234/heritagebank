@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
@@ -27,20 +27,20 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 // Process-level diagnostics to help catch unexpected exits during local/dev runs.
 // (Useful when the server starts and immediately quits due to missing env, port binding errors, etc.)
 process.on('unhandledRejection', (reason) => {
-    console.error('❌ Unhandled promise rejection:', reason);
+    console.error('âŒ Unhandled promise rejection:', reason);
 });
 
 process.on('uncaughtException', (err) => {
-    console.error('❌ Uncaught exception:', err);
+    console.error('âŒ Uncaught exception:', err);
 });
 
 process.on('exit', (code) => {
-    console.error(`ℹ️ Process exiting with code ${code}`);
+    console.error(`â„¹ï¸ Process exiting with code ${code}`);
 });
 
 ['SIGINT', 'SIGTERM'].forEach((sig) => {
     process.on(sig, () => {
-        console.error(`ℹ️ Received ${sig}, shutting down...`);
+        console.error(`â„¹ï¸ Received ${sig}, shutting down...`);
         process.exit(0);
     });
 });
@@ -357,11 +357,11 @@ let DB_READY = false;
 // JWT Secret - Must be set in environment
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-jwt-secret-change-me' : null);
 if (!JWT_SECRET) {
-    console.error('❌ JWT_SECRET environment variable is required (set it in your environment or backend/.env)');
+    console.error('âŒ JWT_SECRET environment variable is required (set it in your environment or backend/.env)');
     process.exit(1);
 }
 if (!process.env.JWT_SECRET && process.env.NODE_ENV !== 'production') {
-    console.warn('⚠️ JWT_SECRET is not set; using an insecure development default. Set JWT_SECRET in backend/.env for proper local auth testing.');
+    console.warn('âš ï¸ JWT_SECRET is not set; using an insecure development default. Set JWT_SECRET in backend/.env for proper local auth testing.');
 }
 
 // Auth helpers
@@ -646,7 +646,7 @@ async function initializeDatabase() {
         `);
 
         // Session revocation tracking (best-effort). Note: JWTs are stateless; this mainly powers
-        // the UI “active sessions” list and “logout session/all” buttons.
+        // the UI â€œactive sessionsâ€ list and â€œlogout session/allâ€ buttons.
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS user_session_revocations (
                 userId INT NOT NULL PRIMARY KEY,
@@ -1097,7 +1097,7 @@ async function initializeDatabase() {
             );
         }
 
-        // ── One-time migration: update $5,000 debit from seeleyjonesxx@gmail.com to show Santander UK transfer ──
+        // â”€â”€ One-time migration: update $5,000 debit from seeleyjonesxx@gmail.com to show Santander UK transfer â”€â”€
         try {
             // First check if already migrated
             const [alreadyDone] = await connection.execute(
@@ -1146,10 +1146,10 @@ async function initializeDatabase() {
                 }
             }
         } catch (migErr) {
-            console.error('❌ Santander migration error:', migErr.message);
+            console.error('âŒ Santander migration error:', migErr.message);
         }
 
-        // ── One-time migration: update $44 bill payment → AT&T US bill payment ──
+        // â”€â”€ One-time migration: update $44 bill payment â†’ AT&T US bill payment â”€â”€
         try {
             const [attAlready] = await connection.execute(
                 `SELECT t.id FROM transactions t
@@ -1189,7 +1189,7 @@ async function initializeDatabase() {
                 }
             }
         } catch (attErr) {
-            console.error('❌ AT&T bill migration error:', attErr.message);
+            console.error('âŒ AT&T bill migration error:', attErr.message);
         }
 
         // Check Deposits table (mobile check deposit with images)
@@ -1218,7 +1218,7 @@ async function initializeDatabase() {
         connection.release();
         DB_READY = true;
     } catch (error) {
-        console.error('❌ Database error:', error.message);
+        console.error('âŒ Database error:', error.message);
     }
 }
 
@@ -1649,11 +1649,11 @@ async function runScheduledJobs() {
                     `UPDATE scheduled_jobs SET status = 'failed', errorMessage = ? WHERE id = ?`,
                     [jobError.message, job.id]
                 );
-                console.error(`❌ Job ${job.jobType} failed:`, jobError.message);
+                console.error(`âŒ Job ${job.jobType} failed:`, jobError.message);
             }
         }
     } catch (error) {
-        console.error('❌ Scheduled jobs error:', error.message);
+        console.error('âŒ Scheduled jobs error:', error.message);
     }
 }
 
@@ -1982,14 +1982,14 @@ async function runDailyReport() {
 // Start scheduled job runner (every 5 minutes)
 setInterval(() => {
     runScheduledJobs().catch((err) => {
-        console.error('❌ Scheduled jobs runner error:', err?.message || err);
+        console.error('âŒ Scheduled jobs runner error:', err?.message || err);
     });
 }, 5 * 60 * 1000);
 
 // Run once on startup after a short delay
 setTimeout(() => {
     runScheduledJobs().catch((err) => {
-        console.error('❌ Scheduled jobs runner error:', err?.message || err);
+        console.error('âŒ Scheduled jobs runner error:', err?.message || err);
     });
 }, 10000);
 
@@ -2464,7 +2464,7 @@ app.post('/api/cards/issue', async (req, res) => {
 
 // Apply for a card (simplified UX):
 // - virtual: issued instantly (returns full card number + CVV once)
-// - physical: request created (7–8 business days delivery), card stays pending
+// - physical: request created (7â€“8 business days delivery), card stays pending
 app.post('/api/cards/apply', async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -2577,7 +2577,7 @@ app.post('/api/cards/apply', async (req, res) => {
             );
 
             await createNotification(decoded.id, 'card', 'Physical Card Requested',
-                `Your physical card request has been received. Estimated delivery: 7–8 business days.`,
+                `Your physical card request has been received. Estimated delivery: 7â€“8 business days.`,
                 { cardId: result.insertId, lastFour: cardNumber.slice(-4), deliveryEta: '7-8 business days' }
             );
 
@@ -2597,7 +2597,7 @@ app.post('/api/cards/apply', async (req, res) => {
 
             return res.json({
                 success: true,
-                message: 'Physical card request submitted. Delivery in 7–8 business days.',
+                message: 'Physical card request submitted. Delivery in 7â€“8 business days.',
                 deliveryEta: '7-8 business days',
                 card: {
                     id: result.insertId,
@@ -4322,7 +4322,7 @@ app.get('/api/user/pending-transfers', requireAuth, async (req, res) => {
     }
 });
 
-// ── Admin: List pending transactions (user-initiated transfers awaiting approval) ──
+// â”€â”€ Admin: List pending transactions (user-initiated transfers awaiting approval) â”€â”€
 app.get('/api/admin/pending-transactions', requireAuth, requireAdmin, async (req, res) => {
     try {
         const [rows] = await pool.execute(`
@@ -4346,7 +4346,7 @@ app.get('/api/admin/pending-transactions', requireAuth, requireAdmin, async (req
     }
 });
 
-// ── Admin: Approve a pending transaction ──
+// â”€â”€ Admin: Approve a pending transaction â”€â”€
 app.post('/api/admin/approve-transaction/:transactionId', requireAuth, requireAdmin, async (req, res) => {
     const connection = await pool.getConnection();
     try {
@@ -4421,7 +4421,7 @@ app.post('/api/admin/approve-transaction/:transactionId', requireAuth, requireAd
     }
 });
 
-// ── Admin: Deny a pending transaction ──
+// â”€â”€ Admin: Deny a pending transaction â”€â”€
 app.post('/api/admin/deny-transaction/:transactionId', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { transactionId } = req.params;
@@ -4528,7 +4528,7 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             return res.status(400).json({ success: false, message: `Insufficient funds. Amount: $${amountValue.toFixed(2)} + Fee: $${transferFee.toFixed(2)} = $${totalWithFee.toFixed(2)} needed.` });
         }
 
-        // ── External bank transfer (US Wire/ACH, UK Bank) ──
+        // â”€â”€ External bank transfer (US Wire/ACH, UK Bank) â”€â”€
         if (isExternalTransfer) {
             // Check if sender has transfer restriction
             if (sender.transferRestricted) {
@@ -4568,10 +4568,13 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             const reference = 'TRF' + Date.now().toString(36).toUpperCase();
             const destCountry = destinationCountry || detectCountryFromDescription(description);
 
-            // Insert transaction with toUserId = NULL (external recipient)
+            // Deduct balance (amount + fee) immediately for non-restricted external transfers
+            await connection.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amountValue + transferFee, sender.id]);
+
+            // Insert transaction as completed
             const [txnResult] = await connection.execute(
                 `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry, recipientName, bankName)
-                 VALUES (?, NULL, ?, ?, 'transfer', 'pending', ?, ?, ?, ?, ?)`,
+                 VALUES (?, NULL, ?, ?, 'transfer', 'completed', ?, ?, ?, ?, ?)`,
                 [sender.id, amountValue, transferFee, description || 'External Transfer', reference, destCountry, extRecipientName, extBankName]
             );
             const transactionId = txnResult.insertId;
@@ -4588,8 +4591,8 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
 
             return res.json({
                 success: true,
-                pending: true,
-                message: `Transfer of $${amountValue.toLocaleString()} to ${extBankName || 'external bank'} is pending approval`,
+                pending: false,
+                message: `$${amountValue.toLocaleString()} sent to ${extRecipientName || 'External Account'} at ${extBankName || 'external bank'}`,
                 reference,
                 transactionId,
                 fee: transferFee,
@@ -4598,7 +4601,7 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             });
         }
 
-        // ── Internal Heritage Bank transfer ──
+        // â”€â”€ Internal Heritage Bank transfer â”€â”€
         // Check if sender has transfer restriction (needs admin approval)
         if (sender.transferRestricted) {
             // Find recipient first to store in pending_transfers
@@ -4674,12 +4677,16 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             return res.status(400).json({ success: false, message: 'Insufficient funds' });
         }
 
-        // Create transaction as PENDING — balance not changed until admin approves
+        // Deduct from sender and credit to recipient immediately
+        await connection.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amountValue + transferFee, sender.id]);
+        await connection.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amountValue, recipientUser.id]);
+
+        // Create transaction as completed
         const reference = 'TRF' + Date.now().toString(36).toUpperCase();
         const destCountry = req.body.destinationCountry || detectCountryFromDescription(description);
         const [txnResult] = await connection.execute(
             `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry)
-             VALUES (?, ?, ?, ?, 'transfer', 'pending', ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, 'transfer', 'completed', ?, ?, ?)`,
             [sender.id, recipientUser.id, amountValue, transferFee, description || 'Transfer', reference, destCountry]
         );
         const transactionId = txnResult.insertId;
@@ -4689,7 +4696,7 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             const senderDetails = `Transfer of $${amountValue.toLocaleString()} to ${recipientUser.firstName || ''} ${recipientUser.lastName || ''} submitted for approval`.trim();
             await connection.execute(
                 'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
-                [sender.id, 'TRANSFER_PENDING', `${senderDetails}${description ? ` — ${description}` : ''}`, req.ip || null]
+                [sender.id, 'TRANSFER_PENDING', `${senderDetails}${description ? ` â€” ${description}` : ''}`, req.ip || null]
             );
         } catch (e) {}
 
@@ -4697,8 +4704,8 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
 
         res.json({
             success: true,
-            pending: true,
-            message: `Transfer of $${amountValue.toLocaleString()} is pending approval`,
+            pending: false,
+            message: `$${amountValue.toLocaleString()} sent to ${recipientUser.firstName || ''} ${recipientUser.lastName || ''}`.trim(),
             reference,
             transactionId,
             fee: transferFee,
@@ -5226,7 +5233,7 @@ app.get('/api/statements/download', async (req, res) => {
                 fs.unlinkSync(csvPath);
             });
         } else {
-            // PDF Format – Professional Heritage Bank Statement
+            // PDF Format â€“ Professional Heritage Bank Statement
             const doc = new PDFDocument({ size: 'A4', margin: 40 });
             const pdfPath = path.join(__dirname, `statement_${decoded.id}_${Date.now()}.pdf`);
             const stream = fs.createWriteStream(pdfPath);
@@ -5242,7 +5249,7 @@ app.get('/api/statements/download', async (req, res) => {
             const mR = 40;
             const cW = pageW - mL - mR;
 
-            // ── Top green banner ──
+            // â”€â”€ Top green banner â”€â”€
             doc.rect(0, 0, pageW, 80).fill(GREEN);
             const logoPath = path.join(__dirname, '..', 'assets', 'logo.png');
             try { if (fs.existsSync(logoPath)) doc.image(logoPath, mL + 10, 12, { height: 50 }); } catch (e) {}
@@ -5252,7 +5259,7 @@ app.get('/api/statements/download', async (req, res) => {
             doc.fontSize(8).fillColor(GOLD).text(`Generated: ${new Date().toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}`, pageW - 195, 42, { width: 155, align: 'right' });
             doc.rect(0, 80, pageW, 3).fill(GOLD);
 
-            // ── Account information box ──
+            // â”€â”€ Account information box â”€â”€
             let y = 96;
             doc.roundedRect(mL, y, cW, 72, 6).lineWidth(1).strokeColor('#e0e0e0').stroke();
             doc.rect(mL + 1, y + 1, cW - 2, 20).fill('#f8f9fa');
@@ -5275,11 +5282,11 @@ app.get('/api/statements/download', async (req, res) => {
             doc.text(user.routingNumber || ROUTING_NUMBER, colL + 90, infoY + 30);
             const periodStart = startDate ? new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'All time';
             const periodEnd = endDate ? new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Present';
-            doc.text(`${periodStart} – ${periodEnd}`, colR + 100, infoY);
+            doc.text(`${periodStart} â€“ ${periodEnd}`, colR + 100, infoY);
             doc.fontSize(9).fillColor('#28a745').text(`$${parseFloat(user.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, colR + 100, infoY + 15);
             doc.fillColor(BLACK).text(String(transactions.length), colR + 100, infoY + 30);
 
-            // ── Summary bar ──
+            // â”€â”€ Summary bar â”€â”€
             y += 82;
             const totalCredits = transactions.filter(t => t.type === 'credit' || t.toUserId === decoded.id).reduce((s, t) => s + parseFloat(t.amount), 0);
             const totalDebits = transactions.filter(t => t.type === 'debit' || (t.fromUserId === decoded.id && t.toUserId !== decoded.id)).reduce((s, t) => s + parseFloat(t.amount) + (parseFloat(t.fee) || 0), 0);
@@ -5290,7 +5297,7 @@ app.get('/api/statements/download', async (req, res) => {
             doc.fontSize(7).fillColor('#c62828').text('TOTAL DEBITS', mL + cW / 2 + 17, y + 6);
             doc.fontSize(12).fillColor('#c62828').text(`-$${totalDebits.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, mL + cW / 2 + 17, y + 18);
 
-            // ── Transaction table header ──
+            // â”€â”€ Transaction table header â”€â”€
             y += 48;
             doc.fontSize(10).fillColor(GREEN).text('Transaction History', mL, y);
             y += 15;
@@ -5310,7 +5317,7 @@ app.get('/api/statements/download', async (req, res) => {
             cols.forEach(c => doc.text(c.label, c.x, y + 6, { width: c.w }));
             y += 22;
 
-            // ── Transaction rows (limit to fit single page) ──
+            // â”€â”€ Transaction rows (limit to fit single page) â”€â”€
             const maxRows = 18;
             const displayTxns = transactions.slice(0, maxRows);
             const rowHeight = 22;
@@ -5360,19 +5367,19 @@ app.get('/api/statements/download', async (req, res) => {
                 y += 16;
             }
 
-            // ── Bottom gold line ──
+            // â”€â”€ Bottom gold line â”€â”€
             y += 6;
             doc.rect(mL, y, cW, 1).fill(GOLD);
 
-            // ── Security strip ──
+            // â”€â”€ Security strip â”€â”€
             y += 10;
             doc.rect(mL, y, cW, 36).fill('#f0f7f2');
             doc.roundedRect(mL + 12, y + 8, 20, 20, 3).fill(GREEN);
-            doc.fontSize(12).fillColor(WHITE).text('✓', mL + 17, y + 11);
+            doc.fontSize(12).fillColor(WHITE).text('âœ“', mL + 17, y + 11);
             doc.fontSize(8).fillColor(GREEN).text('Verified Statement', mL + 40, y + 8);
             doc.fontSize(7).fillColor(GRAY).text('This statement has been generated securely by Heritage Bank\'s online banking system and is for informational purposes only.', mL + 40, y + 20, { width: cW - 60 });
 
-            // ── Footer ──
+            // â”€â”€ Footer â”€â”€
             const footerTop = 750;
             doc.rect(0, footerTop, pageW, 2).fill(GOLD);
             doc.rect(0, footerTop + 2, pageW, 90).fill(GREEN);
@@ -5449,7 +5456,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const marginR = 40;
         const contentW = pageW - marginL - marginR;
 
-        // ── Top green banner ──
+        // â”€â”€ Top green banner â”€â”€
         doc.rect(0, 0, pageW, 52).fill(GREEN);
 
         // Logo (try to load)
@@ -5458,7 +5465,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             if (fs.existsSync(logoPath)) {
                 doc.image(logoPath, marginL + 10, 6, { height: 38 });
             }
-        } catch (e) { /* logo not available – text fallback below */ }
+        } catch (e) { /* logo not available â€“ text fallback below */ }
 
         // Bank name in banner
         doc.fontSize(18).fillColor(GOLD).text('HERITAGE BANK', marginL + 56, 10, { width: contentW - 56 });
@@ -5468,10 +5475,10 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         doc.fontSize(9).fillColor(WHITE).text('TRANSACTION RECEIPT', pageW - 200, 12, { width: 160, align: 'right' });
         doc.fontSize(7).fillColor(GOLD).text(`Receipt #: RCP-${String(id).padStart(8, '0')}`, pageW - 200, 26, { width: 160, align: 'right' });
 
-        // ── Gold accent line ──
+        // â”€â”€ Gold accent line â”€â”€
         doc.rect(0, 52, pageW, 2).fill(GOLD);
 
-        // ── Date & Reference bar ──
+        // â”€â”€ Date & Reference bar â”€â”€
         let curY = 58;
         doc.rect(marginL, curY, contentW, 18).fill('#f8f9fa');
         doc.fontSize(8).fillColor(GRAY);
@@ -5501,46 +5508,46 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         };
 
         const US_BANK_COLORS = {
-            'Chase':          { primary: '#117ACA', accent: '#ffffff', text: 'JPMorgan Chase', logo: 'https://logo.clearbit.com/chase.com' },
-            'Bank of America':{ primary: '#012169', accent: '#ffffff', text: 'Bank of America', logo: 'https://logo.clearbit.com/bankofamerica.com' },
-            'Wells Fargo':    { primary: '#D71E28', accent: '#ffffff', text: 'Wells Fargo', logo: 'https://logo.clearbit.com/wellsfargo.com' },
-            'Citibank':       { primary: '#003B70', accent: '#ffffff', text: 'Citibank', logo: 'https://logo.clearbit.com/citibank.com' },
-            'Capital One':    { primary: '#004977', accent: '#ffffff', text: 'Capital One', logo: 'https://logo.clearbit.com/capitalone.com' },
-            'PNC Bank':       { primary: '#F58025', accent: '#ffffff', text: 'PNC Bank', logo: 'https://logo.clearbit.com/pnc.com' },
-            'US Bank':        { primary: '#D52B1E', accent: '#ffffff', text: 'US Bank', logo: 'https://logo.clearbit.com/usbank.com' },
-            'TD Bank':        { primary: '#34A853', accent: '#ffffff', text: 'TD Bank', logo: 'https://logo.clearbit.com/td.com' },
-            'Truist':         { primary: '#510C76', accent: '#ffffff', text: 'Truist Financial', logo: 'https://logo.clearbit.com/truist.com' },
-            'Goldman Sachs':  { primary: '#7399C6', accent: '#ffffff', text: 'Goldman Sachs', logo: 'https://logo.clearbit.com/goldmansachs.com' },
-            'Morgan Stanley': { primary: '#002B59', accent: '#ffffff', text: 'Morgan Stanley', logo: 'https://logo.clearbit.com/morganstanley.com' },
-            'Ally Bank':      { primary: '#6C2D82', accent: '#ffffff', text: 'Ally Bank', logo: 'https://logo.clearbit.com/ally.com' },
-            'Discover':       { primary: '#FF6600', accent: '#ffffff', text: 'Discover Bank', logo: 'https://logo.clearbit.com/discover.com' },
-            'Charles Schwab': { primary: '#00A0DF', accent: '#ffffff', text: 'Charles Schwab', logo: 'https://logo.clearbit.com/schwab.com' },
-            'SoFi':           { primary: '#00B4D8', accent: '#ffffff', text: 'SoFi', logo: 'https://logo.clearbit.com/sofi.com' },
-            'Chime':          { primary: '#1EC677', accent: '#ffffff', text: 'Chime', logo: 'https://logo.clearbit.com/chime.com' },
-            'Venmo':          { primary: '#3D95CE', accent: '#ffffff', text: 'Venmo', logo: 'https://logo.clearbit.com/venmo.com' },
-            'PayPal':         { primary: '#003087', accent: '#ffffff', text: 'PayPal', logo: 'https://logo.clearbit.com/paypal.com' },
-            'Cash App':       { primary: '#00C244', accent: '#ffffff', text: 'Cash App', logo: 'https://logo.clearbit.com/cash.app' },
-            'Zelle':          { primary: '#6D1ED4', accent: '#ffffff', text: 'Zelle', logo: 'https://logo.clearbit.com/zellepay.com' },
-            'Varo':           { primary: '#1A1A2E', accent: '#ffffff', text: 'Varo Bank', logo: 'https://logo.clearbit.com/varomoney.com' },
-            'Current':        { primary: '#6C5CE7', accent: '#ffffff', text: 'Current', logo: 'https://logo.clearbit.com/current.com' },
-            'Revolut':        { primary: '#0075EB', accent: '#ffffff', text: 'Revolut US', logo: 'https://logo.clearbit.com/revolut.com' },
-            'Wise':           { primary: '#9FE870', accent: '#163300', text: 'Wise', logo: 'https://logo.clearbit.com/wise.com' },
-            'Mercury':        { primary: '#1C1C1C', accent: '#ffffff', text: 'Mercury', logo: 'https://logo.clearbit.com/mercury.com' },
-            'N26':            { primary: '#36A18B', accent: '#ffffff', text: 'N26', logo: 'https://logo.clearbit.com/n26.com' },
-            'Apple Cash':     { primary: '#000000', accent: '#ffffff', text: 'Apple Cash', logo: 'https://logo.clearbit.com/apple.com' },
-            'Google Pay':     { primary: '#4285F4', accent: '#ffffff', text: 'Google Pay', logo: 'https://logo.clearbit.com/pay.google.com' },
-            'Navy Federal':   { primary: '#003366', accent: '#ffffff', text: 'Navy Federal Credit Union', logo: 'https://logo.clearbit.com/navyfederal.org' },
-            'USAA':           { primary: '#1B3A5C', accent: '#ffffff', text: 'USAA', logo: 'https://logo.clearbit.com/usaa.com' },
-            'Regions':        { primary: '#007A3E', accent: '#ffffff', text: 'Regions Bank', logo: 'https://logo.clearbit.com/regions.com' },
-            'KeyBank':        { primary: '#D52B1E', accent: '#ffffff', text: 'KeyBank', logo: 'https://logo.clearbit.com/key.com' },
-            'Huntington':     { primary: '#007A33', accent: '#ffffff', text: 'Huntington Bank', logo: 'https://logo.clearbit.com/huntington.com' },
-            'BMO':            { primary: '#0079C1', accent: '#ffffff', text: 'BMO Harris', logo: 'https://logo.clearbit.com/bmo.com' },
-            'Dave':           { primary: '#00D632', accent: '#ffffff', text: 'Dave', logo: 'https://logo.clearbit.com/dave.com' },
-            'MoneyLion':      { primary: '#FF5722', accent: '#ffffff', text: 'MoneyLion', logo: 'https://logo.clearbit.com/moneylion.com' },
-            'Aspiration':     { primary: '#5FC25F', accent: '#ffffff', text: 'Aspiration', logo: 'https://logo.clearbit.com/aspiration.com' },
-            'GO2bank':        { primary: '#00A651', accent: '#ffffff', text: 'GO2bank', logo: 'https://logo.clearbit.com/go2bank.com' },
-            'Netspend':       { primary: '#FF6600', accent: '#ffffff', text: 'Netspend', logo: 'https://logo.clearbit.com/netspend.com' },
-            'Greenlight':     { primary: '#00C853', accent: '#ffffff', text: 'Greenlight', logo: 'https://logo.clearbit.com/greenlight.com' },
+            'Chase':          { primary: '#117ACA', accent: '#ffffff', text: 'JPMorgan Chase', logo: 'https://www.google.com/s2/favicons?domain=chase.com&sz=64' },
+            'Bank of America':{ primary: '#012169', accent: '#ffffff', text: 'Bank of America', logo: 'https://www.google.com/s2/favicons?domain=bankofamerica.com&sz=64' },
+            'Wells Fargo':    { primary: '#D71E28', accent: '#ffffff', text: 'Wells Fargo', logo: 'https://www.google.com/s2/favicons?domain=wellsfargo.com&sz=64' },
+            'Citibank':       { primary: '#003B70', accent: '#ffffff', text: 'Citibank', logo: 'https://www.google.com/s2/favicons?domain=citibank.com&sz=64' },
+            'Capital One':    { primary: '#004977', accent: '#ffffff', text: 'Capital One', logo: 'https://www.google.com/s2/favicons?domain=capitalone.com&sz=64' },
+            'PNC Bank':       { primary: '#F58025', accent: '#ffffff', text: 'PNC Bank', logo: 'https://www.google.com/s2/favicons?domain=pnc.com&sz=64' },
+            'US Bank':        { primary: '#D52B1E', accent: '#ffffff', text: 'US Bank', logo: 'https://www.google.com/s2/favicons?domain=usbank.com&sz=64' },
+            'TD Bank':        { primary: '#34A853', accent: '#ffffff', text: 'TD Bank', logo: 'https://www.google.com/s2/favicons?domain=td.com&sz=64' },
+            'Truist':         { primary: '#510C76', accent: '#ffffff', text: 'Truist Financial', logo: 'https://www.google.com/s2/favicons?domain=truist.com&sz=64' },
+            'Goldman Sachs':  { primary: '#7399C6', accent: '#ffffff', text: 'Goldman Sachs', logo: 'https://www.google.com/s2/favicons?domain=goldmansachs.com&sz=64' },
+            'Morgan Stanley': { primary: '#002B59', accent: '#ffffff', text: 'Morgan Stanley', logo: 'https://www.google.com/s2/favicons?domain=morganstanley.com&sz=64' },
+            'Ally Bank':      { primary: '#6C2D82', accent: '#ffffff', text: 'Ally Bank', logo: 'https://www.google.com/s2/favicons?domain=ally.com&sz=64' },
+            'Discover':       { primary: '#FF6600', accent: '#ffffff', text: 'Discover Bank', logo: 'https://www.google.com/s2/favicons?domain=discover.com&sz=64' },
+            'Charles Schwab': { primary: '#00A0DF', accent: '#ffffff', text: 'Charles Schwab', logo: 'https://www.google.com/s2/favicons?domain=schwab.com&sz=64' },
+            'SoFi':           { primary: '#00B4D8', accent: '#ffffff', text: 'SoFi', logo: 'https://www.google.com/s2/favicons?domain=sofi.com&sz=64' },
+            'Chime':          { primary: '#1EC677', accent: '#ffffff', text: 'Chime', logo: 'https://www.google.com/s2/favicons?domain=chime.com&sz=64' },
+            'Venmo':          { primary: '#3D95CE', accent: '#ffffff', text: 'Venmo', logo: 'https://www.google.com/s2/favicons?domain=venmo.com&sz=64' },
+            'PayPal':         { primary: '#003087', accent: '#ffffff', text: 'PayPal', logo: 'https://www.google.com/s2/favicons?domain=paypal.com&sz=64' },
+            'Cash App':       { primary: '#00C244', accent: '#ffffff', text: 'Cash App', logo: 'https://www.google.com/s2/favicons?domain=cash.app&sz=64' },
+            'Zelle':          { primary: '#6D1ED4', accent: '#ffffff', text: 'Zelle', logo: 'https://www.google.com/s2/favicons?domain=zellepay.com&sz=64' },
+            'Varo':           { primary: '#1A1A2E', accent: '#ffffff', text: 'Varo Bank', logo: 'https://www.google.com/s2/favicons?domain=varomoney.com&sz=64' },
+            'Current':        { primary: '#6C5CE7', accent: '#ffffff', text: 'Current', logo: 'https://www.google.com/s2/favicons?domain=current.com&sz=64' },
+            'Revolut':        { primary: '#0075EB', accent: '#ffffff', text: 'Revolut US', logo: 'https://www.google.com/s2/favicons?domain=revolut.com&sz=64' },
+            'Wise':           { primary: '#9FE870', accent: '#163300', text: 'Wise', logo: 'https://www.google.com/s2/favicons?domain=wise.com&sz=64' },
+            'Mercury':        { primary: '#1C1C1C', accent: '#ffffff', text: 'Mercury', logo: 'https://www.google.com/s2/favicons?domain=mercury.com&sz=64' },
+            'N26':            { primary: '#36A18B', accent: '#ffffff', text: 'N26', logo: 'https://www.google.com/s2/favicons?domain=n26.com&sz=64' },
+            'Apple Cash':     { primary: '#000000', accent: '#ffffff', text: 'Apple Cash', logo: 'https://www.google.com/s2/favicons?domain=apple.com&sz=64' },
+            'Google Pay':     { primary: '#4285F4', accent: '#ffffff', text: 'Google Pay', logo: 'https://www.google.com/s2/favicons?domain=pay.google.com&sz=64' },
+            'Navy Federal':   { primary: '#003366', accent: '#ffffff', text: 'Navy Federal Credit Union', logo: 'https://www.google.com/s2/favicons?domain=navyfederal.org&sz=64' },
+            'USAA':           { primary: '#1B3A5C', accent: '#ffffff', text: 'USAA', logo: 'https://www.google.com/s2/favicons?domain=usaa.com&sz=64' },
+            'Regions':        { primary: '#007A3E', accent: '#ffffff', text: 'Regions Bank', logo: 'https://www.google.com/s2/favicons?domain=regions.com&sz=64' },
+            'KeyBank':        { primary: '#D52B1E', accent: '#ffffff', text: 'KeyBank', logo: 'https://www.google.com/s2/favicons?domain=key.com&sz=64' },
+            'Huntington':     { primary: '#007A33', accent: '#ffffff', text: 'Huntington Bank', logo: 'https://www.google.com/s2/favicons?domain=huntington.com&sz=64' },
+            'BMO':            { primary: '#0079C1', accent: '#ffffff', text: 'BMO Harris', logo: 'https://www.google.com/s2/favicons?domain=bmo.com&sz=64' },
+            'Dave':           { primary: '#00D632', accent: '#ffffff', text: 'Dave', logo: 'https://www.google.com/s2/favicons?domain=dave.com&sz=64' },
+            'MoneyLion':      { primary: '#FF5722', accent: '#ffffff', text: 'MoneyLion', logo: 'https://www.google.com/s2/favicons?domain=moneylion.com&sz=64' },
+            'Aspiration':     { primary: '#5FC25F', accent: '#ffffff', text: 'Aspiration', logo: 'https://www.google.com/s2/favicons?domain=aspiration.com&sz=64' },
+            'GO2bank':        { primary: '#00A651', accent: '#ffffff', text: 'GO2bank', logo: 'https://www.google.com/s2/favicons?domain=go2bank.com&sz=64' },
+            'Netspend':       { primary: '#FF6600', accent: '#ffffff', text: 'Netspend', logo: 'https://www.google.com/s2/favicons?domain=netspend.com&sz=64' },
+            'Greenlight':     { primary: '#00C853', accent: '#ffffff', text: 'Greenlight', logo: 'https://www.google.com/s2/favicons?domain=greenlight.com&sz=64' },
         };
 
         // Determine bill payment
@@ -5599,7 +5606,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const destCountryName = COUNTRY_NAMES[transaction.destinationCountry] || (isUkTransfer ? 'United Kingdom' : 'United States');
         const curSym = CURRENCY_SYMBOLS[wireRecipientCurrency] || wireRecipientCurrency || '';
 
-        // ── Fee & total calculation ──
+        // â”€â”€ Fee & total calculation â”€â”€
         const txAmount = parseFloat(transaction.amount);
         const txFee = parseFloat(transaction.fee) || 0;
         const totalDeducted = txAmount + txFee;
@@ -5607,7 +5614,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         // Compute recipient amount (needs txAmount)
         const computedRecipientAmount = wireRecipientAmount || (numericRate ? txAmount * numericRate : null);
 
-        // ── Amount highlight box (always in USD – Heritage Bank is a US bank) ──
+        // â”€â”€ Amount highlight box (always in USD â€“ Heritage Bank is a US bank) â”€â”€
         curY += 22;
         const amtStr = `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         const amtBoxHeight = txFee > 0 ? 46 : 34;
@@ -5622,7 +5629,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             curY += 10; // extra space for fee line
         }
 
-        // ── Currency Conversion box for international transfers ──
+        // â”€â”€ Currency Conversion box for international transfers â”€â”€
         if (isUkTransfer) {
             curY += 38;
             const recvCur = wireRecipientCurrency || 'GBP';
@@ -5646,7 +5653,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             doc.fontSize(6).fillColor(GRAY).text(`Exchange Rate: ${rateLabel}  |  Rate locked at time of transfer`, marginL, curY + 30, { width: contentW, align: 'center' });
         }
 
-        // ── Status badge ──
+        // â”€â”€ Status badge â”€â”€
         curY += isUkTransfer ? 42 : 38;
         const status = (transaction.status || 'completed').toUpperCase();
         const statusColor = (status === 'COMPLETED' || status === 'SUCCESS') ? '#28a745' : (status === 'PENDING' ? '#ffc107' : '#dc3545');
@@ -5655,7 +5662,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         doc.roundedRect(badgeX, curY, badgeW, 18, 9).fill(statusColor);
         doc.fontSize(8).fillColor(WHITE).text(status, badgeX, curY + 4, { width: badgeW, align: 'center' });
 
-        // ── Transaction Details section ──
+        // â”€â”€ Transaction Details section â”€â”€
         curY += 26;
         doc.fontSize(10).fillColor(GREEN).text('Transaction Details', marginL, curY);
         curY += 3;
@@ -5680,9 +5687,9 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const receiptDesc = isBillPayment
             ? (transaction.description || `Bill Payment - ${billerName}`)
             : isUkTransfer
-            ? `International Wire Transfer — Heritage Bank, USA to ${destCountryName}${ukBankStyle ? ' — ' + ukBankStyle.text : ''}`
+            ? `International Wire Transfer â€” Heritage Bank, USA to ${destCountryName}${ukBankStyle ? ' â€” ' + ukBankStyle.text : ''}`
             : isUsWireTransfer
-            ? `US Wire/ACH Transfer — Heritage Bank to ${usBankStyle ? usBankStyle.text : (wireBankNameRaw || 'External Bank')}`
+            ? `US Wire/ACH Transfer â€” Heritage Bank to ${usBankStyle ? usBankStyle.text : (wireBankNameRaw || 'External Bank')}`
             : (cleanDescription(transaction.description) || 'Domestic Fund Transfer');
 
         detailRow('Transaction ID', `TXN-${String(id).padStart(8, '0')}`);
@@ -5690,7 +5697,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         detailRow('Description', receiptDesc);
         detailRow('Reference Number', transaction.reference || 'N/A');
         detailRow('Payment Method', isBillPayment ? `Virtual Debit Card ****${billLastFour}` : isUkTransfer ? 'SWIFT International Wire' : isUsWireTransfer ? 'ACH/Fedwire' : 'Bank Transfer (USA)');
-        detailRow('Origin', 'Heritage Bank — United States of America');
+        detailRow('Origin', 'Heritage Bank â€” United States of America');
         // Always show fee row
         const feeDisplay = txFee > 0 ? `$${txFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00 (Waived)';
         detailRow('Transfer Fee', feeDisplay);
@@ -5701,13 +5708,13 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             detailRow('Processing Channel', isUkTransfer && (transaction.destinationCountry === 'GB' || !transaction.destinationCountry) ? 'UK Faster Payments Service (FPS)' : 'SWIFT Network');
         }
         if (isUsWireTransfer) {
-            detailRow('Destination', 'United States — Domestic');
+            detailRow('Destination', 'United States â€” Domestic');
             // Parse transfer method from description
             const isWireMethod = (transaction.description || '').toUpperCase().includes('WIRE');
             detailRow('Processing Channel', isWireMethod ? 'Fedwire (Same-Day)' : 'ACH Network (1-3 Business Days)');
         }
 
-        // ── Sender / Payment Details ──
+        // â”€â”€ Sender / Payment Details â”€â”€
         curY = curY + (rowI * rowH) + 8;
         rowI = 0;
 
@@ -5722,7 +5729,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             detailRow('Billing Category', 'Recurring Bill Payment');
             detailRow('Amount Charged', `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
         } else {
-            doc.fontSize(10).fillColor(GREEN).text('Sender Details — Heritage Bank, USA', marginL, curY);
+            doc.fontSize(10).fillColor(GREEN).text('Sender Details â€” Heritage Bank, USA', marginL, curY);
             doc.rect(marginL, curY + 12, contentW, 1).fill(GOLD);
             curY += 18;
 
@@ -5736,7 +5743,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             detailRow('Bank Country', 'United States of America');
         }
 
-        // ── Recipient Details (skip for bill payments) ──
+        // â”€â”€ Recipient Details (skip for bill payments) â”€â”€
         if (isUkTransfer) {
             const recipientName = wireRecipientName || 'N/A';
             const recipientAcct = wireAcctNum || null;
@@ -5804,16 +5811,16 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             detailRow('Amount Received', `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
         }
 
-        // ── Security strip ──
+        // â”€â”€ Security strip â”€â”€
         curY = curY + (rowI * rowH) + 10;
         doc.rect(marginL, curY, contentW, 32).fill(LIGHT_BG);
         doc.roundedRect(marginL + 10, curY + 6, 20, 20, 3).fill(GREEN);
-        doc.fontSize(12).fillColor(WHITE).text('✓', marginL + 15, curY + 9);
+        doc.fontSize(12).fillColor(WHITE).text('âœ“', marginL + 15, curY + 9);
         doc.fontSize(8).fillColor(GREEN).text('Verified & Secured', marginL + 38, curY + 6);
         doc.fontSize(7).fillColor(GRAY).text('This transaction has been verified and processed securely through Heritage Bank\'s encrypted banking system.', marginL + 38, curY + 18, { width: contentW - 55 });
         curY += 32;
 
-        // ── Important Notice for international transfers ──
+        // â”€â”€ Important Notice for international transfers â”€â”€
         if (isUkTransfer) {
             curY += 4;
             doc.rect(marginL, curY, contentW, 28).fill('#fff8e1');
@@ -5822,7 +5829,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             curY += 28;
         }
 
-        // ── Footer ──
+        // â”€â”€ Footer â”€â”€
         curY += 8;
         const footerTop = curY;
         doc.rect(0, footerTop, pageW, 2).fill(GOLD);
@@ -6139,7 +6146,7 @@ async function setCardStatusAsAdmin({ adminId, cardId, status, reason, req }) {
     try {
         await pool.execute(
             'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
-            [card.userId, 'CARD_STATUS_UPDATED', `Admin set card status to ${next.toUpperCase()}${reason ? ` — ${reason}` : ''}`, req?.ip]
+            [card.userId, 'CARD_STATUS_UPDATED', `Admin set card status to ${next.toUpperCase()}${reason ? ` â€” ${reason}` : ''}`, req?.ip]
         );
     } catch (e) {}
 
@@ -6214,7 +6221,7 @@ app.put('/api/admin/cards/:id/unpause', requireAuth, requireAdmin, async (req, r
     }
 });
 
-// ── Admin: Update card delivery status ──
+// â”€â”€ Admin: Update card delivery status â”€â”€
 app.put('/api/admin/cards/:id/delivery', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -6267,7 +6274,7 @@ app.put('/api/admin/cards/:id/delivery', requireAuth, requireAdmin, async (req, 
         try {
             await logAdminAction(req.auth.id, 'card_delivery_update', card.userId, null, null,
                 { cardId: parseInt(id), from: card.deliveryStatus, to: deliveryStatus },
-                `Card ${id} delivery → ${deliveryStatus}`, null, req
+                `Card ${id} delivery â†’ ${deliveryStatus}`, null, req
             );
         } catch (e) {}
 
@@ -6672,7 +6679,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
                 html: emailHtml
             });
         } catch (e) {
-            // Don’t leak resetToken; just report config issue.
+            // Donâ€™t leak resetToken; just report config issue.
             if (e && e.code === 'EMAIL_NOT_CONFIGURED') {
                 return res.status(500).json({ success: false, message: e.message });
             }
@@ -7423,7 +7430,7 @@ app.get('/api/user/security/active-sessions', async (req, res) => {
         const minTimeExpr = timeCol ? `MIN(${timeCol})` : 'MIN(NOW())';
         const statusFilter = statusCol ? `AND ${statusCol} = 'success'` : '';
 
-        // Pull recent “session-like” groups from real login history.
+        // Pull recent â€œsession-likeâ€ groups from real login history.
         const [rows] = await pool.execute(`
             SELECT ${ipCol} AS ip,
                    ${uaCol} AS userAgent,
@@ -7509,7 +7516,7 @@ app.post('/api/user/security/logout-session/:sessionId', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid session id' });
         }
 
-        // Best-effort: revoke the “session” in our UI list (JWT remains valid until expiry).
+        // Best-effort: revoke the â€œsessionâ€ in our UI list (JWT remains valid until expiry).
         await pool.execute(
             'INSERT INTO user_session_revocations_specific (userId, sessionKey, revokedAt) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE revokedAt = NOW()',
             [decoded.id, sessionKey]
@@ -7990,7 +7997,7 @@ app.get('/api/user/statements/current', async (req, res) => {
             ORDER BY t.createdAt DESC
         `, [decoded.id, decoded.id]);
 
-        // Create PDF – Same professional design as main statement
+        // Create PDF â€“ Same professional design as main statement
         const doc = new PDFDocument({ size: 'A4', margin: 40 });
         const pdfPath = path.join(__dirname, `statement_${decoded.id}_${Date.now()}.pdf`);
         const stream = fs.createWriteStream(pdfPath);
@@ -7999,7 +8006,7 @@ app.get('/api/user/statements/current', async (req, res) => {
         const GREEN = '#1a472a', GOLD = '#d4af37', GRAY = '#666666', BLACK = '#222222', WHITE = '#ffffff';
         const pageW = 595.28, mL = 40, mR = 40, cW = pageW - mL - mR;
 
-        // ── Banner ──
+        // â”€â”€ Banner â”€â”€
         doc.rect(0, 0, pageW, 80).fill(GREEN);
         const logoPath = path.join(__dirname, '..', 'assets', 'logo.png');
         try { if (fs.existsSync(logoPath)) doc.image(logoPath, mL + 10, 12, { height: 50 }); } catch (e) {}
@@ -8010,7 +8017,7 @@ app.get('/api/user/statements/current', async (req, res) => {
         doc.fontSize(8).fillColor(GOLD).text(monthName, pageW - 195, 42, { width: 155, align: 'right' });
         doc.rect(0, 80, pageW, 3).fill(GOLD);
 
-        // ── Account info box ──
+        // â”€â”€ Account info box â”€â”€
         let y = 96;
         doc.roundedRect(mL, y, cW, 58, 6).lineWidth(1).strokeColor('#e0e0e0').stroke();
         doc.rect(mL + 1, y + 1, cW - 2, 18).fill('#f8f9fa');
@@ -8027,7 +8034,7 @@ app.get('/api/user/statements/current', async (req, res) => {
         doc.fillColor('#28a745').text(`$${parseFloat(user.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, mL + cW / 2 + 110, infoY);
         doc.fillColor(BLACK).text(monthName, mL + cW / 2 + 110, infoY + 14);
 
-        // ── Transaction table ──
+        // â”€â”€ Transaction table â”€â”€
         y += 68;
         doc.fontSize(10).fillColor(GREEN).text('Transaction History', mL, y);
         y += 15;
@@ -8076,7 +8083,7 @@ app.get('/api/user/statements/current', async (req, res) => {
             });
         }
 
-        // ── Footer ──
+        // â”€â”€ Footer â”€â”€
         const footerTop = 750;
         doc.rect(0, footerTop, pageW, 2).fill(GOLD);
         doc.rect(0, footerTop + 2, pageW, 90).fill(GREEN);
@@ -9985,7 +9992,7 @@ app.get('/api/user/spending-analytics', requireAuth, async (req, res) => {
             }
         }
 
-        // --- auto-categorize helper (keyword → category) ---
+        // --- auto-categorize helper (keyword â†’ category) ---
         function guessCategory(desc) {
             if (!desc) return 'other';
             const d = desc.toLowerCase();
@@ -10017,8 +10024,8 @@ app.get('/api/user/spending-analytics', requireAuth, async (req, res) => {
 
         // 2. Build aggregates in JS (income/expense split, categories, trend)
         let totalIncome = 0, totalExpenses = 0, txCount = rows.length;
-        const trendMap = {};   // date → { income, expenses }
-        const catMap = {};     // category → total expense amount
+        const trendMap = {};   // date â†’ { income, expenses }
+        const catMap = {};     // category â†’ total expense amount
 
         for (const r of rows) {
             const amt = parseFloat(r.amount) || 0;
@@ -11077,7 +11084,7 @@ app.get('/api/admin/check-deposits', requireAuth, requireAdmin, async (req, res)
     }
 });
 
-// Admin: Approve a check deposit — credits the user's balance
+// Admin: Approve a check deposit â€” credits the user's balance
 app.post('/api/admin/approve-check-deposit/:depositId', requireAuth, requireAdmin, async (req, res) => {
     const connection = await pool.getConnection();
     try {
@@ -11207,3 +11214,4 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Heritage Bank running on port ${PORT}`);
 });
+
