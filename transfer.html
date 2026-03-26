@@ -222,14 +222,18 @@
         /* ── Bank Logo in Receipt ── */
         .receipt-bank-logo-row {
             display: flex; align-items: center; justify-content: center;
-            gap: 10px; margin-bottom: 14px;
+            gap: 12px; margin-bottom: 16px;
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e8e8e8;
         }
         .receipt-bank-logo-row img {
-            width: 36px; height: 36px; border-radius: 8px; object-fit: contain;
-            border: 1px solid #e0e0e0; background: white; padding: 2px;
+            width: 42px; height: 42px; border-radius: 8px; object-fit: contain;
+            border: 1px solid #e0e0e0; background: white; padding: 3px;
         }
         .receipt-bank-logo-row .bank-name-label {
-            font-size: 1rem; font-weight: 600; color: #1a472a;
+            font-size: 1.05rem; font-weight: 600; color: #1a472a;
         }
 
         /* ── Transfer Complete Animation ── */
@@ -842,7 +846,7 @@
                 <div class="receipt-stamp" id="receiptStamp">SUCCESSFUL</div>
                 <hr class="receipt-divider">
                 <div class="receipt-row"><span class="rlabel">To</span><span class="rvalue" id="receiptTo">-</span></div>
-                <div class="receipt-row"><span class="rlabel">Bank</span><span class="rvalue" id="receiptBank">Heritage Bank</span></div>
+                <div class="receipt-row"><span class="rlabel">Bank</span><span class="rvalue" id="receiptBank" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;"><img id="receiptBankIcon" src="" alt="" style="width:22px;height:22px;border-radius:4px;object-fit:contain;display:none;border:1px solid #e0e0e0;"><span id="receiptBankText">Heritage Bank</span></span></div>
                 <div class="receipt-row"><span class="rlabel">Date & Time</span><span class="rvalue" id="receiptDate">-</span></div>
                 <div class="receipt-row"><span class="rlabel">Reference</span><span class="rvalue" id="receiptRef">-</span></div>
                 <div class="receipt-row"><span class="rlabel">Description</span><span class="rvalue" id="receiptDesc">-</span></div>
@@ -1417,9 +1421,20 @@
             document.getElementById('receiptAmount').textContent = '$' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
             document.getElementById('receiptTotal').textContent = '$' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
             document.getElementById('receiptTo').textContent = details.to;
-            document.getElementById('receiptBank').textContent = details.bank;
 
-            // Show bank logo in receipt
+            // Bank row with inline logo
+            const bankIcon = document.getElementById('receiptBankIcon');
+            const bankText = document.getElementById('receiptBankText');
+            bankText.textContent = details.bank;
+            if (details.bankLogo) {
+                bankIcon.src = details.bankLogo;
+                bankIcon.alt = details.bank;
+                bankIcon.style.display = 'block';
+            } else {
+                bankIcon.style.display = 'none';
+            }
+
+            // Show bank logo prominently in receipt header area
             const logoRow = document.getElementById('receiptBankLogoRow');
             const logoImg = document.getElementById('receiptBankLogo');
             const logoLabel = document.getElementById('receiptBankLabel');

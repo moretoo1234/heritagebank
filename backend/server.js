@@ -508,6 +508,7 @@ async function initializeDatabase() {
         try { await connection.execute('ALTER TABLE pending_transfers ADD COLUMN rejectionReason VARCHAR(500) NULL'); } catch (e) {}
         try { await connection.execute('ALTER TABLE pending_transfers ADD COLUMN reviewedAt TIMESTAMP NULL'); } catch (e) {}
         try { await connection.execute('ALTER TABLE pending_transfers ADD COLUMN reviewedBy INT NULL'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE pending_transfers MODIFY COLUMN toUserId INT NULL'); } catch (e) {}
 
         // Transactions table (core ledger for transfers/credits/debits)
         await connection.execute(`
@@ -4459,7 +4460,7 @@ app.post('/api/admin/deny-transaction/:transactionId', requireAuth, requireAdmin
 app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req, res) => {
     const connection = await pool.getConnection();
     try {
-        const { toEmail, toAccountNumber, amount, description, recipient } = req.body;
+        const { toEmail, toAccountNumber, amount, description, recipient, destinationCountry } = req.body;
 
         const amountValue = parseFloat(amount);
         if (!Number.isFinite(amountValue) || amountValue <= 0) {
@@ -4475,7 +4476,12 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             ? String(toAccountNumber).trim()
             : (!recipientValue.includes('@') ? recipientValue : '');
 
-        if (!toEmailValue && !toAccountValue) {
+        // Determine if this is an external bank transfer (US Wire/ACH or UK Bank)
+        const isExternalTransfer = destinationCountry === 'US' || destinationCountry === 'GB' ||
+            (description && /US (WIRE|ACH) Transfer/i.test(description)) ||
+            (description && /UK Transfer/i.test(description));
+
+        if (!isExternalTransfer && !toEmailValue && !toAccountValue) {
             return res.status(400).json({ success: false, message: 'Recipient email or account number required' });
         }
 
@@ -4494,6 +4500,81 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             return res.status(403).json({ success: false, message: `Account is ${sender.accountStatus}. Transfers not allowed.` });
         }
 
+        const senderBalance = parseFloat(sender.balance);
+        if (senderBalance < amountValue) {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'Insufficient funds' });
+        }
+
+        // ── External bank transfer (US Wire/ACH, UK Bank) ──
+        if (isExternalTransfer) {
+            // Check if sender has transfer restriction
+            if (sender.transferRestricted) {
+                // Create pending transfer request for external
+                try {
+                    await connection.execute(
+                        `INSERT INTO pending_transfers (fromUserId, toUserId, toEmail, toAccountNumber, amount, description, status)
+                         VALUES (?, NULL, ?, ?, ?, ?, 'pending')`,
+                        [sender.id, null, toAccountValue || null, amountValue, description || 'External Transfer']
+                    );
+                } catch (e) {}
+
+                await connection.commit();
+                return res.status(403).json({
+                    success: false,
+                    message: 'Transfer cannot be completed at this time. Please contact bank support for assistance.',
+                    pendingApproval: true,
+                    transferRestricted: true
+                });
+            }
+
+            // Parse recipient name and bank name from description
+            let extRecipientName = null;
+            let extBankName = null;
+            let extRoutingNum = null;
+            const usMatch = (description || '').match(/US (?:WIRE|ACH) Transfer to (.+?) at (.+?) \(Routing:\s*([\d]+)\)/i);
+            const ukMatch2 = (description || '').match(/UK Transfer to (.+?) at (.+?) \(/i);
+            if (usMatch) {
+                extRecipientName = usMatch[1].trim();
+                extBankName = usMatch[2].trim();
+                extRoutingNum = usMatch[3].trim();
+            } else if (ukMatch2) {
+                extRecipientName = ukMatch2[1].trim();
+                extBankName = ukMatch2[2].trim();
+            }
+
+            const reference = 'TRF' + Date.now().toString(36).toUpperCase();
+            const destCountry = destinationCountry || detectCountryFromDescription(description);
+
+            // Insert transaction with toUserId = NULL (external recipient)
+            const [txnResult] = await connection.execute(
+                `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry, recipientName, bankName)
+                 VALUES (?, NULL, ?, 0, 'transfer', 'pending', ?, ?, ?, ?, ?)`,
+                [sender.id, amountValue, description || 'External Transfer', reference, destCountry, extRecipientName, extBankName]
+            );
+            const transactionId = txnResult.insertId;
+
+            // Log activity
+            try {
+                await connection.execute(
+                    'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+                    [sender.id, 'TRANSFER_PENDING', `External transfer of $${amountValue.toLocaleString()} to ${extRecipientName || 'External Account'} at ${extBankName || 'External Bank'}`, req.ip || null]
+                );
+            } catch (e) {}
+
+            await connection.commit();
+
+            return res.json({
+                success: true,
+                pending: true,
+                message: `Transfer of $${amountValue.toLocaleString()} to ${extBankName || 'external bank'} is pending approval`,
+                reference,
+                transactionId,
+                transaction: { to: extRecipientName || 'External Account' }
+            });
+        }
+
+        // ── Internal Heritage Bank transfer ──
         // Check if sender has transfer restriction (needs admin approval)
         if (sender.transferRestricted) {
             // Find recipient first to store in pending_transfers
@@ -4517,7 +4598,6 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             }
 
             // Check balance before creating pending transfer
-            const senderBalance = parseFloat(sender.balance);
             if (senderBalance < amountValue) {
                 await connection.rollback();
                 return res.status(400).json({ success: false, message: 'Insufficient funds' });
@@ -4565,7 +4645,6 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             return res.status(400).json({ success: false, message: 'Recipient account is not active' });
         }
 
-        const senderBalance = parseFloat(sender.balance);
         if (senderBalance < amountValue) {
             await connection.rollback();
             return res.status(400).json({ success: false, message: 'Insufficient funds' });
