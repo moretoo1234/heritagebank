@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Transfer funds securely between accounts or send domestic and international wire transfers with Heritage Bank.">
     <title>Transfer - Heritage Bank</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
@@ -924,6 +924,12 @@
         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:3001' 
             : window.location.origin;
+        
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+        }
+
         let userId = null;
         let currentBalance = 0;
         let transferType = 'email';
@@ -1151,7 +1157,7 @@
                     convBox.classList.add('show');
                     document.getElementById('convSendAmount').textContent = '$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
                     document.getElementById('convReceiveAmount').textContent = sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2});
-                    document.getElementById('convRate').innerHTML = `<i class="fas fa-chart-line"></i> Exchange rate: 1 USD = ${rate.toFixed(4)} ${recipientCurrency}`;
+                    document.getElementById('convRate').innerHTML = `<i class="fas fa-chart-line"></i> Exchange rate: 1 USD = ${rate.toFixed(4)} ${escapeHtml(recipientCurrency)}`;
 
                     // Summary rows
                     convRowEl.style.display = 'flex';
@@ -1219,13 +1225,13 @@
             const container = document.getElementById('recentRecipients');
             
             container.innerHTML = recentRecipients.slice(0, 5).map(r => `
-                <div class="transfer-item" onclick="selectRecipient('${r.email || ''}', '${r.accountNumber || ''}')">
+                <div class="transfer-item" onclick="selectRecipient('${escapeHtml(r.email || '')}', '${escapeHtml(r.accountNumber || '')}')">
                     <div class="transfer-icon">
                         <i class="fas fa-user"></i>
                     </div>
                     <div class="transfer-details">
-                        <h4>${r.name}</h4>
-                        <span>${r.email || ('Account: ****' + r.accountNumber.slice(-4))}</span>
+                        <h4>${escapeHtml(r.name)}</h4>
+                        <span>${escapeHtml(r.email || ('Account: ****' + (r.accountNumber||'').slice(-4)))}</span>
                     </div>
                 </div>
             `).join('');
@@ -1251,16 +1257,25 @@
                 info: 'info-circle'
             };
             document.getElementById('alertBox').innerHTML = `
-                <div class="alert alert-${type}">
-                    <i class="fas fa-${iconMap[type] || 'info-circle'}"></i>
-                    ${message}
+                <div class="alert alert-${escapeHtml(type)}">
+                    <i class="fas fa-${escapeHtml(iconMap[type] || 'info-circle')}"></i>
+                    ${escapeHtml(message)}
                 </div>
             `;
         }
         
         // Form submission
+        let lastSubmitTime = 0;
         document.getElementById('transferForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Rate limit: prevent submissions within 3 seconds of each other
+            const now = Date.now();
+            if (now - lastSubmitTime < 3000) {
+                showAlert('Please wait a moment before submitting again', 'warning');
+                return;
+            }
+            lastSubmitTime = now;
             
             const token = localStorage.getItem('token');
             if (!token || !userId) {
@@ -1656,18 +1671,18 @@
             container.innerHTML = beneficiaries.map(b => `
                 <div class="beneficiary-item">
                     <div>
-                        <h4>${b.nickname || b.name}</h4>
-                        <p>${b.accountNumber} ${b.bankName !== 'Heritage Bank' ? ' • ' + b.bankName : ''}</p>
-                        ${b.email ? `<p style="font-size: 12px; color: #999;">${b.email}</p>` : ''}
+                        <h4>${escapeHtml(b.nickname || b.name)}</h4>
+                        <p>${escapeHtml(b.accountNumber)} ${b.bankName !== 'Heritage Bank' ? ' • ' + escapeHtml(b.bankName) : ''}</p>
+                        ${b.email ? `<p style="font-size: 12px; color: #999;">${escapeHtml(b.email)}</p>` : ''}
                     </div>
                     <div style="display: flex; gap: 10px;">
-                        <button class="btn-small" onclick="transferToBeneficiary('${b.accountNumber}', '${b.email || ''}', '${b.name}')">
+                        <button class="btn-small" onclick="transferToBeneficiary('${escapeHtml(b.accountNumber)}', '${escapeHtml(b.email || '')}', '${escapeHtml(b.name)}')">
                             <i class="fas fa-paper-plane"></i> Transfer
                         </button>
-                        <button class="btn-small btn-secondary" onclick="editBeneficiary(${b.id}, '${b.name}', '${b.accountNumber}', '${b.bankName}', '${b.email || ''}', '${b.nickname || ''}')">
+                        <button class="btn-small btn-secondary" onclick="editBeneficiary(${parseInt(b.id)}, '${escapeHtml(b.name)}', '${escapeHtml(b.accountNumber)}', '${escapeHtml(b.bankName)}', '${escapeHtml(b.email || '')}', '${escapeHtml(b.nickname || '')}')">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn-small btn-danger" onclick="deleteBeneficiary(${b.id})">
+                        <button class="btn-small btn-danger" onclick="deleteBeneficiary(${parseInt(b.id)})">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -1857,26 +1872,26 @@
             modal.innerHTML = `
                 <div class="modal-content">
                     <h2><i class="fas fa-edit"></i> Edit Beneficiary</h2>
-                    <form onsubmit="saveBeneficiary(event, ${id})">
+                    <form onsubmit="saveBeneficiary(event, ${parseInt(id)})">
                         <div class="form-group">
                             <label>Full Name *</label>
-                            <input type="text" id="benName" value="${name}" required>
+                            <input type="text" id="benName" value="${escapeHtml(name)}" required>
                         </div>
                         <div class="form-group">
                             <label>Nickname (Optional)</label>
-                            <input type="text" id="benNickname" value="${nickname}" placeholder="e.g., Mom, John's Account">
+                            <input type="text" id="benNickname" value="${escapeHtml(nickname)}" placeholder="e.g., Mom, John's Account">
                         </div>
                         <div class="form-group">
                             <label>Account Number *</label>
-                            <input type="text" id="benAccount" value="${account}" required>
+                            <input type="text" id="benAccount" value="${escapeHtml(account)}" required>
                         </div>
                         <div class="form-group">
                             <label>Bank Name</label>
-                            <input type="text" id="benBank" value="${bank}">
+                            <input type="text" id="benBank" value="${escapeHtml(bank)}">
                         </div>
                         <div class="form-group">
                             <label>Email (Optional)</label>
-                            <input type="email" id="benEmail" value="${email}">
+                            <input type="email" id="benEmail" value="${escapeHtml(email)}">
                         </div>
                         <div style="display: flex; gap: 10px; margin-top: 20px;">
                             <button type="submit" class="btn" style="flex: 1;">

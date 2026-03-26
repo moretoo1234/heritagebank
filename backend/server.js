@@ -84,7 +84,7 @@ app.use(
                 scriptSrcAttr: ["'unsafe-inline'"],
                 styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net", "https://ka-f.fontawesome.com"],
                 fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "https://ka-f.fontawesome.com"],
-                imgSrc: ["'self'", "data:", "https://flagcdn.com", "https://cdnjs.cloudflare.com"],
+                imgSrc: ["'self'", "data:", "https://flagcdn.com", "https://cdnjs.cloudflare.com", "https://www.google.com"],
                 connectSrc: ["'self'"],
                 frameSrc: ["'none'"],
                 objectSrc: ["'none'"],
@@ -109,14 +109,49 @@ const authLimiter = rateLimit({
     legacyHeaders: false
 });
 
+// Rate limiters for sensitive auth endpoints
+const forgotPasswordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many password reset attempts. Please try again later.' }
+});
+const resetPasswordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many attempts. Please try again later.' }
+});
+
 app.use('/api/', apiLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/apply', authLimiter);
+app.use('/api/auth/forgot-password', forgotPasswordLimiter);
+app.use('/api/auth/reset-password', resetPasswordLimiter);
 
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// CORS – restrict to our own origins in production
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : (process.env.NODE_ENV === 'production'
+        ? ['https://heritagebank-ku1y.onrender.com']
+        : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001']);
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (server-to-server, curl, mobile apps)
+        if (!origin) return callback(null, true);
+        if (ALLOWED_ORIGINS.indexOf(origin) !== -1) return callback(null, true);
+        callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+app.use(bodyParser.json({ limit: '1mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
 
 // Prevent stale API JSON responses (e.g., transaction history) from being cached by browsers/CDNs.
 app.use('/api', (req, res, next) => {
@@ -196,7 +231,7 @@ app.get('/api/build-info', async (req, res) => {
             }
         });
     } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
+        return console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -403,13 +438,41 @@ async function requireAdmin(req, res, next) {
         }
         return next();
     } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
+        return console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 }
 
 // Banking Details
 const ROUTING_NUMBER = process.env.ROUTING_NUMBER || '091238946';
 const BANK_NAME = 'Heritage Bank';
+
+// Card number encryption (AES-256-GCM for PCI compliance)
+const CARD_ENCRYPTION_KEY = process.env.CARD_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+const CARD_KEY_BUFFER = Buffer.from(CARD_ENCRYPTION_KEY, 'hex');
+
+function encryptCardNumber(cardNumber) {
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', CARD_KEY_BUFFER, iv);
+    let encrypted = cipher.update(cardNumber, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const tag = cipher.getAuthTag().toString('hex');
+    return iv.toString('hex') + ':' + encrypted + ':' + tag;
+}
+
+function decryptCardNumber(encryptedData) {
+    try {
+        const [ivHex, encrypted, tagHex] = encryptedData.split(':');
+        const iv = Buffer.from(ivHex, 'hex');
+        const tag = Buffer.from(tagHex, 'hex');
+        const decipher = crypto.createDecipheriv('aes-256-gcm', CARD_KEY_BUFFER, iv);
+        decipher.setAuthTag(tag);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+    } catch (e) {
+        return null; // Return null if decryption fails (old unencrypted data)
+    }
+}
 
 // Generate random account number
 function generateAccountNumber() {
@@ -482,6 +545,10 @@ async function initializeDatabase() {
         try { await connection.execute('ALTER TABLE users ADD COLUMN isVerified BOOLEAN DEFAULT false'); } catch (e) {}
         try { await connection.execute('ALTER TABLE users ADD COLUMN documentRequested BOOLEAN DEFAULT false'); } catch (e) {}
         try { await connection.execute('ALTER TABLE users ADD COLUMN documentRequestMessage VARCHAR(500) NULL'); } catch (e) {}
+
+        // Email verification columns
+        try { await connection.execute('ALTER TABLE users ADD COLUMN emailVerified BOOLEAN DEFAULT false'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN emailVerifyToken VARCHAR(255) NULL'); } catch (e) {}
 
         // Pending transfers table (for accounts with transfer restrictions)
         await connection.execute(`
@@ -2063,7 +2130,7 @@ app.post('/api/auth/apply', async (req, res) => {
             status: 'pending'
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2098,7 +2165,7 @@ app.get('/api/admin/signups/pending', requireAuth, requireAdmin, async (req, res
         
         res.json({ success: true, signups: maskedSignups });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2175,7 +2242,7 @@ app.post('/api/admin/signups/:id/approve', requireAuth, requireAdmin, async (req
             email: signup.email
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2211,7 +2278,7 @@ app.post('/api/admin/signups/:id/reject', requireAuth, requireAdmin, async (req,
         
         res.json({ success: true, message: 'Signup rejected' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2235,7 +2302,7 @@ app.get('/api/accounts', async (req, res) => {
         
         res.json({ success: true, accounts });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2313,7 +2380,7 @@ app.post('/api/accounts/open', async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2342,7 +2409,7 @@ app.get('/api/cards', async (req, res) => {
         
         res.json({ success: true, cards });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2373,7 +2440,7 @@ app.get('/api/cards/:id', async (req, res) => {
         
         res.json({ success: true, card: cards[0] });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2422,11 +2489,12 @@ app.post('/api/cards/issue', async (req, res) => {
         const cvv = generateCVV();
         const hashedCvv = await bcrypt.hash(cvv, 10);
         const cardNumberMasked = `****-****-****-${cardNumber.slice(-4)}`;
+        const encryptedCardNumber = encryptCardNumber(cardNumber);
         
         const [result] = await pool.execute(
             `INSERT INTO cards (userId, accountId, cardNumber, cardNumberMasked, expirationDate, cvv, cardType, cardholderName, status)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
-            [decoded.id, accountId, cardNumber, cardNumberMasked, expiryDate, hashedCvv, cardType, holderName]
+            [decoded.id, accountId, encryptedCardNumber, cardNumberMasked, expiryDate, hashedCvv, cardType, holderName]
         );
         
         await pool.execute(
@@ -2458,7 +2526,7 @@ app.post('/api/cards/issue', async (req, res) => {
             warning: 'Please save your card details securely. The full card number and CVV will not be shown again.'
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2563,6 +2631,7 @@ app.post('/api/cards/apply', async (req, res) => {
             const hashedCvv = await bcrypt.hash(cvv, 10);
             const hashedPin = await bcrypt.hash(pinStr, 10);
             const cardNumberMasked = `****-****-****-${cardNumber.slice(-4)}`;
+            const encryptedCardNumber = encryptCardNumber(cardNumber);
 
             // Create pending physical card request
             const [result] = await pool.execute(
@@ -2573,7 +2642,7 @@ app.post('/api/cards/apply', async (req, res) => {
                     pin,
                     deliveryAddress, deliveryEtaText, deliveryStatus
                 ) VALUES (?, ?, ?, ?, ?, ?, 'debit', ?, 'pending', ?, ?, ?, 'processing')`,
-                [decoded.id, selectedAccountId, cardNumber, cardNumberMasked, expiryDate, hashedCvv, holderName, hashedPin, addr, '7-8 business days']
+                [decoded.id, selectedAccountId, encryptedCardNumber, cardNumberMasked, expiryDate, hashedCvv, holderName, hashedPin, addr, '7-8 business days']
             );
 
             await createNotification(decoded.id, 'card', 'Physical Card Requested',
@@ -2625,6 +2694,7 @@ app.post('/api/cards/apply', async (req, res) => {
             const cvv = generateCVV();
             const hashedCvv = await bcrypt.hash(cvv, 10);
             const cardNumberMasked = `****-****-****-${cardNumber.slice(-4)}`;
+            const encryptedCardNumber = encryptCardNumber(cardNumber);
 
             const [result] = await pool.execute(
                 `INSERT INTO cards (
@@ -2633,7 +2703,7 @@ app.post('/api/cards/apply', async (req, res) => {
                     cardType, cardholderName, status,
                     deliveryEtaText, deliveryStatus
                 ) VALUES (?, ?, ?, ?, ?, ?, 'virtual', ?, 'active', 'instant', 'not_applicable')`,
-                [decoded.id, selectedAccountId, cardNumber, cardNumberMasked, expiryDate, hashedCvv, holderName]
+                [decoded.id, selectedAccountId, encryptedCardNumber, cardNumberMasked, expiryDate, hashedCvv, holderName]
             );
 
             await pool.execute('UPDATE cards SET activatedAt = NOW() WHERE id = ?', [result.insertId]);
@@ -2675,7 +2745,7 @@ app.post('/api/cards/apply', async (req, res) => {
             });
         }
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2704,7 +2774,7 @@ app.get('/api/notifications', async (req, res) => {
         
         res.json({ success: true, notifications, unreadCount });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2724,7 +2794,7 @@ app.put('/api/notifications/:id/read', async (req, res) => {
         
         res.json({ success: true, message: 'Notification marked as read' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2743,7 +2813,7 @@ app.put('/api/notifications/read-all', async (req, res) => {
         
         res.json({ success: true, message: 'All notifications marked as read' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2781,7 +2851,7 @@ app.post('/api/support/tickets', async (req, res) => {
             ticketId: result.insertId
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2806,7 +2876,7 @@ app.get('/api/support/tickets', async (req, res) => {
         const [tickets] = await pool.execute(query, params);
         res.json({ success: true, tickets });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2839,7 +2909,7 @@ app.get('/api/support/tickets/:ticketNumber', async (req, res) => {
         
         res.json({ success: true, ticket: tickets[0], replies });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2886,7 +2956,7 @@ app.post('/api/support/tickets/:ticketNumber/reply', async (req, res) => {
         
         res.json({ success: true, message: 'Reply added' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2915,7 +2985,7 @@ app.get('/api/admin/support/tickets', requireAuth, requireAdmin, async (req, res
         const [tickets] = await pool.execute(query, params);
         res.json({ success: true, tickets });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2962,7 +3032,7 @@ app.post('/api/admin/support/tickets/:ticketNumber/reply', requireAuth, requireA
         
         res.json({ success: true, message: 'Reply sent' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -2991,7 +3061,7 @@ app.get('/api/faqs', async (req, res) => {
         
         res.json({ success: true, faqs, categories: categories.map(c => c.category) });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3002,7 +3072,7 @@ app.post('/api/faqs/:id/view', async (req, res) => {
         await pool.execute('UPDATE faqs SET viewCount = viewCount + 1 WHERE id = ?', [id]);
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3013,7 +3083,7 @@ app.post('/api/faqs/:id/helpful', async (req, res) => {
         await pool.execute('UPDATE faqs SET helpfulCount = helpfulCount + 1 WHERE id = ?', [id]);
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3036,7 +3106,7 @@ app.post('/api/admin/faqs', requireAuth, requireAdmin, async (req, res) => {
         
         res.json({ success: true, faqId: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3060,7 +3130,7 @@ app.put('/api/admin/faqs/:id', requireAuth, requireAdmin, async (req, res) => {
         
         res.json({ success: true, message: 'FAQ updated' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3084,7 +3154,7 @@ app.get('/api/settings/public', async (req, res) => {
         
         res.json({ success: true, settings: settingsObj });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3110,7 +3180,7 @@ app.put('/api/admin/settings/:key', requireAuth, requireAdmin, async (req, res) 
         
         res.json({ success: true, message: 'Setting updated' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3193,7 +3263,7 @@ app.post('/api/auth/login', async (req, res) => {
             [user.id]
         );
         
-        const tokenExpiry = rememberMe ? '30d' : '24h';
+        const tokenExpiry = rememberMe ? '7d' : '8h';
         const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: tokenExpiry });
 
         res.json({
@@ -3212,7 +3282,7 @@ app.post('/api/auth/login', async (req, res) => {
         });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3241,6 +3311,32 @@ app.post('/api/auth/register', async (req, res) => {
         if (!firstName || !lastName || !email || !password || !phone) {
             return res.status(400).json({ success: false, message: 'All required fields must be filled' });
         }
+
+        // Validate email format
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ success: false, message: 'Invalid email format' });
+        }
+
+        // Validate password strength
+        if (password.length < 8) {
+            return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
+        }
+        if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
+            return res.status(400).json({ success: false, message: 'Password must contain uppercase, lowercase, and a number' });
+        }
+
+        // Validate phone format
+        if (!/^[\d\s\-\+\(\)]{7,20}$/.test(phone)) {
+            return res.status(400).json({ success: false, message: 'Invalid phone number format' });
+        }
+
+        // Validate ZIP code if provided
+        if (zipCode && !/^\d{5}(-\d{4})?$/.test(zipCode)) {
+            return res.status(400).json({ success: false, message: 'Invalid ZIP code format' });
+        }
+
+        // Sanitize string inputs
+        const sanitize = (s) => s ? String(s).trim().slice(0, 255) : s;
         
         // Validate age
         if (dateOfBirth) {
@@ -3264,20 +3360,21 @@ app.post('/api/auth/register', async (req, res) => {
         
         const hashedPassword = await bcrypt.hash(password, 10);
         const accountNumber = generateAccountNumber();
+        const emailVerifyToken = crypto.randomBytes(32).toString('hex');
 
         await pool.execute(
             `INSERT INTO users (
                 firstName, lastName, email, password, phone, 
                 dateOfBirth, address, city, state, zipCode, country,
                 accountNumber, routingNumber, balance, accountType, 
-                marketingConsent
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                marketingConsent, emailVerifyToken
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                firstName, lastName, email, hashedPassword, phone,
-                dateOfBirth || null, address || null, city || null, 
-                state || null, zipCode || null, country || 'United States',
+                sanitize(firstName), sanitize(lastName), email.trim().toLowerCase(), hashedPassword, sanitize(phone),
+                dateOfBirth || null, sanitize(address) || null, sanitize(city) || null, 
+                sanitize(state) || null, zipCode || null, sanitize(country) || 'United States',
                 accountNumber, ROUTING_NUMBER, deposit, accountType || 'checking',
-                marketingConsent || false
+                marketingConsent || false, emailVerifyToken
             ]
         );
 
@@ -3303,6 +3400,21 @@ app.post('/api/auth/register', async (req, res) => {
         
         const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
 
+        // Send verification email if nodemailer is available
+        try {
+            if (nodemailer && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+                const appBaseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+                const verifyLink = `${appBaseUrl}/api/auth/verify-email?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(emailVerifyToken)}`;
+                await sendEmail(
+                    user.email,
+                    'Verify Your Heritage Bank Email',
+                    `Hello ${user.firstName},\n\nPlease verify your email by clicking: ${verifyLink}\n\nThank you,\nHeritage Bank`
+                );
+            }
+        } catch (emailErr) {
+            console.error('Verification email send failed:', emailErr);
+        }
+
         res.status(201).json({
             success: true,
             token,
@@ -3318,7 +3430,32 @@ app.post('/api/auth/register', async (req, res) => {
         });
     } catch (error) {
         console.error('Registration error:', error);
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
+    }
+});
+
+// Email verification endpoint
+app.get('/api/auth/verify-email', async (req, res) => {
+    try {
+        const { token: verifyToken, email } = req.query;
+        if (!verifyToken || !email) {
+            return res.status(400).json({ success: false, message: 'Invalid verification link' });
+        }
+        const [users] = await pool.execute(
+            'SELECT id FROM users WHERE email = ? AND emailVerifyToken = ?',
+            [email, verifyToken]
+        );
+        if (users.length === 0) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired verification link' });
+        }
+        await pool.execute(
+            'UPDATE users SET emailVerified = TRUE, emailVerifyToken = NULL WHERE id = ?',
+            [users[0].id]
+        );
+        res.send('<html><body style="font-family:sans-serif;text-align:center;padding:60px;"><h1>Email Verified!</h1><p>Your email has been verified successfully. You can now <a href="/signin.html">sign in</a>.</p></body></html>');
+    } catch (error) {
+        console.error('Email verification error:', error);
+        res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3349,7 +3486,7 @@ app.get('/api/user/profile', async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3380,7 +3517,7 @@ app.get('/api/auth/profile', async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3392,7 +3529,7 @@ app.get('/api/admin/users-with-balances', requireAuth, requireAdmin, async (req,
         );
         res.json({ success: true, users });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3466,7 +3603,7 @@ app.post('/api/admin/fund-user', requireAuth, requireAdmin, async (req, res) => 
         });
     } catch (error) {
         try { await connection.rollback(); } catch (e) {}
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     } finally {
         connection.release();
     }
@@ -3548,7 +3685,7 @@ app.post('/api/admin/create-user', requireAuth, requireAdmin, async (req, res) =
             }
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3594,7 +3731,7 @@ app.post('/api/auth/change-password', requireAuth, requireNotImpersonation, asyn
 
         res.json({ success: true, message: 'Password changed successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3626,7 +3763,7 @@ app.post('/api/admin/lookup-user', requireAuth, requireAdmin, async (req, res) =
 
         res.json({ success: true, user });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3657,7 +3794,7 @@ app.get('/api/admin/lookup-user', requireAuth, requireAdmin, async (req, res) =>
 
         res.json({ success: true, user });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -3675,7 +3812,7 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
             description,
             transferType,
             type,
-            bypassBalanceCheck,
+            bypassBalanceCheck: false, // Security: balance bypass disabled
             // tolerate alternate field names used in other clients
             senderEmail,
             senderAccountNumber,
@@ -3741,6 +3878,7 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
         const totalDeducted = amountValue + feeValue;
         const senderBalance = parseFloat(sender.balance);
         if (!bypassBalanceCheck && senderBalance < totalDeducted) {
+            // Security: bypassBalanceCheck is always false; balance check always enforced
             await connection.rollback();
             return res.status(400).json({
                 success: false,
@@ -3782,7 +3920,7 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
         });
     } catch (error) {
         try { await connection.rollback(); } catch (e) {}
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     } finally {
         connection.release();
     }
@@ -3886,7 +4024,7 @@ app.post('/api/admin/credit-account', requireAuth, requireAdmin, async (req, res
         });
     } catch (error) {
         try { await connection.rollback(); } catch (e) {}
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     } finally {
         connection.release();
     }
@@ -4003,7 +4141,7 @@ app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res)
         });
     } catch (error) {
         try { await connection.rollback(); } catch (e) {}
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     } finally {
         connection.release();
     }
@@ -4056,7 +4194,7 @@ app.post('/api/admin/toggle-transfer-restriction', requireAuth, requireAdmin, as
             }
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -4124,7 +4262,7 @@ app.put('/api/admin/edit-transaction/:id', requireAuth, requireAdmin, async (req
             transaction: updated[0]
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -4154,7 +4292,7 @@ app.get('/api/admin/pending-transfers', requireAuth, requireAdmin, async (req, r
             pendingTransfers: rows
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -4232,7 +4370,7 @@ app.post('/api/admin/approve-transfer/:transferId', requireAuth, requireAdmin, a
         });
     } catch (error) {
         try { await connection.rollback(); } catch (e) {}
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     } finally {
         connection.release();
     }
@@ -4274,7 +4412,7 @@ app.post('/api/admin/reject-transfer/:transferId', requireAuth, requireAdmin, as
             message: 'Transfer request has been rejected'
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -4293,7 +4431,7 @@ app.get('/api/admin/restricted-users', requireAuth, requireAdmin, async (req, re
             users: rows
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -4318,7 +4456,7 @@ app.get('/api/user/pending-transfers', requireAuth, async (req, res) => {
             pendingTransfers: rows
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -4342,7 +4480,7 @@ app.get('/api/admin/pending-transactions', requireAuth, requireAdmin, async (req
 
         res.json({ success: true, pendingTransactions: rows });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -4415,7 +4553,7 @@ app.post('/api/admin/approve-transaction/:transactionId', requireAuth, requireAd
         });
     } catch (error) {
         try { await connection.rollback(); } catch (e) {}
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     } finally {
         connection.release();
     }
@@ -4454,7 +4592,7 @@ app.post('/api/admin/deny-transaction/:transactionId', requireAuth, requireAdmin
 
         res.json({ success: true, message: 'Transaction has been denied' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -4713,7 +4851,7 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
         });
     } catch (error) {
         try { await connection.rollback(); } catch (e) {}
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     } finally {
         connection.release();
     }
@@ -4914,7 +5052,7 @@ app.get('/api/user/:userId/transactions', async (req, res) => {
         const transactions = (rows || []).map(normalizeTransactionRow);
         res.json({ success: true, transactions, txCount: transactions.length });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -5090,7 +5228,7 @@ app.get('/api/user/:userId/activity', async (req, res) => {
 
         res.json({ success: true, activities: combined });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -5170,7 +5308,7 @@ app.post('/api/bills/pay', async (req, res) => {
             message: `Bill payment of $${amount} processed successfully`
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -5399,7 +5537,7 @@ app.get('/api/statements/download', async (req, res) => {
             });
         }
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -5851,7 +5989,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             });
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -5876,7 +6014,7 @@ app.get('/api/beneficiaries', async (req, res) => {
 
         res.json({ success: true, beneficiaries });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -5893,7 +6031,7 @@ app.post('/api/beneficiaries', async (req, res) => {
 
         res.json({ success: true, message: 'Beneficiary added successfully', beneficiaryId: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -5911,7 +6049,7 @@ app.put('/api/beneficiaries/:id', async (req, res) => {
 
         res.json({ success: true, message: 'Beneficiary updated successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -5925,7 +6063,7 @@ app.delete('/api/beneficiaries/:id', async (req, res) => {
 
         res.json({ success: true, message: 'Beneficiary deleted successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -5978,7 +6116,7 @@ app.get('/api/transactions/search', async (req, res) => {
 
         res.json({ success: true, transactions });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6001,7 +6139,7 @@ app.get('/api/limits', async (req, res) => {
 
         res.json({ success: true, limits: limits[0] });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6018,7 +6156,7 @@ app.put('/api/limits', async (req, res) => {
 
         res.json({ success: true, message: 'Limits updated successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6057,7 +6195,7 @@ app.put('/api/cards/:id/freeze', async (req, res) => {
 
         res.json({ success: true, message: 'Card frozen successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6093,7 +6231,7 @@ app.get('/api/admin/cards', requireAuth, requireAdmin, async (req, res) => {
         const [cards] = await pool.execute(sql, params);
         res.json({ success: true, cards, count: cards.length });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6172,7 +6310,7 @@ app.put('/api/admin/cards/:id/freeze', requireAuth, requireAdmin, async (req, re
         });
         res.json({ success: true, message: 'Card frozen', ...result });
     } catch (error) {
-        res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(error.statusCode || 500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6187,7 +6325,7 @@ app.put('/api/admin/cards/:id/unfreeze', requireAuth, requireAdmin, async (req, 
         });
         res.json({ success: true, message: 'Card unfrozen', ...result });
     } catch (error) {
-        res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(error.statusCode || 500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6202,7 +6340,7 @@ app.put('/api/admin/cards/:id/pause', requireAuth, requireAdmin, async (req, res
         });
         res.json({ success: true, message: 'Card paused', ...result });
     } catch (error) {
-        res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(error.statusCode || 500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6217,7 +6355,7 @@ app.put('/api/admin/cards/:id/unpause', requireAuth, requireAdmin, async (req, r
         });
         res.json({ success: true, message: 'Card unpaused', ...result });
     } catch (error) {
-        res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(error.statusCode || 500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6285,7 +6423,7 @@ app.put('/api/admin/cards/:id/delivery', requireAuth, requireAdmin, async (req, 
             cardActivated: deliveryStatus === 'delivered' && card.status === 'pending'
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6308,7 +6446,7 @@ app.put('/api/cards/:id/unfreeze', async (req, res) => {
 
         res.json({ success: true, message: 'Card unfrozen successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6326,7 +6464,7 @@ app.put('/api/cards/:id/block', async (req, res) => {
 
         res.json({ success: true, message: 'Card blocked successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6353,7 +6491,7 @@ app.put('/api/cards/:id/change-pin', async (req, res) => {
 
         res.json({ success: true, message: 'PIN changed successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6370,7 +6508,7 @@ app.get('/api/scheduled-payments', async (req, res) => {
 
         res.json({ success: true, payments });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6387,7 +6525,7 @@ app.post('/api/scheduled-payments', async (req, res) => {
 
         res.json({ success: true, message: 'Payment scheduled successfully', paymentId: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6404,7 +6542,7 @@ app.put('/api/scheduled-payments/:id/pause', async (req, res) => {
 
         res.json({ success: true, message: 'Payment paused successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6421,7 +6559,7 @@ app.put('/api/scheduled-payments/:id/resume', async (req, res) => {
 
         res.json({ success: true, message: 'Payment resumed successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6438,7 +6576,7 @@ app.delete('/api/scheduled-payments/:id', async (req, res) => {
 
         res.json({ success: true, message: 'Payment cancelled successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6466,7 +6604,7 @@ app.post('/api/documents/upload', async (req, res) => {
 
         res.json({ success: true, message: 'Document uploaded successfully', documentId: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6482,7 +6620,7 @@ app.get('/api/documents', async (req, res) => {
 
         res.json({ success: true, documents });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6507,7 +6645,7 @@ app.get('/api/admin/documents/pending', requireAuth, requireAdmin, async (req, r
 
         res.json({ success: true, documents });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6529,7 +6667,7 @@ app.put('/api/admin/documents/:id/approve', requireAuth, requireAdmin, async (re
 
         res.json({ success: true, message: 'Document approved successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6553,7 +6691,7 @@ app.put('/api/admin/documents/:id/reject', requireAuth, requireAdmin, async (req
 
         res.json({ success: true, message: 'Document rejected successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6570,7 +6708,7 @@ app.get('/api/login-history', async (req, res) => {
 
         res.json({ success: true, history });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6619,7 +6757,7 @@ app.get('/api/transactions/all', requireAuth, requireAdmin, async (req, res) => 
         const transactions = (rows || []).map(normalizeTransactionRow);
         res.json({ success: true, transactions });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6636,7 +6774,7 @@ app.get('/api/admin/activity-logs', requireAuth, requireAdmin, async (req, res) 
         
         res.json({ success: true, logs });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6688,7 +6826,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
         res.json({ success: true, message: 'Password reset instructions sent to email' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6706,6 +6844,14 @@ app.post('/api/auth/reset-password', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
         }
 
+        // Validate password strength
+        if (!newPassword || newPassword.length < 8) {
+            return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long' });
+        }
+        if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/\d/.test(newPassword)) {
+            return res.status(400).json({ success: false, message: 'Password must contain uppercase, lowercase, and a number' });
+        }
+
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         
         await pool.execute(
@@ -6715,7 +6861,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
         res.json({ success: true, message: 'Password reset successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6786,7 +6932,7 @@ app.get('/api/admin/dashboard-stats', requireAuth, requireAdmin, async (req, res
             }
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6818,7 +6964,7 @@ app.put('/api/admin/account-status/:userId', requireAuth, requireAdmin, async (r
 
         res.json({ success: true, message: `Account ${status} successfully` });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6842,7 +6988,7 @@ app.get('/api/admin/search-users', requireAuth, requireAdmin, async (req, res) =
 
         res.json({ success: true, users });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -6939,7 +7085,7 @@ app.get('/api/admin/search-transactions', requireAuth, requireAdmin, async (req,
         const transactions = (rows || []).map(normalizeTransactionRow);
         res.json({ success: true, transactions });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7015,7 +7161,7 @@ app.post('/api/admin/reverse-transaction/:transactionId', requireAuth, requireAd
         res.json({ success: true, message: 'Transaction reversed successfully' });
     } catch (error) {
         await connection.rollback();
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     } finally {
         connection.release();
     }
@@ -7087,7 +7233,7 @@ app.post('/api/admin/force-password-reset/:userId', requireAuth, requireAdmin, a
 
         res.json({ success: true, message: 'Password reset email sent to user' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7112,7 +7258,7 @@ app.get('/api/admin/export-users', requireAuth, requireAdmin, async (req, res) =
         res.setHeader('Content-Disposition', 'attachment; filename=users_export.csv');
         res.send(headers + rows);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7156,7 +7302,7 @@ app.get('/api/admin/export-transactions', requireAuth, requireAdmin, async (req,
         res.setHeader('Content-Disposition', 'attachment; filename=transactions_export.csv');
         res.send(headers + rows);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7209,7 +7355,7 @@ app.get('/api/admin/monthly-report', requireAuth, requireAdmin, async (req, res)
             }
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7250,7 +7396,7 @@ app.put('/api/admin/transaction-limits/:userId', requireAuth, requireAdmin, asyn
 
         res.json({ success: true, message: 'Transaction limits updated successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7322,7 +7468,7 @@ app.get('/api/user/profile/complete', async (req, res) => {
         if (error.name === 'JsonWebTokenError') {
             return res.status(401).json({ success: false, message: 'Invalid token' });
         }
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7357,7 +7503,7 @@ app.put('/api/user/profile/complete', async (req, res) => {
         if (error.name === 'JsonWebTokenError') {
             return res.status(401).json({ success: false, message: 'Invalid token' });
         }
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7400,7 +7546,7 @@ app.get('/api/user/security/login-history', async (req, res) => {
 
         res.json({ success: true, logins });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7499,7 +7645,7 @@ app.get('/api/user/security/active-sessions', async (req, res) => {
 
         res.json({ success: true, sessions });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7524,7 +7670,7 @@ app.post('/api/user/security/logout-session/:sessionId', async (req, res) => {
 
         res.json({ success: true, message: 'Session removed from active sessions list' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7547,7 +7693,7 @@ app.post('/api/user/security/logout-all', async (req, res) => {
 
         res.json({ success: true, message: 'All sessions removed from active sessions list' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7570,7 +7716,7 @@ app.post('/api/user/documents/upload', async (req, res) => {
 
         res.json({ success: true, message: 'Document uploaded', documentId: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7588,7 +7734,7 @@ app.get('/api/user/documents', async (req, res) => {
 
         res.json({ success: true, documents });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7608,7 +7754,7 @@ app.delete('/api/user/documents/:id', async (req, res) => {
 
         res.json({ success: true, message: 'Document deleted' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7627,7 +7773,7 @@ app.get('/api/beneficiaries', async (req, res) => {
         );
         res.json({ success: true, beneficiaries });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7650,7 +7796,7 @@ app.post('/api/beneficiaries', async (req, res) => {
 
         res.json({ success: true, message: 'Beneficiary added', beneficiaryId: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7670,7 +7816,7 @@ app.put('/api/beneficiaries/:id', async (req, res) => {
 
         res.json({ success: true, message: 'Beneficiary updated' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7685,7 +7831,7 @@ app.delete('/api/beneficiaries/:id', async (req, res) => {
         await pool.execute('DELETE FROM beneficiaries WHERE id = ? AND userId = ?', [id, decoded.id]);
         res.json({ success: true, message: 'Beneficiary deleted' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7703,7 +7849,7 @@ app.get('/api/user/beneficiaries', async (req, res) => {
 
         res.json({ success: true, beneficiaries });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7727,7 +7873,7 @@ app.post('/api/user/beneficiaries', async (req, res) => {
 
         res.json({ success: true, message: 'Beneficiary added', beneficiaryId: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7748,7 +7894,7 @@ app.put('/api/user/beneficiaries/:id', async (req, res) => {
 
         res.json({ success: true, message: 'Beneficiary updated' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7768,7 +7914,7 @@ app.delete('/api/user/beneficiaries/:id', async (req, res) => {
 
         res.json({ success: true, message: 'Beneficiary deleted' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7795,7 +7941,7 @@ app.post('/api/user/2fa/enable', async (req, res) => {
 
         res.json({ success: true, message: '2FA enabled', codes });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7814,7 +7960,7 @@ app.post('/api/user/2fa/disable', async (req, res) => {
 
         res.json({ success: true, message: '2FA disabled' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7833,7 +7979,7 @@ app.post('/api/user/2fa/backup-codes', async (req, res) => {
 
         res.json({ success: true, codes });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7854,7 +8000,7 @@ app.post('/api/user/account/freeze', async (req, res) => {
 
         res.json({ success: true, message: 'Account frozen' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7873,7 +8019,7 @@ app.post('/api/user/account/unfreeze', async (req, res) => {
 
         res.json({ success: true, message: 'Account unfrozen' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7894,7 +8040,7 @@ app.post('/api/user/account/international', async (req, res) => {
 
         res.json({ success: true, message: 'International transactions ' + (enabled ? 'enabled' : 'disabled') });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7918,7 +8064,7 @@ app.put('/api/user/preferences', async (req, res) => {
 
         res.json({ success: true, message: 'Preferences updated' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7950,7 +8096,7 @@ app.get('/api/user/privacy/export-data', async (req, res) => {
 
         res.json({ success: true, data });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -7971,7 +8117,7 @@ app.post('/api/user/privacy/delete-request', async (req, res) => {
 
         res.json({ success: true, message: 'Account deletion requested. Scheduled for ' + deletionDate.toDateString() });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8101,7 +8247,7 @@ app.get('/api/user/statements/current', async (req, res) => {
             });
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8175,7 +8321,7 @@ app.get('/api/admin/compliance/audit-logs', requireAuth, requireAdmin, async (re
 
         res.json({ success: true, logs, total, limit: parseInt(limit), offset: parseInt(offset) });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8209,7 +8355,7 @@ app.get('/api/admin/compliance/admin-actions', requireAuth, requireAdmin, async 
         const [logs] = await pool.execute(query, params);
         res.json({ success: true, logs });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8240,7 +8386,7 @@ app.post('/api/admin/compliance/flags', requireAuth, requireAdmin, async (req, r
 
         res.json({ success: true, message: 'Compliance flag added successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8272,7 +8418,7 @@ app.put('/api/admin/compliance/flags/:flagId/resolve', requireAuth, requireAdmin
 
         res.json({ success: true, message: 'Flag resolved successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8297,7 +8443,7 @@ app.get('/api/admin/compliance/flags/:userId', requireAuth, requireAdmin, async 
         const [flags] = await pool.execute(query, params);
         res.json({ success: true, flags });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8342,7 +8488,7 @@ app.post('/api/user/privacy/delete-account', async (req, res) => {
             gracePeriodDays: 30
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8372,7 +8518,7 @@ app.post('/api/user/privacy/cancel-deletion', async (req, res) => {
 
         res.json({ success: true, message: 'Account deletion request cancelled' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8416,7 +8562,7 @@ app.get('/api/user/privacy/export-data', async (req, res) => {
 
         res.json({ success: true, data: exportData });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8523,7 +8669,7 @@ app.post('/api/admin/compliance/reports', requireAuth, requireAdmin, async (req,
             generatedAt: new Date().toISOString()
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8550,7 +8696,7 @@ app.get('/api/admin/compliance/reports', requireAuth, requireAdmin, async (req, 
         const [reports] = await pool.execute(query, params);
         res.json({ success: true, reports });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8617,7 +8763,7 @@ app.post('/api/admin/users/:userId/adjust-balance', requireAuth, requireAdmin, a
             type: adjustmentType
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8649,7 +8795,7 @@ app.get('/api/admin/system/config', requireAuth, requireAdmin, async (req, res) 
 
         res.json({ success: true, config: configObj });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8684,7 +8830,7 @@ app.put('/api/admin/system/config/:key', requireAuth, requireAdmin, async (req, 
 
         res.json({ success: true, message: 'Configuration updated', key, oldValue, newValue: stringValue });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8767,7 +8913,7 @@ app.post('/api/admin/impersonate/:userId', requireAuth, requireAdmin, async (req
             isReadOnly: true
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8784,7 +8930,7 @@ app.post('/api/admin/impersonate/end', requireAuth, async (req, res) => {
 
         res.json({ success: true, message: 'Impersonation session ended' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -8870,7 +9016,7 @@ app.get('/api/admin/impersonate/dashboard', requireAuth, async (req, res) => {
             }))
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9005,7 +9151,7 @@ app.post('/api/transfer/internal', async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9024,7 +9170,7 @@ app.get('/api/admin/jobs', requireAuth, requireAdmin, async (req, res) => {
         const [jobs] = await pool.execute('SELECT * FROM scheduled_jobs ORDER BY nextRunAt');
         res.json({ success: true, jobs });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9072,7 +9218,7 @@ app.post('/api/admin/jobs/:jobType/run', requireAuth, requireAdmin, async (req, 
 
         res.json({ success: true, jobType, result });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9096,7 +9242,7 @@ app.put('/api/admin/jobs/:jobId/toggle', requireAuth, requireAdmin, async (req, 
 
         res.json({ success: true, jobId, isActive: newStatus });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9140,7 +9286,7 @@ app.post('/api/cards/:cardId/freeze', async (req, res) => {
             status: newStatus
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9192,7 +9338,7 @@ app.put('/api/cards/:cardId/settings', async (req, res) => {
 
         res.json({ success: true, message: 'Card settings updated' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9213,7 +9359,7 @@ app.get('/api/user/login-history', requireAuth, async (req, res) => {
         `, [req.auth.id]);
         res.json({ success: true, loginHistory: rows });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9227,7 +9373,7 @@ app.get('/api/user/session-settings', requireAuth, async (req, res) => {
         const settings = rows[0] || { sessionTimeout: 15, autoLogout: true };
         res.json({ success: true, settings });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9242,7 +9388,7 @@ app.put('/api/user/session-settings', requireAuth, async (req, res) => {
         `, [req.auth.id, sessionTimeout || 15, autoLogout !== false]);
         res.json({ success: true, message: 'Session settings updated' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9277,7 +9423,7 @@ app.post('/api/user/transaction-pin', requireAuth, async (req, res) => {
         
         res.json({ success: true, message: 'Transaction PIN updated successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9300,7 +9446,7 @@ app.post('/api/user/verify-transaction-pin', requireAuth, async (req, res) => {
 
         res.json({ success: true, message: 'PIN verified' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9311,7 +9457,7 @@ app.get('/api/user/has-transaction-pin', requireAuth, async (req, res) => {
         const hasPin = !!(users[0]?.transactionPin);
         res.json({ success: true, hasPin });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9337,7 +9483,7 @@ app.post('/api/user/freeze-account', requireAuth, async (req, res) => {
 
         res.json({ success: true, message: 'Your account has been frozen. Contact support to unfreeze.' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9359,7 +9505,7 @@ app.get('/api/user/preferences', requireAuth, async (req, res) => {
         };
         res.json({ success: true, preferences });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9381,7 +9527,7 @@ app.put('/api/user/preferences', requireAuth, async (req, res) => {
         
         res.json({ success: true, message: 'Preferences updated' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9439,7 +9585,7 @@ app.post('/api/currency/convert', async (req, res) => {
             rate: toRate / fromRate
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9474,7 +9620,7 @@ app.get('/api/user/verification-status', requireAuth, async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9504,7 +9650,7 @@ app.put('/api/admin/verify-user/:userId', requireAuth, async (req, res) => {
 
         res.json({ success: true, message: `User ${statusText} successfully` });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9532,7 +9678,7 @@ app.post('/api/admin/request-documents/:userId', requireAuth, async (req, res) =
 
         res.json({ success: true, message: 'Document request sent to user' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9546,7 +9692,7 @@ app.get('/api/user/savings-goals', requireAuth, async (req, res) => {
         `, [req.auth.id]);
         res.json({ success: true, goals: rows });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9566,7 +9712,7 @@ app.post('/api/user/savings-goals', requireAuth, async (req, res) => {
 
         res.json({ success: true, message: 'Savings goal created', goalId: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9612,7 +9758,7 @@ app.put('/api/user/savings-goals/:goalId', requireAuth, async (req, res) => {
 
         res.json({ success: true, message: 'Savings goal updated', newAmount: newCurrentAmount });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9623,7 +9769,7 @@ app.delete('/api/user/savings-goals/:goalId', requireAuth, async (req, res) => {
         await pool.execute('DELETE FROM savings_goals WHERE id = ? AND userId = ?', [goalId, req.auth.id]);
         res.json({ success: true, message: 'Savings goal deleted' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9649,7 +9795,7 @@ app.get('/api/messages/inbox', requireAuth, async (req, res) => {
         `, [req.auth.id]);
         res.json({ success: true, messages: rows });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9667,7 +9813,7 @@ app.get('/api/messages/sent', requireAuth, async (req, res) => {
         `, [req.auth.id]);
         res.json({ success: true, messages: rows });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9680,7 +9826,7 @@ app.get('/api/messages/unread-count', requireAuth, async (req, res) => {
         );
         res.json({ success: true, count: rows[0].count });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9710,7 +9856,7 @@ app.post('/api/messages/send', requireAuth, async (req, res) => {
 
         res.json({ success: true, message: 'Message sent', messageId: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9724,7 +9870,7 @@ app.put('/api/messages/:messageId/read', requireAuth, async (req, res) => {
         );
         res.json({ success: true, message: 'Message marked as read' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9763,7 +9909,7 @@ app.get('/api/messages/:messageId', requireAuth, async (req, res) => {
 
         res.json({ success: true, message: msg });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9777,7 +9923,7 @@ app.delete('/api/messages/:messageId', requireAuth, async (req, res) => {
         );
         res.json({ success: true, message: 'Message deleted' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9799,7 +9945,7 @@ app.get('/api/admin/messages', requireAuth, requireAdmin, async (req, res) => {
         `);
         res.json({ success: true, messages: rows });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9832,7 +9978,7 @@ app.post('/api/admin/messages/send', requireAuth, requireAdmin, async (req, res)
 
         res.json({ success: true, message: 'Message sent', messageId: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9874,7 +10020,7 @@ app.put('/api/admin/messages/:id/reply', requireAuth, requireAdmin, async (req, 
 
         res.json({ success: true, message: 'Reply sent', messageId: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9906,7 +10052,7 @@ app.get('/api/admin/support-tickets', requireAuth, requireAdmin, async (req, res
         const [tickets] = await pool.execute(query, params);
         res.json({ success: true, tickets });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -9965,7 +10111,7 @@ app.put('/api/admin/support-tickets/:id', requireAuth, requireAdmin, async (req,
 
         res.json({ success: true, message: 'Ticket updated successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -10071,7 +10217,7 @@ app.get('/api/user/spending-analytics', requireAuth, async (req, res) => {
             categories
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -10110,7 +10256,7 @@ app.post('/api/transactions/:transactionId/category', requireAuth, async (req, r
 
         res.json({ success: true, message: 'Category set' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -10153,7 +10299,7 @@ app.post('/api/support/tickets', requireAuth, async (req, res) => {
 
         res.json({ success: true, message: 'Ticket created', ticketNumber, ticketId: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -10165,7 +10311,7 @@ app.get('/api/support/tickets', requireAuth, async (req, res) => {
         `, [req.auth.id]);
         res.json({ success: true, tickets: rows });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -10193,7 +10339,7 @@ app.get('/api/support/tickets/:ticketId', requireAuth, async (req, res) => {
 
         res.json({ success: true, ticket: tickets[0], replies });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -10230,7 +10376,7 @@ app.post('/api/support/tickets/:ticketId/reply', requireAuth, async (req, res) =
 
         res.json({ success: true, message: 'Reply added' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -10255,7 +10401,7 @@ app.get('/api/admin/support/tickets', requireAuth, requireAdmin, async (req, res
         const [rows] = await pool.execute(query, params);
         res.json({ success: true, tickets: rows });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -10283,7 +10429,7 @@ app.post('/api/admin/support/tickets/:ticketId/reply', requireAuth, requireAdmin
 
         res.json({ success: true, message: 'Reply added' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -10313,7 +10459,7 @@ app.put('/api/admin/support/tickets/:ticketId/status', requireAuth, requireAdmin
 
         res.json({ success: true, message: 'Ticket updated' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -10814,7 +10960,7 @@ app.post('/api/investments/:id/withdraw', requireAuth, async (req, res) => {
             newBalance: parseFloat(balRow[0].balance)
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
@@ -11141,7 +11287,7 @@ app.post('/api/admin/approve-check-deposit/:depositId', requireAuth, requireAdmi
     } catch (error) {
         try { await connection.rollback(); } catch (e) {}
         console.error('Approve check deposit error:', error);
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     } finally {
         connection.release();
     }
@@ -11173,7 +11319,7 @@ app.post('/api/admin/reject-check-deposit/:depositId', requireAuth, requireAdmin
 
         res.json({ success: true, message: 'Check deposit rejected' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 

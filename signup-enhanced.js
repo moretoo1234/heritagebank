@@ -293,7 +293,9 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
         
         if (data.success) {
             localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+            // Only store non-sensitive user fields
+            const safeUser = { id: data.user.id, firstName: data.user.firstName, lastName: data.user.lastName, email: data.user.email, accountNumber: data.user.accountNumber, accountType: data.user.accountType };
+            localStorage.setItem('user', JSON.stringify(safeUser));
             
             showAlert(`Account created successfully! Account Number: ${data.user.accountNumber}`, 'success');
             
