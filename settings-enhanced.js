@@ -7,6 +7,13 @@
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
     ? 'http://localhost:3001' 
     : window.location.origin;
+
+// HTML escape helper to prevent XSS
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 let userId = null;
 let loginHistoryCache = [];
 let activeSessionsCache = [];
@@ -345,9 +352,9 @@ function displayLoginHistory(logins) {
         <div class="history-item" style="padding: 10px; border-bottom: 1px solid #eee;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <strong>${login.device || 'Unknown Device'}</strong>
+                    <strong>${escapeHtml(login.device || 'Unknown Device')}</strong>
                     <p style="margin: 5px 0 0 0; color: #666; font-size: 0.85rem;">
-                        <i class="fas fa-map-marker-alt"></i> ${login.location || 'Unknown Location'}<br>
+                        <i class="fas fa-map-marker-alt"></i> ${escapeHtml(login.location || 'Unknown Location')}<br>
                         <i class="fas fa-globe"></i> IP: ${maskIP(login.ip || 'N/A')}
                     </p>
                 </div>
@@ -867,29 +874,31 @@ function displayBeneficiaries(beneficiaries) {
         return;
     }
     
-    container.innerHTML = beneficiaries.map(ben => `
+    container.innerHTML = beneficiaries.map(ben => {
+        const safeId = escapeHtml(String(ben.id || ben._id));
+        return `
         <div class="beneficiary-item" style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <strong>${ben.name}</strong>
-                ${ben.nickname ? `<span style="color: #999; font-size: 0.9rem;"> (${ben.nickname})</span>` : ''}
+                <strong>${escapeHtml(ben.name)}</strong>
+                ${ben.nickname ? `<span style="color: #999; font-size: 0.9rem;"> (${escapeHtml(ben.nickname)})</span>` : ''}
                 <p style="margin: 5px 0 0 0; color: #666; font-size: 0.85rem;">
                     Account: ${maskAccountNumber(ben.accountNumber)}<br>
-                    Routing: ${ben.routingNumber} | Bank: ${ben.bankName || 'N/A'}<br>
+                    Routing: ${escapeHtml(ben.routingNumber)} | Bank: ${escapeHtml(ben.bankName || 'N/A')}<br>
                     Status: <span style="color: ${ben.verified ? '#4caf50' : '#ff9800'};">
                         ${ben.verified ? 'Verified' : 'Pending Verification'}
                     </span>
                 </p>
             </div>
             <div>
-                <button class="btn btn-secondary btn-sm" onclick="editBeneficiary('${ben.id || ben._id}')">
+                <button class="btn btn-secondary btn-sm" onclick="editBeneficiary('${safeId}')">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteBeneficiary('${ben.id || ben._id}')" style="margin-left: 5px;">
+                <button class="btn btn-danger btn-sm" onclick="deleteBeneficiary('${safeId}')" style="margin-left: 5px;">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         </div>
-    `).join('');
+    `; }).join('');
 }
 
 function maskAccountNumber(account) {

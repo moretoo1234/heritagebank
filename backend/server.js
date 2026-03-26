@@ -125,9 +125,22 @@ const resetPasswordLimiter = rateLimit({
     message: { success: false, message: 'Too many attempts. Please try again later.' }
 });
 
+// Rate limiter for financial operations (transfers, loans, investments)
+const financialLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many financial requests. Please try again later.' }
+});
+
 app.use('/api/', apiLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/user/transfer', financialLimiter);
+app.use('/api/transfer/internal', financialLimiter);
+app.use('/api/user/investment', financialLimiter);
+app.use('/api/user/loan', financialLimiter);
 app.use('/api/auth/apply', authLimiter);
 app.use('/api/auth/forgot-password', forgotPasswordLimiter);
 app.use('/api/auth/reset-password', resetPasswordLimiter);
@@ -447,8 +460,14 @@ const ROUTING_NUMBER = process.env.ROUTING_NUMBER || '091238946';
 const BANK_NAME = 'Heritage Bank';
 
 // Card number encryption (AES-256-GCM for PCI compliance)
-const CARD_ENCRYPTION_KEY = process.env.CARD_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
-const CARD_KEY_BUFFER = Buffer.from(CARD_ENCRYPTION_KEY, 'hex');
+const CARD_ENCRYPTION_KEY = process.env.CARD_ENCRYPTION_KEY;
+if (!CARD_ENCRYPTION_KEY) {
+    console.error('❌ CARD_ENCRYPTION_KEY environment variable is required (64-char hex string). Generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+    if (process.env.NODE_ENV === 'production') process.exit(1);
+    // In dev only, warn but continue with ephemeral key
+    console.warn('⚠️  Using ephemeral card encryption key — card data will be lost on restart');
+}
+const CARD_KEY_BUFFER = Buffer.from(CARD_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex'), 'hex');
 
 function encryptCardNumber(cardNumber) {
     const iv = crypto.randomBytes(12);
@@ -3238,6 +3257,22 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
         
+        // Server-side login lockout check
+        const lockoutMinutes = 15;
+        const maxFailedAttempts = 5;
+        const [recentFails] = await pool.execute(
+            `SELECT COUNT(*) as cnt FROM login_history 
+             WHERE userId = ? AND loginStatus = 'failed' 
+             AND loginAt > DATE_SUB(NOW(), INTERVAL ? MINUTE)`,
+            [user.id, lockoutMinutes]
+        );
+        if (recentFails[0].cnt >= maxFailedAttempts) {
+            return res.status(429).json({ 
+                success: false, 
+                message: `Account temporarily locked due to too many failed attempts. Try again in ${lockoutMinutes} minutes.` 
+            });
+        }
+        
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
             // Log failed login attempt
@@ -3247,7 +3282,29 @@ app.post('/api/auth/login', async (req, res) => {
                 [user.id, req.ip || null, req.get('user-agent') || null, 'failed']
             );
             
+            // Tell user how many attempts remain
+            const attemptsUsed = recentFails[0].cnt + 1;
+            const remaining = maxFailedAttempts - attemptsUsed;
+            if (remaining <= 0) {
+                return res.status(429).json({ success: false, message: `Account temporarily locked due to too many failed attempts. Try again in ${lockoutMinutes} minutes.` });
+            }
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        // Check if 2FA is enabled
+        if (user.twoFactorEnabled) {
+            // Generate temporary pre-auth token (short-lived, cannot access protected routes)
+            const preAuthToken = jwt.sign(
+                { id: user.id, email: user.email, require2FA: true },
+                JWT_SECRET,
+                { expiresIn: '5m' }
+            );
+            return res.json({
+                success: true,
+                requires2FA: true,
+                preAuthToken,
+                method: user.twoFactorMethod || 'sms'
+            });
         }
 
         // Log successful login
@@ -3812,7 +3869,7 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
             description,
             transferType,
             type,
-            bypassBalanceCheck: false, // Security: balance bypass disabled
+            // Security: bypassBalanceCheck intentionally not destructured — always disabled
             // tolerate alternate field names used in other clients
             senderEmail,
             senderAccountNumber,
@@ -3874,11 +3931,10 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Cannot transfer to the same account' });
         }
 
-        // Check balance unless bypassing
+        // Check balance — always enforced (bypassBalanceCheck disabled for security)
         const totalDeducted = amountValue + feeValue;
         const senderBalance = parseFloat(sender.balance);
-        if (!bypassBalanceCheck && senderBalance < totalDeducted) {
-            // Security: bypassBalanceCheck is always false; balance check always enforced
+        if (senderBalance < totalDeducted) {
             await connection.rollback();
             return res.status(400).json({
                 success: false,
@@ -6791,11 +6847,12 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
         // Generate reset token (NEVER return it in API response)
         const resetToken = crypto.randomBytes(24).toString('hex');
+        const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
         const resetExpiry = new Date(Date.now() + 3600000); // 1 hour
         
         await pool.execute(
             'UPDATE users SET resetToken = ?, resetTokenExpiry = ? WHERE email = ?',
-            [resetToken, resetExpiry, email]
+            [resetTokenHash, resetExpiry, email]
         );
 
         const appBaseUrl = process.env.APP_BASE_URL;
@@ -6835,9 +6892,10 @@ app.post('/api/auth/reset-password', async (req, res) => {
     try {
         const { email, resetToken, newPassword } = req.body;
         
+        const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
         const [users] = await pool.execute(
             'SELECT * FROM users WHERE email = ? AND resetToken = ? AND resetTokenExpiry > NOW()',
-            [email, resetToken]
+            [email, resetTokenHash]
         );
         
         if (users.length === 0) {
@@ -7125,6 +7183,15 @@ app.post('/api/admin/reverse-transaction/:transactionId', requireAuth, requireAd
         }
 
         if (transaction.toUserId) {
+            // Verify recipient has sufficient balance before deducting
+            const [recipientRows] = await connection.execute(
+                'SELECT balance FROM users WHERE id = ? FOR UPDATE',
+                [transaction.toUserId]
+            );
+            if (recipientRows.length > 0 && parseFloat(recipientRows[0].balance) < parseFloat(transaction.amount)) {
+                await connection.rollback();
+                return res.status(400).json({ success: false, message: 'Recipient has insufficient balance for reversal' });
+            }
             await connection.execute(
                 'UPDATE users SET balance = balance - ? WHERE id = ?',
                 [transaction.amount, transaction.toUserId]
@@ -7185,18 +7252,19 @@ app.post('/api/admin/force-password-reset/:userId', requireAuth, requireAdmin, a
         }
 
         const resetToken = crypto.randomBytes(24).toString('hex');
+        const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
         const resetExpiry = new Date(Date.now() + 3600000); // 1 hour
 
         try {
             await pool.execute(
                 'UPDATE users SET resetToken = ?, resetTokenExpiry = ?, forcePasswordChange = 1 WHERE id = ?',
-                [resetToken, resetExpiry, userId]
+                [resetTokenHash, resetExpiry, userId]
             );
         } catch (e) {
             // In case the DB doesn't have forcePasswordChange yet.
             await pool.execute(
                 'UPDATE users SET resetToken = ?, resetTokenExpiry = ? WHERE id = ?',
-                [resetToken, resetExpiry, userId]
+                [resetTokenHash, resetExpiry, userId]
             );
         }
 
@@ -7237,6 +7305,14 @@ app.post('/api/admin/force-password-reset/:userId', requireAuth, requireAdmin, a
     }
 });
 
+// CSV cell sanitizer to prevent formula injection
+function sanitizeCsvCell(value) {
+    if (value == null) return '';
+    const str = String(value);
+    if (/^[=+\-@\t\r]/.test(str)) return "'" + str;
+    return str;
+}
+
 // Export users to CSV
 app.get('/api/admin/export-users', requireAuth, requireAdmin, async (req, res) => {
     try {
@@ -7251,7 +7327,7 @@ app.get('/api/admin/export-users', requireAuth, requireAdmin, async (req, res) =
         // Create CSV
         const headers = 'ID,First Name,Last Name,Email,Account Number,Balance,Status,Phone,Address,City,State,ZIP,Created\n';
         const rows = users.map(u => 
-            `${u.id},"${u.firstName}","${u.lastName}","${u.email}",${u.accountNumber},${u.balance},"${u.accountStatus}","${u.phone || ''}","${u.address || ''}","${u.city || ''}","${u.state || ''}","${u.zipCode || ''}","${u.createdAt}"`
+            `${u.id},"${sanitizeCsvCell(u.firstName)}","${sanitizeCsvCell(u.lastName)}","${sanitizeCsvCell(u.email)}",${u.accountNumber},${u.balance},"${sanitizeCsvCell(u.accountStatus)}","${sanitizeCsvCell(u.phone || '')}","${sanitizeCsvCell(u.address || '')}","${sanitizeCsvCell(u.city || '')}","${sanitizeCsvCell(u.state || '')}","${sanitizeCsvCell(u.zipCode || '')}","${u.createdAt}"`
         ).join('\n');
 
         res.setHeader('Content-Type', 'text/csv');
@@ -7295,7 +7371,7 @@ app.get('/api/admin/export-transactions', requireAuth, requireAdmin, async (req,
         // Create CSV
         const headers = 'ID,Reference,Type,Amount,Sender Account,Sender Name,Recipient Account,Recipient Name,Description,Status,Date\n';
         const rows = transactions.map(t => 
-            `${t.id},"${t.reference}","${t.type}",${t.amount},"${t.senderAccount || ''}","${t.senderFirst || ''} ${t.senderLast || ''}","${t.recipientAccount || ''}","${t.recipientFirst || ''} ${t.recipientLast || ''}","${t.description}","${t.status}","${t.createdAt}"`
+            `${t.id},"${sanitizeCsvCell(t.reference)}","${sanitizeCsvCell(t.type)}",${t.amount},"${sanitizeCsvCell(t.senderAccount || '')}","${sanitizeCsvCell((t.senderFirst || '') + ' ' + (t.senderLast || ''))}","${sanitizeCsvCell(t.recipientAccount || '')}","${sanitizeCsvCell((t.recipientFirst || '') + ' ' + (t.recipientLast || ''))}","${sanitizeCsvCell(t.description)}","${sanitizeCsvCell(t.status)}","${t.createdAt}"`
         ).join('\n');
 
         res.setHeader('Content-Type', 'text/csv');
@@ -7929,9 +8005,9 @@ app.post('/api/user/2fa/enable', async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         const { method } = req.body;
 
-        // Generate backup codes
+        // Generate backup codes using cryptographically secure random
         const codes = Array.from({ length: 8 }, () => 
-            Math.random().toString(36).substring(2, 8).toUpperCase()
+            crypto.randomBytes(4).toString('hex').substring(0, 6).toUpperCase()
         );
 
         await pool.execute(
@@ -7972,9 +8048,9 @@ app.post('/api/user/2fa/backup-codes', async (req, res) => {
 
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        // Generate backup codes
+        // Generate backup codes using cryptographically secure random
         const codes = Array.from({ length: 8 }, () => 
-            Math.random().toString(36).substring(2, 8).toUpperCase()
+            crypto.randomBytes(4).toString('hex').substring(0, 6).toUpperCase()
         );
 
         res.json({ success: true, codes });
@@ -8005,16 +8081,14 @@ app.post('/api/user/account/freeze', async (req, res) => {
 });
 
 // Unfreeze account
-app.post('/api/user/account/unfreeze', async (req, res) => {
+app.post('/api/user/account/unfreeze', requireAuth, requireAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ success: false, message: 'No token' });
-
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const { userId } = req.body;
+        if (!userId) return res.status(400).json({ success: false, message: 'User ID required' });
 
         await pool.execute(
             'UPDATE users SET accountStatus = ? WHERE id = ?',
-            ['active', decoded.id]
+            ['active', userId]
         );
 
         res.json({ success: true, message: 'Account unfrozen' });
@@ -8085,9 +8159,18 @@ app.get('/api/user/privacy/export-data', async (req, res) => {
         const [documents] = await pool.execute('SELECT * FROM user_documents WHERE userId = ?', [decoded.id]);
         const [logins] = await pool.execute('SELECT * FROM login_history WHERE userId = ? LIMIT 100', [decoded.id]);
 
+        // Remove sensitive fields before export
+        const user = { ...users[0] };
+        delete user.password;
+        delete user.resetToken;
+        delete user.resetTokenExpiry;
+        delete user.transactionPin;
+        delete user.emailVerifyToken;
+        delete user.twoFactorSecret;
+
         const data = {
             exported: new Date(),
-            user: users[0],
+            user,
             transactions,
             beneficiaries,
             documents,
@@ -8540,6 +8623,11 @@ app.get('/api/user/privacy/export-data', async (req, res) => {
         const user = users[0];
         // Remove sensitive fields
         delete user.password;
+        delete user.resetToken;
+        delete user.resetTokenExpiry;
+        delete user.transactionPin;
+        delete user.emailVerifyToken;
+        delete user.twoFactorSecret;
 
         const exportData = {
             exportDate: new Date().toISOString(),
@@ -9091,29 +9179,44 @@ app.post('/api/transfer/internal', async (req, res) => {
         // Generate reference ID
         const referenceId = generateReferenceId('TRF');
 
-        // Execute transfer
-        await pool.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [transferAmount, sender.id]);
-        await pool.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [transferAmount, recipient.id]);
+        // Execute transfer inside a database transaction with row locking
+        const conn = await pool.getConnection();
+        try {
+            await conn.beginTransaction();
 
-        // Record transaction (single ledger entry)
-        await pool.execute(
-            `INSERT INTO transactions (fromUserId, toUserId, type, amount, description, status, reference)
-             VALUES (?, ?, 'transfer', ?, ?, 'completed', ?)`,
-            [
-                sender.id,
-                recipient.id,
-                transferAmount,
-                description || `Transfer to ${recipient.accountNumber}`,
-                referenceId
-            ]
-        );
+            // Lock sender row and re-check balance
+            const [lockedSender] = await conn.execute('SELECT balance FROM users WHERE id = ? FOR UPDATE', [sender.id]);
+            const lockedBalance = parseFloat(lockedSender[0].balance);
+            if (lockedBalance < transferAmount && !sender.overdraftEnabled) {
+                await conn.rollback();
+                conn.release();
+                return res.status(400).json({ success: false, message: 'Insufficient funds' });
+            }
 
-        // Record transfer log
-        await pool.execute(
-            `INSERT INTO transfer_logs (sender_account_id, receiver_account_id, amount, reference_id)
-             VALUES (?, ?, ?, ?)`,
-            [sender.id, recipient.id, transferAmount, referenceId]
-        );
+            await conn.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [transferAmount, sender.id]);
+            await conn.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [transferAmount, recipient.id]);
+
+            // Record transaction (single ledger entry)
+            await conn.execute(
+                `INSERT INTO transactions (fromUserId, toUserId, type, amount, description, status, reference)
+                 VALUES (?, ?, 'transfer', ?, ?, 'completed', ?)`,
+                [sender.id, recipient.id, transferAmount, description || `Transfer to ${recipient.accountNumber}`, referenceId]
+            );
+
+            // Record transfer log
+            await conn.execute(
+                `INSERT INTO transfer_logs (sender_account_id, receiver_account_id, amount, reference_id)
+                 VALUES (?, ?, ?, ?)`,
+                [sender.id, recipient.id, transferAmount, referenceId]
+            );
+
+            await conn.commit();
+            conn.release();
+        } catch (txErr) {
+            await conn.rollback();
+            conn.release();
+            throw txErr;
+        }
 
         // Update spent limits
         await updateSpentLimits(sender.id, transferAmount);

@@ -2,6 +2,12 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
     ? 'http://localhost:3001' 
     : window.location.origin;
 
+// HTML escape helper to prevent XSS
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 // Redirect authenticated users to dashboard
 (function() {
     const token = localStorage.getItem('token');
@@ -181,17 +187,19 @@ function saveStepData() {
 
 // Show review summary
 function showReviewSummary() {
+    const maskedSSN = formData.ssn ? '***-**-' + formData.ssn.replace(/\D/g, '').slice(-4) : '';
     const summary = `
         <h3 style="color: #1a472a; margin-bottom: 15px;">Account Summary</h3>
         <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; line-height: 1.8;">
-            <strong>Name:</strong><span>${formData.firstName} ${formData.lastName}</span>
-            <strong>Date of Birth:</strong><span>${new Date(formData.dateOfBirth).toLocaleDateString()}</span>
-            <strong>Email:</strong><span>${formData.email}</span>
-            <strong>Phone:</strong><span>${formData.phone}</span>
-            <strong>Address:</strong><span>${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}</span>
-            <strong>Account Type:</strong><span style="text-transform: capitalize;">${formData.accountType}</span>
-            <strong>Initial Deposit:</strong><span>$${formData.initialDeposit.toFixed(2)}</span>
-            ${formData.referralCode ? `<strong>Referral Code:</strong><span>${formData.referralCode}</span>` : ''}
+            <strong>Name:</strong><span>${escapeHtml(formData.firstName)} ${escapeHtml(formData.lastName)}</span>
+            <strong>Date of Birth:</strong><span>${escapeHtml(new Date(formData.dateOfBirth).toLocaleDateString())}</span>
+            <strong>Email:</strong><span>${escapeHtml(formData.email)}</span>
+            <strong>Phone:</strong><span>${escapeHtml(formData.phone)}</span>
+            <strong>Address:</strong><span>${escapeHtml(formData.address)}, ${escapeHtml(formData.city)}, ${escapeHtml(formData.state)} ${escapeHtml(formData.zipCode)}</span>
+            <strong>Account Type:</strong><span style="text-transform: capitalize;">${escapeHtml(formData.accountType)}</span>
+            <strong>Initial Deposit:</strong><span>$${escapeHtml(formData.initialDeposit.toFixed(2))}</span>
+            ${formData.referralCode ? `<strong>Referral Code:</strong><span>${escapeHtml(formData.referralCode)}</span>` : ''}
+            ${maskedSSN ? `<strong>SSN:</strong><span>${escapeHtml(maskedSSN)}</span>` : ''}
         </div>
     `;
     document.getElementById('reviewSummary').innerHTML = summary;
@@ -292,6 +300,10 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
         const data = await response.json();
         
         if (data.success) {
+            // Clear sensitive data from memory
+            formData.ssn = '';
+            formData.password = '';
+
             localStorage.setItem('token', data.token);
             // Only store non-sensitive user fields
             const safeUser = { id: data.user.id, firstName: data.user.firstName, lastName: data.user.lastName, email: data.user.email, accountNumber: data.user.accountNumber, accountType: data.user.accountType };

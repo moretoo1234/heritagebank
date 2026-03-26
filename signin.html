@@ -212,7 +212,8 @@
                             location.reload();
                         }, 15 * 60000);
                     } else {
-                        document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ${data.message}</div>`;
+                        const safeMsg = (data.message || 'Login failed').replace(/[<>"'&]/g, c => ({'<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','&':'&amp;'}[c]));
+                        document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ${safeMsg}</div>`;
                         document.getElementById('loginAttempts').innerHTML = `⚠️ ${failedAttempts} failed attempt(s). ${5 - failedAttempts} remaining before lockout.`;
                     }
                     
