@@ -27,20 +27,20 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 // Process-level diagnostics to help catch unexpected exits during local/dev runs.
 // (Useful when the server starts and immediately quits due to missing env, port binding errors, etc.)
 process.on('unhandledRejection', (reason) => {
-    console.error('âŒ Unhandled promise rejection:', reason);
+    console.error('❌ Unhandled promise rejection:', reason);
 });
 
 process.on('uncaughtException', (err) => {
-    console.error('âŒ Uncaught exception:', err);
+    console.error('❌ Uncaught exception:', err);
 });
 
 process.on('exit', (code) => {
-    console.error(`â„¹ï¸ Process exiting with code ${code}`);
+    console.error(`ℹï¸ Process exiting with code ${code}`);
 });
 
 ['SIGINT', 'SIGTERM'].forEach((sig) => {
     process.on(sig, () => {
-        console.error(`â„¹ï¸ Received ${sig}, shutting down...`);
+        console.error(`ℹï¸ Received ${sig}, shutting down...`);
         process.exit(0);
     });
 });
@@ -357,11 +357,11 @@ let DB_READY = false;
 // JWT Secret - Must be set in environment
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-jwt-secret-change-me' : null);
 if (!JWT_SECRET) {
-    console.error('âŒ JWT_SECRET environment variable is required (set it in your environment or backend/.env)');
+    console.error('❌ JWT_SECRET environment variable is required (set it in your environment or backend/.env)');
     process.exit(1);
 }
 if (!process.env.JWT_SECRET && process.env.NODE_ENV !== 'production') {
-    console.warn('âš ï¸ JWT_SECRET is not set; using an insecure development default. Set JWT_SECRET in backend/.env for proper local auth testing.');
+    console.warn('⚠ï¸ JWT_SECRET is not set; using an insecure development default. Set JWT_SECRET in backend/.env for proper local auth testing.');
 }
 
 // Auth helpers
@@ -646,7 +646,7 @@ async function initializeDatabase() {
         `);
 
         // Session revocation tracking (best-effort). Note: JWTs are stateless; this mainly powers
-        // the UI â€œactive sessionsâ€ list and â€œlogout session/allâ€ buttons.
+        // the UI “active sessions” list and “logout session/all” buttons.
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS user_session_revocations (
                 userId INT NOT NULL PRIMARY KEY,
@@ -1097,7 +1097,7 @@ async function initializeDatabase() {
             );
         }
 
-        // â”€â”€ One-time migration: update $5,000 debit from seeleyjonesxx@gmail.com to show Santander UK transfer â”€â”€
+        // ── One-time migration: update $5,000 debit from seeleyjonesxx@gmail.com to show Santander UK transfer ──
         try {
             // First check if already migrated
             const [alreadyDone] = await connection.execute(
@@ -1146,10 +1146,10 @@ async function initializeDatabase() {
                 }
             }
         } catch (migErr) {
-            console.error('âŒ Santander migration error:', migErr.message);
+            console.error('❌ Santander migration error:', migErr.message);
         }
 
-        // â”€â”€ One-time migration: update $44 bill payment â†’ AT&T US bill payment â”€â”€
+        // ── One-time migration: update $44 bill payment → AT&T US bill payment ──
         try {
             const [attAlready] = await connection.execute(
                 `SELECT t.id FROM transactions t
@@ -1189,7 +1189,7 @@ async function initializeDatabase() {
                 }
             }
         } catch (attErr) {
-            console.error('âŒ AT&T bill migration error:', attErr.message);
+            console.error('❌ AT&T bill migration error:', attErr.message);
         }
 
         // Check Deposits table (mobile check deposit with images)
@@ -1218,7 +1218,7 @@ async function initializeDatabase() {
         connection.release();
         DB_READY = true;
     } catch (error) {
-        console.error('âŒ Database error:', error.message);
+        console.error('❌ Database error:', error.message);
     }
 }
 
@@ -1649,11 +1649,11 @@ async function runScheduledJobs() {
                     `UPDATE scheduled_jobs SET status = 'failed', errorMessage = ? WHERE id = ?`,
                     [jobError.message, job.id]
                 );
-                console.error(`âŒ Job ${job.jobType} failed:`, jobError.message);
+                console.error(`❌ Job ${job.jobType} failed:`, jobError.message);
             }
         }
     } catch (error) {
-        console.error('âŒ Scheduled jobs error:', error.message);
+        console.error('❌ Scheduled jobs error:', error.message);
     }
 }
 
@@ -1982,14 +1982,14 @@ async function runDailyReport() {
 // Start scheduled job runner (every 5 minutes)
 setInterval(() => {
     runScheduledJobs().catch((err) => {
-        console.error('âŒ Scheduled jobs runner error:', err?.message || err);
+        console.error('❌ Scheduled jobs runner error:', err?.message || err);
     });
 }, 5 * 60 * 1000);
 
 // Run once on startup after a short delay
 setTimeout(() => {
     runScheduledJobs().catch((err) => {
-        console.error('âŒ Scheduled jobs runner error:', err?.message || err);
+        console.error('❌ Scheduled jobs runner error:', err?.message || err);
     });
 }, 10000);
 
@@ -2464,7 +2464,7 @@ app.post('/api/cards/issue', async (req, res) => {
 
 // Apply for a card (simplified UX):
 // - virtual: issued instantly (returns full card number + CVV once)
-// - physical: request created (7â€“8 business days delivery), card stays pending
+// - physical: request created (7–8 business days delivery), card stays pending
 app.post('/api/cards/apply', async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -2577,7 +2577,7 @@ app.post('/api/cards/apply', async (req, res) => {
             );
 
             await createNotification(decoded.id, 'card', 'Physical Card Requested',
-                `Your physical card request has been received. Estimated delivery: 7â€“8 business days.`,
+                `Your physical card request has been received. Estimated delivery: 7–8 business days.`,
                 { cardId: result.insertId, lastFour: cardNumber.slice(-4), deliveryEta: '7-8 business days' }
             );
 
@@ -2597,7 +2597,7 @@ app.post('/api/cards/apply', async (req, res) => {
 
             return res.json({
                 success: true,
-                message: 'Physical card request submitted. Delivery in 7â€“8 business days.',
+                message: 'Physical card request submitted. Delivery in 7–8 business days.',
                 deliveryEta: '7-8 business days',
                 card: {
                     id: result.insertId,
@@ -4322,7 +4322,7 @@ app.get('/api/user/pending-transfers', requireAuth, async (req, res) => {
     }
 });
 
-// â”€â”€ Admin: List pending transactions (user-initiated transfers awaiting approval) â”€â”€
+// ── Admin: List pending transactions (user-initiated transfers awaiting approval) ──
 app.get('/api/admin/pending-transactions', requireAuth, requireAdmin, async (req, res) => {
     try {
         const [rows] = await pool.execute(`
@@ -4346,7 +4346,7 @@ app.get('/api/admin/pending-transactions', requireAuth, requireAdmin, async (req
     }
 });
 
-// â”€â”€ Admin: Approve a pending transaction â”€â”€
+// ── Admin: Approve a pending transaction ──
 app.post('/api/admin/approve-transaction/:transactionId', requireAuth, requireAdmin, async (req, res) => {
     const connection = await pool.getConnection();
     try {
@@ -4421,7 +4421,7 @@ app.post('/api/admin/approve-transaction/:transactionId', requireAuth, requireAd
     }
 });
 
-// â”€â”€ Admin: Deny a pending transaction â”€â”€
+// ── Admin: Deny a pending transaction ──
 app.post('/api/admin/deny-transaction/:transactionId', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { transactionId } = req.params;
@@ -4528,7 +4528,7 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             return res.status(400).json({ success: false, message: `Insufficient funds. Amount: $${amountValue.toFixed(2)} + Fee: $${transferFee.toFixed(2)} = $${totalWithFee.toFixed(2)} needed.` });
         }
 
-        // â”€â”€ External bank transfer (US Wire/ACH, UK Bank) â”€â”€
+        // ── External bank transfer (US Wire/ACH, UK Bank) ──
         if (isExternalTransfer) {
             // Check if sender has transfer restriction
             if (sender.transferRestricted) {
@@ -4601,7 +4601,7 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             });
         }
 
-        // â”€â”€ Internal Heritage Bank transfer â”€â”€
+        // ── Internal Heritage Bank transfer ──
         // Check if sender has transfer restriction (needs admin approval)
         if (sender.transferRestricted) {
             // Find recipient first to store in pending_transfers
@@ -4696,7 +4696,7 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             const senderDetails = `Transfer of $${amountValue.toLocaleString()} to ${recipientUser.firstName || ''} ${recipientUser.lastName || ''} submitted for approval`.trim();
             await connection.execute(
                 'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
-                [sender.id, 'TRANSFER_PENDING', `${senderDetails}${description ? ` â€” ${description}` : ''}`, req.ip || null]
+                [sender.id, 'TRANSFER_PENDING', `${senderDetails}${description ? ` — ${description}` : ''}`, req.ip || null]
             );
         } catch (e) {}
 
@@ -5233,7 +5233,7 @@ app.get('/api/statements/download', async (req, res) => {
                 fs.unlinkSync(csvPath);
             });
         } else {
-            // PDF Format â€“ Professional Heritage Bank Statement
+            // PDF Format – Professional Heritage Bank Statement
             const doc = new PDFDocument({ size: 'A4', margin: 40 });
             const pdfPath = path.join(__dirname, `statement_${decoded.id}_${Date.now()}.pdf`);
             const stream = fs.createWriteStream(pdfPath);
@@ -5249,7 +5249,7 @@ app.get('/api/statements/download', async (req, res) => {
             const mR = 40;
             const cW = pageW - mL - mR;
 
-            // â”€â”€ Top green banner â”€â”€
+            // ── Top green banner ──
             doc.rect(0, 0, pageW, 80).fill(GREEN);
             const logoPath = path.join(__dirname, '..', 'assets', 'logo.png');
             try { if (fs.existsSync(logoPath)) doc.image(logoPath, mL + 10, 12, { height: 50 }); } catch (e) {}
@@ -5259,7 +5259,7 @@ app.get('/api/statements/download', async (req, res) => {
             doc.fontSize(8).fillColor(GOLD).text(`Generated: ${new Date().toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}`, pageW - 195, 42, { width: 155, align: 'right' });
             doc.rect(0, 80, pageW, 3).fill(GOLD);
 
-            // â”€â”€ Account information box â”€â”€
+            // ── Account information box ──
             let y = 96;
             doc.roundedRect(mL, y, cW, 72, 6).lineWidth(1).strokeColor('#e0e0e0').stroke();
             doc.rect(mL + 1, y + 1, cW - 2, 20).fill('#f8f9fa');
@@ -5282,11 +5282,11 @@ app.get('/api/statements/download', async (req, res) => {
             doc.text(user.routingNumber || ROUTING_NUMBER, colL + 90, infoY + 30);
             const periodStart = startDate ? new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'All time';
             const periodEnd = endDate ? new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Present';
-            doc.text(`${periodStart} â€“ ${periodEnd}`, colR + 100, infoY);
+            doc.text(`${periodStart} – ${periodEnd}`, colR + 100, infoY);
             doc.fontSize(9).fillColor('#28a745').text(`$${parseFloat(user.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, colR + 100, infoY + 15);
             doc.fillColor(BLACK).text(String(transactions.length), colR + 100, infoY + 30);
 
-            // â”€â”€ Summary bar â”€â”€
+            // ── Summary bar ──
             y += 82;
             const totalCredits = transactions.filter(t => t.type === 'credit' || t.toUserId === decoded.id).reduce((s, t) => s + parseFloat(t.amount), 0);
             const totalDebits = transactions.filter(t => t.type === 'debit' || (t.fromUserId === decoded.id && t.toUserId !== decoded.id)).reduce((s, t) => s + parseFloat(t.amount) + (parseFloat(t.fee) || 0), 0);
@@ -5297,7 +5297,7 @@ app.get('/api/statements/download', async (req, res) => {
             doc.fontSize(7).fillColor('#c62828').text('TOTAL DEBITS', mL + cW / 2 + 17, y + 6);
             doc.fontSize(12).fillColor('#c62828').text(`-$${totalDebits.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, mL + cW / 2 + 17, y + 18);
 
-            // â”€â”€ Transaction table header â”€â”€
+            // ── Transaction table header ──
             y += 48;
             doc.fontSize(10).fillColor(GREEN).text('Transaction History', mL, y);
             y += 15;
@@ -5317,7 +5317,7 @@ app.get('/api/statements/download', async (req, res) => {
             cols.forEach(c => doc.text(c.label, c.x, y + 6, { width: c.w }));
             y += 22;
 
-            // â”€â”€ Transaction rows (limit to fit single page) â”€â”€
+            // ── Transaction rows (limit to fit single page) ──
             const maxRows = 18;
             const displayTxns = transactions.slice(0, maxRows);
             const rowHeight = 22;
@@ -5367,19 +5367,19 @@ app.get('/api/statements/download', async (req, res) => {
                 y += 16;
             }
 
-            // â”€â”€ Bottom gold line â”€â”€
+            // ── Bottom gold line ──
             y += 6;
             doc.rect(mL, y, cW, 1).fill(GOLD);
 
-            // â”€â”€ Security strip â”€â”€
+            // ── Security strip ──
             y += 10;
             doc.rect(mL, y, cW, 36).fill('#f0f7f2');
             doc.roundedRect(mL + 12, y + 8, 20, 20, 3).fill(GREEN);
-            doc.fontSize(12).fillColor(WHITE).text('âœ“', mL + 17, y + 11);
+            doc.fontSize(12).fillColor(WHITE).text('✓', mL + 17, y + 11);
             doc.fontSize(8).fillColor(GREEN).text('Verified Statement', mL + 40, y + 8);
             doc.fontSize(7).fillColor(GRAY).text('This statement has been generated securely by Heritage Bank\'s online banking system and is for informational purposes only.', mL + 40, y + 20, { width: cW - 60 });
 
-            // â”€â”€ Footer â”€â”€
+            // ── Footer ──
             const footerTop = 750;
             doc.rect(0, footerTop, pageW, 2).fill(GOLD);
             doc.rect(0, footerTop + 2, pageW, 90).fill(GREEN);
@@ -5456,7 +5456,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const marginR = 40;
         const contentW = pageW - marginL - marginR;
 
-        // â”€â”€ Top green banner â”€â”€
+        // ── Top green banner ──
         doc.rect(0, 0, pageW, 52).fill(GREEN);
 
         // Logo (try to load)
@@ -5465,7 +5465,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             if (fs.existsSync(logoPath)) {
                 doc.image(logoPath, marginL + 10, 6, { height: 38 });
             }
-        } catch (e) { /* logo not available â€“ text fallback below */ }
+        } catch (e) { /* logo not available – text fallback below */ }
 
         // Bank name in banner
         doc.fontSize(18).fillColor(GOLD).text('HERITAGE BANK', marginL + 56, 10, { width: contentW - 56 });
@@ -5475,10 +5475,10 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         doc.fontSize(9).fillColor(WHITE).text('TRANSACTION RECEIPT', pageW - 200, 12, { width: 160, align: 'right' });
         doc.fontSize(7).fillColor(GOLD).text(`Receipt #: RCP-${String(id).padStart(8, '0')}`, pageW - 200, 26, { width: 160, align: 'right' });
 
-        // â”€â”€ Gold accent line â”€â”€
+        // ── Gold accent line ──
         doc.rect(0, 52, pageW, 2).fill(GOLD);
 
-        // â”€â”€ Date & Reference bar â”€â”€
+        // ── Date & Reference bar ──
         let curY = 58;
         doc.rect(marginL, curY, contentW, 18).fill('#f8f9fa');
         doc.fontSize(8).fillColor(GRAY);
@@ -5606,7 +5606,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const destCountryName = COUNTRY_NAMES[transaction.destinationCountry] || (isUkTransfer ? 'United Kingdom' : 'United States');
         const curSym = CURRENCY_SYMBOLS[wireRecipientCurrency] || wireRecipientCurrency || '';
 
-        // â”€â”€ Fee & total calculation â”€â”€
+        // ── Fee & total calculation ──
         const txAmount = parseFloat(transaction.amount);
         const txFee = parseFloat(transaction.fee) || 0;
         const totalDeducted = txAmount + txFee;
@@ -5614,7 +5614,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         // Compute recipient amount (needs txAmount)
         const computedRecipientAmount = wireRecipientAmount || (numericRate ? txAmount * numericRate : null);
 
-        // â”€â”€ Amount highlight box (always in USD â€“ Heritage Bank is a US bank) â”€â”€
+        // ── Amount highlight box (always in USD – Heritage Bank is a US bank) ──
         curY += 22;
         const amtStr = `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         const amtBoxHeight = txFee > 0 ? 46 : 34;
@@ -5629,7 +5629,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             curY += 10; // extra space for fee line
         }
 
-        // â”€â”€ Currency Conversion box for international transfers â”€â”€
+        // ── Currency Conversion box for international transfers ──
         if (isUkTransfer) {
             curY += 38;
             const recvCur = wireRecipientCurrency || 'GBP';
@@ -5653,7 +5653,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             doc.fontSize(6).fillColor(GRAY).text(`Exchange Rate: ${rateLabel}  |  Rate locked at time of transfer`, marginL, curY + 30, { width: contentW, align: 'center' });
         }
 
-        // â”€â”€ Status badge â”€â”€
+        // ── Status badge ──
         curY += isUkTransfer ? 42 : 38;
         const status = (transaction.status || 'completed').toUpperCase();
         const statusColor = (status === 'COMPLETED' || status === 'SUCCESS') ? '#28a745' : (status === 'PENDING' ? '#ffc107' : '#dc3545');
@@ -5662,7 +5662,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         doc.roundedRect(badgeX, curY, badgeW, 18, 9).fill(statusColor);
         doc.fontSize(8).fillColor(WHITE).text(status, badgeX, curY + 4, { width: badgeW, align: 'center' });
 
-        // â”€â”€ Transaction Details section â”€â”€
+        // ── Transaction Details section ──
         curY += 26;
         doc.fontSize(10).fillColor(GREEN).text('Transaction Details', marginL, curY);
         curY += 3;
@@ -5687,9 +5687,9 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         const receiptDesc = isBillPayment
             ? (transaction.description || `Bill Payment - ${billerName}`)
             : isUkTransfer
-            ? `International Wire Transfer â€” Heritage Bank, USA to ${destCountryName}${ukBankStyle ? ' â€” ' + ukBankStyle.text : ''}`
+            ? `International Wire Transfer — Heritage Bank, USA to ${destCountryName}${ukBankStyle ? ' — ' + ukBankStyle.text : ''}`
             : isUsWireTransfer
-            ? `US Wire/ACH Transfer â€” Heritage Bank to ${usBankStyle ? usBankStyle.text : (wireBankNameRaw || 'External Bank')}`
+            ? `US Wire/ACH Transfer — Heritage Bank to ${usBankStyle ? usBankStyle.text : (wireBankNameRaw || 'External Bank')}`
             : (cleanDescription(transaction.description) || 'Domestic Fund Transfer');
 
         detailRow('Transaction ID', `TXN-${String(id).padStart(8, '0')}`);
@@ -5697,7 +5697,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
         detailRow('Description', receiptDesc);
         detailRow('Reference Number', transaction.reference || 'N/A');
         detailRow('Payment Method', isBillPayment ? `Virtual Debit Card ****${billLastFour}` : isUkTransfer ? 'SWIFT International Wire' : isUsWireTransfer ? 'ACH/Fedwire' : 'Bank Transfer (USA)');
-        detailRow('Origin', 'Heritage Bank â€” United States of America');
+        detailRow('Origin', 'Heritage Bank — United States of America');
         // Always show fee row
         const feeDisplay = txFee > 0 ? `$${txFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00 (Waived)';
         detailRow('Transfer Fee', feeDisplay);
@@ -5708,13 +5708,13 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             detailRow('Processing Channel', isUkTransfer && (transaction.destinationCountry === 'GB' || !transaction.destinationCountry) ? 'UK Faster Payments Service (FPS)' : 'SWIFT Network');
         }
         if (isUsWireTransfer) {
-            detailRow('Destination', 'United States â€” Domestic');
+            detailRow('Destination', 'United States — Domestic');
             // Parse transfer method from description
             const isWireMethod = (transaction.description || '').toUpperCase().includes('WIRE');
             detailRow('Processing Channel', isWireMethod ? 'Fedwire (Same-Day)' : 'ACH Network (1-3 Business Days)');
         }
 
-        // â”€â”€ Sender / Payment Details â”€â”€
+        // ── Sender / Payment Details ──
         curY = curY + (rowI * rowH) + 8;
         rowI = 0;
 
@@ -5729,7 +5729,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             detailRow('Billing Category', 'Recurring Bill Payment');
             detailRow('Amount Charged', `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
         } else {
-            doc.fontSize(10).fillColor(GREEN).text('Sender Details â€” Heritage Bank, USA', marginL, curY);
+            doc.fontSize(10).fillColor(GREEN).text('Sender Details — Heritage Bank, USA', marginL, curY);
             doc.rect(marginL, curY + 12, contentW, 1).fill(GOLD);
             curY += 18;
 
@@ -5743,7 +5743,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             detailRow('Bank Country', 'United States of America');
         }
 
-        // â”€â”€ Recipient Details (skip for bill payments) â”€â”€
+        // ── Recipient Details (skip for bill payments) ──
         if (isUkTransfer) {
             const recipientName = wireRecipientName || 'N/A';
             const recipientAcct = wireAcctNum || null;
@@ -5811,16 +5811,16 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             detailRow('Amount Received', `$${txAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
         }
 
-        // â”€â”€ Security strip â”€â”€
+        // ── Security strip ──
         curY = curY + (rowI * rowH) + 10;
         doc.rect(marginL, curY, contentW, 32).fill(LIGHT_BG);
         doc.roundedRect(marginL + 10, curY + 6, 20, 20, 3).fill(GREEN);
-        doc.fontSize(12).fillColor(WHITE).text('âœ“', marginL + 15, curY + 9);
+        doc.fontSize(12).fillColor(WHITE).text('✓', marginL + 15, curY + 9);
         doc.fontSize(8).fillColor(GREEN).text('Verified & Secured', marginL + 38, curY + 6);
         doc.fontSize(7).fillColor(GRAY).text('This transaction has been verified and processed securely through Heritage Bank\'s encrypted banking system.', marginL + 38, curY + 18, { width: contentW - 55 });
         curY += 32;
 
-        // â”€â”€ Important Notice for international transfers â”€â”€
+        // ── Important Notice for international transfers ──
         if (isUkTransfer) {
             curY += 4;
             doc.rect(marginL, curY, contentW, 28).fill('#fff8e1');
@@ -5829,7 +5829,7 @@ app.get('/api/transactions/:id/receipt', async (req, res) => {
             curY += 28;
         }
 
-        // â”€â”€ Footer â”€â”€
+        // ── Footer ──
         curY += 8;
         const footerTop = curY;
         doc.rect(0, footerTop, pageW, 2).fill(GOLD);
@@ -6146,7 +6146,7 @@ async function setCardStatusAsAdmin({ adminId, cardId, status, reason, req }) {
     try {
         await pool.execute(
             'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
-            [card.userId, 'CARD_STATUS_UPDATED', `Admin set card status to ${next.toUpperCase()}${reason ? ` â€” ${reason}` : ''}`, req?.ip]
+            [card.userId, 'CARD_STATUS_UPDATED', `Admin set card status to ${next.toUpperCase()}${reason ? ` — ${reason}` : ''}`, req?.ip]
         );
     } catch (e) {}
 
@@ -6221,7 +6221,7 @@ app.put('/api/admin/cards/:id/unpause', requireAuth, requireAdmin, async (req, r
     }
 });
 
-// â”€â”€ Admin: Update card delivery status â”€â”€
+// ── Admin: Update card delivery status ──
 app.put('/api/admin/cards/:id/delivery', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -6274,7 +6274,7 @@ app.put('/api/admin/cards/:id/delivery', requireAuth, requireAdmin, async (req, 
         try {
             await logAdminAction(req.auth.id, 'card_delivery_update', card.userId, null, null,
                 { cardId: parseInt(id), from: card.deliveryStatus, to: deliveryStatus },
-                `Card ${id} delivery â†’ ${deliveryStatus}`, null, req
+                `Card ${id} delivery → ${deliveryStatus}`, null, req
             );
         } catch (e) {}
 
@@ -6679,7 +6679,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
                 html: emailHtml
             });
         } catch (e) {
-            // Donâ€™t leak resetToken; just report config issue.
+            // Don’t leak resetToken; just report config issue.
             if (e && e.code === 'EMAIL_NOT_CONFIGURED') {
                 return res.status(500).json({ success: false, message: e.message });
             }
@@ -7430,7 +7430,7 @@ app.get('/api/user/security/active-sessions', async (req, res) => {
         const minTimeExpr = timeCol ? `MIN(${timeCol})` : 'MIN(NOW())';
         const statusFilter = statusCol ? `AND ${statusCol} = 'success'` : '';
 
-        // Pull recent â€œsession-likeâ€ groups from real login history.
+        // Pull recent “session-like” groups from real login history.
         const [rows] = await pool.execute(`
             SELECT ${ipCol} AS ip,
                    ${uaCol} AS userAgent,
@@ -7516,7 +7516,7 @@ app.post('/api/user/security/logout-session/:sessionId', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid session id' });
         }
 
-        // Best-effort: revoke the â€œsessionâ€ in our UI list (JWT remains valid until expiry).
+        // Best-effort: revoke the “session” in our UI list (JWT remains valid until expiry).
         await pool.execute(
             'INSERT INTO user_session_revocations_specific (userId, sessionKey, revokedAt) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE revokedAt = NOW()',
             [decoded.id, sessionKey]
@@ -7997,7 +7997,7 @@ app.get('/api/user/statements/current', async (req, res) => {
             ORDER BY t.createdAt DESC
         `, [decoded.id, decoded.id]);
 
-        // Create PDF â€“ Same professional design as main statement
+        // Create PDF – Same professional design as main statement
         const doc = new PDFDocument({ size: 'A4', margin: 40 });
         const pdfPath = path.join(__dirname, `statement_${decoded.id}_${Date.now()}.pdf`);
         const stream = fs.createWriteStream(pdfPath);
@@ -8006,7 +8006,7 @@ app.get('/api/user/statements/current', async (req, res) => {
         const GREEN = '#1a472a', GOLD = '#d4af37', GRAY = '#666666', BLACK = '#222222', WHITE = '#ffffff';
         const pageW = 595.28, mL = 40, mR = 40, cW = pageW - mL - mR;
 
-        // â”€â”€ Banner â”€â”€
+        // ── Banner ──
         doc.rect(0, 0, pageW, 80).fill(GREEN);
         const logoPath = path.join(__dirname, '..', 'assets', 'logo.png');
         try { if (fs.existsSync(logoPath)) doc.image(logoPath, mL + 10, 12, { height: 50 }); } catch (e) {}
@@ -8017,7 +8017,7 @@ app.get('/api/user/statements/current', async (req, res) => {
         doc.fontSize(8).fillColor(GOLD).text(monthName, pageW - 195, 42, { width: 155, align: 'right' });
         doc.rect(0, 80, pageW, 3).fill(GOLD);
 
-        // â”€â”€ Account info box â”€â”€
+        // ── Account info box ──
         let y = 96;
         doc.roundedRect(mL, y, cW, 58, 6).lineWidth(1).strokeColor('#e0e0e0').stroke();
         doc.rect(mL + 1, y + 1, cW - 2, 18).fill('#f8f9fa');
@@ -8034,7 +8034,7 @@ app.get('/api/user/statements/current', async (req, res) => {
         doc.fillColor('#28a745').text(`$${parseFloat(user.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, mL + cW / 2 + 110, infoY);
         doc.fillColor(BLACK).text(monthName, mL + cW / 2 + 110, infoY + 14);
 
-        // â”€â”€ Transaction table â”€â”€
+        // ── Transaction table ──
         y += 68;
         doc.fontSize(10).fillColor(GREEN).text('Transaction History', mL, y);
         y += 15;
@@ -8083,7 +8083,7 @@ app.get('/api/user/statements/current', async (req, res) => {
             });
         }
 
-        // â”€â”€ Footer â”€â”€
+        // ── Footer ──
         const footerTop = 750;
         doc.rect(0, footerTop, pageW, 2).fill(GOLD);
         doc.rect(0, footerTop + 2, pageW, 90).fill(GREEN);
@@ -9992,7 +9992,7 @@ app.get('/api/user/spending-analytics', requireAuth, async (req, res) => {
             }
         }
 
-        // --- auto-categorize helper (keyword â†’ category) ---
+        // --- auto-categorize helper (keyword → category) ---
         function guessCategory(desc) {
             if (!desc) return 'other';
             const d = desc.toLowerCase();
@@ -10024,8 +10024,8 @@ app.get('/api/user/spending-analytics', requireAuth, async (req, res) => {
 
         // 2. Build aggregates in JS (income/expense split, categories, trend)
         let totalIncome = 0, totalExpenses = 0, txCount = rows.length;
-        const trendMap = {};   // date â†’ { income, expenses }
-        const catMap = {};     // category â†’ total expense amount
+        const trendMap = {};   // date → { income, expenses }
+        const catMap = {};     // category → total expense amount
 
         for (const r of rows) {
             const amt = parseFloat(r.amount) || 0;
@@ -11084,7 +11084,7 @@ app.get('/api/admin/check-deposits', requireAuth, requireAdmin, async (req, res)
     }
 });
 
-// Admin: Approve a check deposit â€” credits the user's balance
+// Admin: Approve a check deposit — credits the user's balance
 app.post('/api/admin/approve-check-deposit/:depositId', requireAuth, requireAdmin, async (req, res) => {
     const connection = await pool.getConnection();
     try {

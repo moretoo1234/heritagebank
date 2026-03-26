@@ -136,7 +136,7 @@
         }
         .sort-code-display i { color: #d4af37; }
 
-        /* â”€â”€ Receipt Modal â”€â”€ */
+        /* ── Receipt Modal ── */
         .receipt-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.65);
@@ -157,7 +157,7 @@
         }
         .receipt-header {
             background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%);
-            padding: 28px 28px 40px;
+            padding: 28px 28px 32px;
             border-radius: 16px 16px 0 0;
             text-align: center; color: white;
             position: relative;
@@ -173,8 +173,9 @@
         .receipt-header p { opacity: 0.85; font-size: 0.82rem; margin-bottom: 0; }
         .receipt-check-3d {
             width: 64px; height: 64px; border-radius: 50%;
-            position: absolute; bottom: -32px; left: 50%; transform: translateX(-50%);
-            perspective: 200px;
+            margin: -32px auto 0;
+            position: relative;
+            z-index: 2;
         }
         .receipt-check-3d .check-sphere {
             width: 64px; height: 64px; border-radius: 50%;
@@ -200,7 +201,7 @@
             50% { opacity: 1; transform: scale(1.2) rotate(5deg); }
             100% { opacity: 1; transform: scale(1) rotate(0deg); }
         }
-        .receipt-body { padding: 44px 28px 20px; }
+        .receipt-body { padding: 16px 28px 20px; }
         .receipt-amount-display {
             text-align: center; margin-bottom: 20px;
         }
@@ -240,7 +241,7 @@
             margin-bottom: 12px;
         }
 
-        /* â”€â”€ Bank Logo in Receipt â”€â”€ */
+        /* ── Bank Logo in Receipt ── */
         .receipt-bank-logo-row {
             display: flex; align-items: center; justify-content: center;
             gap: 12px; margin-bottom: 16px;
@@ -257,7 +258,7 @@
             font-size: 1.05rem; font-weight: 600; color: #1a472a;
         }
 
-        /* â”€â”€ Transfer Complete Animation â”€â”€ */
+        /* ── Transfer Complete Animation ── */
         .transfer-complete-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(26,71,42,0.92);
@@ -352,7 +353,7 @@
             100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
         }
 
-        /* â”€â”€ Currency Conversion â”€â”€ */
+        /* ── Currency Conversion ── */
         .currency-selector {
             display: flex; gap: 8px; margin-bottom: 12px;
         }
@@ -693,7 +694,7 @@
                     <div class="form-group">
                         <label>Payment Reference</label>
                         <input type="text" id="ukReference" placeholder="e.g., Invoice 12345" maxlength="18">
-                        <small>Up to 18 characters â€“ shown on the recipient's statement</small>
+                        <small>Up to 18 characters — shown on the recipient's statement</small>
                     </div>
                 </div>
 
@@ -769,7 +770,7 @@
                             <span class="cur-label">British Pound</span>
                         </div>
                         <div class="currency-option" onclick="setRecipientCurrency('EUR', this)">
-                            <span class="cur-symbol">â‚¬</span>
+                            <span class="cur-symbol">€</span>
                             EUR
                             <span class="cur-label">Euro</span>
                         </div>
@@ -878,9 +879,9 @@
                 </div>
                 <h3>Heritage Bank</h3>
                 <p>Transaction Receipt</p>
-                <div class="receipt-check-3d">
-                    <div class="check-sphere"><i class="fas fa-check"></i></div>
-                </div>
+            </div>
+            <div class="receipt-check-3d">
+                <div class="check-sphere"><i class="fas fa-check"></i></div>
             </div>
             <div class="receipt-body">
                 <div class="receipt-amount-display">
@@ -904,7 +905,7 @@
                 <div class="receipt-row"><span class="rlabel">Reference</span><span class="rvalue" id="receiptRef">-</span></div>
                 <div class="receipt-row"><span class="rlabel">Description</span><span class="rvalue" id="receiptDesc">-</span></div>
                 <div class="receipt-row initially-hidden" id="receiptCurrencyRow"><span class="rlabel">Currency</span><span class="rvalue" id="receiptCurrency">-</span></div>
-                <div class="receipt-row"><span class="rlabel">Status</span><span class="rvalue receipt-status-success" id="receiptStatus">Completed âœ“</span></div>
+                <div class="receipt-row"><span class="rlabel">Status</span><span class="rvalue receipt-status-success" id="receiptStatus">Completed ✓</span></div>
                 <hr class="receipt-divider">
                 <div class="receipt-row"><span class="rlabel">Transaction Fee</span><span class="rvalue" id="receiptFee">$0.00</span></div>
                 <div class="receipt-row receipt-total-row"><span class="rlabel">Total Debited</span><span class="rvalue" id="receiptTotal">$0.00</span></div>
@@ -914,7 +915,7 @@
                     <button class="btn-receipt-action btn-download-receipt" onclick="downloadLastReceipt()"><i class="fas fa-download"></i> Download PDF</button>
                     <button class="btn-receipt-action btn-close-receipt" onclick="closeReceipt()"><i class="fas fa-times"></i> Close</button>
                 </div>
-                <div class="receipt-ref" id="receiptFooterRef">Heritage Bank N.A. â€¢ Member FDIC â€¢ Equal Housing Lender</div>
+                <div class="receipt-ref" id="receiptFooterRef">Heritage Bank N.A. - Member FDIC - Equal Housing Lender</div>
             </div>
         </div>
     </div>
@@ -932,13 +933,13 @@
         let lastTransactionId = null;
         let recipientCurrency = 'USD';
 
-        // Exchange rates (USD base â†’ target)
+        // Exchange rates (USD base → target)
         const EXCHANGE_RATES = {
             USD: 1.00,
             GBP: 0.79,
             EUR: 0.92
         };
-        const CURRENCY_SYMBOLS = { GBP: 'Â£', USD: '$', EUR: 'â‚¬' };
+        const CURRENCY_SYMBOLS = { GBP: 'Â£', USD: '$', EUR: '€' };
         const CURRENCY_NAMES = { GBP: 'British Pound', USD: 'US Dollar', EUR: 'Euro' };
 
         function setRecipientCurrency(cur, el) {
@@ -1011,10 +1012,10 @@
             { name: 'SoFi', routing: '084006470', logo: 'https://www.google.com/s2/favicons?domain=sofi.com&sz=64' },
             { name: 'Chime', routing: '031101279', logo: 'https://www.google.com/s2/favicons?domain=chime.com&sz=64' },
             // Virtual Banks & Fintech
-            { name: 'Venmo', routing: '031101279', logo: 'https://www.google.com/s2/favicons?domain=venmo.com&sz=64' },
+            { name: 'Venmo', routing: '031101279', logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%233D95CE'/%3E%3Cpath d='M42.5 14c1.5 2.6 2.2 5.3 2.2 8.7 0 10.8-9.2 24.9-16.7 34.8H17.2L12.5 17l9.8-0.9 2.8 22.5c2.6-4.2 5.8-10.9 5.8-15.4 0-3.2-0.5-5.3-1.3-7.1L42.5 14z' fill='white'/%3E%3C/svg%3E" },
             { name: 'PayPal', routing: '031101279', logo: 'https://www.google.com/s2/favicons?domain=paypal.com&sz=64' },
-            { name: 'Cash App', routing: '073923033', logo: 'https://www.google.com/s2/favicons?domain=cash.app&sz=64' },
-            { name: 'Zelle', routing: '021000021', logo: 'https://www.google.com/s2/favicons?domain=zellepay.com&sz=64' },
+            { name: 'Cash App', routing: '073923033', logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2300D632'/%3E%3Ctext x='32' y='44' font-family='Arial' font-weight='bold' font-size='36' fill='white' text-anchor='middle'%3E%24%3C/text%3E%3C/svg%3E" },
+            { name: 'Zelle', routing: '021000021', logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%236D1ED4'/%3E%3Cpath d='M18 18h28v6H27l19 16v6H18v-6h17L16 24v-6z' fill='white'/%3E%3C/svg%3E" },
             { name: 'Varo Bank', routing: '091311229', logo: 'https://www.google.com/s2/favicons?domain=varomoney.com&sz=64' },
             { name: 'Current', routing: '021214891', logo: 'https://www.google.com/s2/favicons?domain=current.com&sz=64' },
             { name: 'Dave', routing: '091311229', logo: 'https://www.google.com/s2/favicons?domain=dave.com&sz=64' },
@@ -1195,7 +1196,7 @@
                 if (selectedUkBank && ukAcc && ukAcc.length >= 6) {
                     preview.classList.add('show');
                     document.getElementById('recipientName').textContent = recipName || selectedUkBank.name + ' Account';
-                    document.getElementById('recipientInfo').textContent = `${selectedUkBank.name} â€¢ Sort: ${selectedUkBank.sortCode} â€¢ Acc: ****${ukAcc.slice(-4)}`;
+                    document.getElementById('recipientInfo').textContent = `${selectedUkBank.name} • Sort: ${selectedUkBank.sortCode} • Acc: ****${ukAcc.slice(-4)}`;
                 } else {
                     preview.classList.remove('show');
                 }
@@ -1348,7 +1349,7 @@
                 }
 
                 if (isForeignCurrency) {
-                    body.description += ` | Converted: $${amount.toFixed(2)} â†’ ${recvSym}${convertedAmount.toFixed(2)} (Rate: 1 USD = ${exchangeRate.toFixed(4)} ${recipientCurrency})`;
+                    body.description += ` | Converted: $${amount.toFixed(2)} → ${recvSym}${convertedAmount.toFixed(2)} (Rate: 1 USD = ${exchangeRate.toFixed(4)} ${recipientCurrency})`;
                 }
                 
                 const res = await fetch(`${API_URL}/api/user/transfer`, {
@@ -1374,7 +1375,7 @@
                         bankDisplay = selectedUsBank.name;
                     }
 
-                    // Show receipt modal â€” pending or completed
+                    // Show receipt modal — pending or completed
                     // Determine account number for display
                     let acctDisplay = '';
                     if (transferType === 'usbank') {
@@ -1442,7 +1443,7 @@
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Money';
         });
 
-        // â”€â”€ Receipt Modal Functions â”€â”€
+        // ── Receipt Modal Functions ──
         function showTransferCompleteAnimation(details, onDone) {
             const overlay = document.getElementById('tcOverlay');
             document.getElementById('tcAmount').textContent = '$' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
@@ -1538,13 +1539,13 @@
                 stampEl.textContent = 'PENDING';
                 stampEl.style.borderColor = '#f0ad4e';
                 stampEl.style.color = '#f0ad4e';
-                statusEl.textContent = 'Pending Approval â³';
+                statusEl.textContent = 'Pending Approval ⏳';
                 statusEl.style.color = '#f0ad4e';
             } else {
                 stampEl.textContent = 'SUCCESSFUL';
                 stampEl.style.borderColor = '';
                 stampEl.style.color = '';
-                statusEl.textContent = 'Completed âœ“';
+                statusEl.textContent = 'Completed ✓';
                 statusEl.style.color = '#28a745';
             }
             document.getElementById('receiptDate').textContent = now.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) + ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -1569,7 +1570,7 @@
                 curRow.style.display = 'flex';
                 document.getElementById('receiptRecvAmount').textContent = sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2});
                 document.getElementById('receiptExRate').textContent = `Rate: 1 USD = ${rate.toFixed(4)} ${details.recipientCurrency}`;
-                document.getElementById('receiptCurrency').textContent = `USD â†’ ${details.recipientCurrency}`;
+                document.getElementById('receiptCurrency').textContent = `USD → ${details.recipientCurrency}`;
             } else {
                 convRow.style.display = 'none';
                 curRow.style.display = 'none';
@@ -1656,7 +1657,7 @@
                 <div class="beneficiary-item">
                     <div>
                         <h4>${b.nickname || b.name}</h4>
-                        <p>${b.accountNumber} ${b.bankName !== 'Heritage Bank' ? ' â€¢ ' + b.bankName : ''}</p>
+                        <p>${b.accountNumber} ${b.bankName !== 'Heritage Bank' ? ' • ' + b.bankName : ''}</p>
                         ${b.email ? `<p style="font-size: 12px; color: #999;">${b.email}</p>` : ''}
                     </div>
                     <div style="display: flex; gap: 10px;">
