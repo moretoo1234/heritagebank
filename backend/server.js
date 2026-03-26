@@ -1067,6 +1067,8 @@ async function initializeDatabase() {
 
         // Add transaction category column to transactions table
         try { await connection.execute('ALTER TABLE transactions ADD COLUMN category VARCHAR(50) DEFAULT NULL'); } catch (e) {}
+        // Add fee column
+        try { await connection.execute("ALTER TABLE transactions ADD COLUMN fee DECIMAL(15,2) DEFAULT 0"); } catch (e) {}
         // Add destination country column for flag display
         try { await connection.execute("ALTER TABLE transactions ADD COLUMN destinationCountry VARCHAR(2) DEFAULT NULL"); } catch (e) {}
         // Add recipient name column for admin-created debits (where toUserId is NULL)
