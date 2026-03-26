@@ -4483,6 +4483,25 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             (description && /US (WIRE|ACH) Transfer/i.test(description)) ||
             (description && /UK Transfer/i.test(description));
 
+        // Calculate transfer fee based on type and amount
+        function calculateTransferFee(amount, isExternal, destCountry) {
+            if (!isExternal) {
+                // Internal Heritage-to-Heritage: free for < $1000, flat $4.99 above
+                return amount < 1000 ? 0 : 4.99;
+            }
+            if (destCountry === 'GB') {
+                // UK international wire: $25 flat + 0.5% of amount
+                return 25 + amount * 0.005;
+            }
+            // US domestic wire/ACH
+            if (amount <= 500) return 2.99;
+            if (amount <= 5000) return 9.99;
+            if (amount <= 25000) return 24.99;
+            return 35.00;
+        }
+
+        const transferFee = calculateTransferFee(amountValue, isExternalTransfer, destinationCountry || detectCountryFromDescription(description));
+
         if (!isExternalTransfer && !toEmailValue && !toAccountValue) {
             return res.status(400).json({ success: false, message: 'Recipient email or account number required' });
         }
@@ -4503,9 +4522,10 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
         }
 
         const senderBalance = parseFloat(sender.balance);
-        if (senderBalance < amountValue) {
+        const totalWithFee = amountValue + transferFee;
+        if (senderBalance < totalWithFee) {
             await connection.rollback();
-            return res.status(400).json({ success: false, message: 'Insufficient funds' });
+            return res.status(400).json({ success: false, message: `Insufficient funds. Amount: $${amountValue.toFixed(2)} + Fee: $${transferFee.toFixed(2)} = $${totalWithFee.toFixed(2)} needed.` });
         }
 
         // ── External bank transfer (US Wire/ACH, UK Bank) ──
@@ -4551,8 +4571,8 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             // Insert transaction with toUserId = NULL (external recipient)
             const [txnResult] = await connection.execute(
                 `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry, recipientName, bankName)
-                 VALUES (?, NULL, ?, 0, 'transfer', 'pending', ?, ?, ?, ?, ?)`,
-                [sender.id, amountValue, description || 'External Transfer', reference, destCountry, extRecipientName, extBankName]
+                 VALUES (?, NULL, ?, ?, 'transfer', 'pending', ?, ?, ?, ?, ?)`,
+                [sender.id, amountValue, transferFee, description || 'External Transfer', reference, destCountry, extRecipientName, extBankName]
             );
             const transactionId = txnResult.insertId;
 
@@ -4572,6 +4592,8 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
                 message: `Transfer of $${amountValue.toLocaleString()} to ${extBankName || 'external bank'} is pending approval`,
                 reference,
                 transactionId,
+                fee: transferFee,
+                totalDebited: amountValue + transferFee,
                 transaction: { to: extRecipientName || 'External Account' }
             });
         }
@@ -4647,7 +4669,7 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             return res.status(400).json({ success: false, message: 'Recipient account is not active' });
         }
 
-        if (senderBalance < amountValue) {
+        if (senderBalance < totalWithFee) {
             await connection.rollback();
             return res.status(400).json({ success: false, message: 'Insufficient funds' });
         }
@@ -4657,8 +4679,8 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
         const destCountry = req.body.destinationCountry || detectCountryFromDescription(description);
         const [txnResult] = await connection.execute(
             `INSERT INTO transactions (fromUserId, toUserId, amount, fee, type, status, description, reference, destinationCountry)
-             VALUES (?, ?, ?, 0, 'transfer', 'pending', ?, ?, ?)`,
-            [sender.id, recipientUser.id, amountValue, description || 'Transfer', reference, destCountry]
+             VALUES (?, ?, ?, ?, 'transfer', 'pending', ?, ?, ?)`,
+            [sender.id, recipientUser.id, amountValue, transferFee, description || 'Transfer', reference, destCountry]
         );
         const transactionId = txnResult.insertId;
 
@@ -4678,7 +4700,9 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             pending: true,
             message: `Transfer of $${amountValue.toLocaleString()} is pending approval`,
             reference,
-            transactionId
+            transactionId,
+            fee: transferFee,
+            totalDebited: amountValue + transferFee
         });
     } catch (error) {
         try { await connection.rollback(); } catch (e) {}
