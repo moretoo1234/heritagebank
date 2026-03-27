@@ -2910,7 +2910,7 @@ app.get('/api/notifications', requireAuth, async (req, res) => {
         if (unreadOnly === 'true') query += ' AND isRead = FALSE';
         query += ' ORDER BY createdAt DESC LIMIT ?';
         
-        const [notifications] = await pool.execute(query, [req.auth.id, parseInt(limit)]);
+        const [notifications] = await pool.execute(query, [req.auth.id, String(parseInt(limit))]);
         
         // Get unread count
         const [[{ unreadCount }]] = await pool.execute(
@@ -3098,7 +3098,7 @@ app.get('/api/admin/support/tickets', requireAuth, requireAdmin, async (req, res
         if (status && status !== 'all') { query += ' AND st.status = ?'; params.push(status); }
         if (priority) { query += ' AND st.priority = ?'; params.push(priority); }
         query += ' ORDER BY st.createdAt DESC LIMIT ?';
-        params.push(parseInt(limit));
+        params.push(String(parseInt(limit)));
         
         const [tickets] = await pool.execute(query, params);
         res.json({ success: true, tickets });
@@ -6444,7 +6444,7 @@ app.get('/api/admin/cards', requireAuth, requireAdmin, async (req, res) => {
         }
 
         sql += ` ORDER BY c.issuedAt DESC LIMIT ?`;
-        params.push(limit);
+        params.push(String(limit));
 
         const [cards] = await pool.execute(sql, params);
         res.json({ success: true, cards, count: cards.length });
@@ -8431,7 +8431,7 @@ app.get('/api/admin/compliance/audit-logs', requireAuth, requireAdmin, async (re
         if (endDate) { query += ' AND cal.createdAt <= ?'; params.push(endDate); }
 
         query += ' ORDER BY cal.createdAt DESC LIMIT ? OFFSET ?';
-        params.push(parseInt(limit), parseInt(offset));
+        params.push(String(parseInt(limit)), String(parseInt(offset)));
 
         const [logs] = await pool.execute(query, params);
         const [[{ total }]] = await pool.execute('SELECT COUNT(*) as total FROM compliance_audit_logs');
@@ -8463,7 +8463,7 @@ app.get('/api/admin/compliance/admin-actions', requireAuth, requireAdmin, async 
         if (endDate) { query += ' AND aal.createdAt <= ?'; params.push(endDate); }
 
         query += ' ORDER BY aal.createdAt DESC LIMIT ? OFFSET ?';
-        params.push(parseInt(limit), parseInt(offset));
+        params.push(String(parseInt(limit)), String(parseInt(offset)));
 
         const [logs] = await pool.execute(query, params);
         res.json({ success: true, logs });
@@ -8777,7 +8777,7 @@ app.get('/api/admin/compliance/reports', requireAuth, requireAdmin, async (req, 
         
         if (reportType) { query += ' AND rr.reportType = ?'; params.push(reportType); }
         query += ' ORDER BY rr.generatedAt DESC LIMIT ?';
-        params.push(parseInt(limit));
+        params.push(String(parseInt(limit)));
 
         const [reports] = await pool.execute(query, params);
         res.json({ success: true, reports });
@@ -10117,7 +10117,7 @@ app.get('/api/admin/support-tickets', requireAuth, requireAdmin, async (req, res
             params.push(priority); 
         }
         query += ' ORDER BY st.createdAt DESC LIMIT ?';
-        params.push(parseInt(limit));
+        params.push(String(parseInt(limit)));
         
         const [tickets] = await pool.execute(query, params);
         res.json({ success: true, tickets });
@@ -10780,7 +10780,7 @@ app.get('/api/admin/loans', requireAuth, requireAdmin, async (req, res) => {
         }
 
         query += ' ORDER BY la.created_at DESC LIMIT ? OFFSET ?';
-        params.push(parseInt(limit), offset);
+        params.push(String(parseInt(limit)), String(parseInt(offset)));
 
         const [applications] = await pool.execute(query, params);
 
