@@ -5,487 +5,892 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <meta name="description" content="Explore Heritage Bank investment products including savings bonds, index funds, and fixed deposits.">
     <title>Investments - Heritage Bank</title>
-    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="app-layout.css">
     <link rel="stylesheet" href="loading.css">
     <style>
-        .container {
-            max-width: 900px;
-            margin: 50px auto;
-            padding: 30px;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f0f2f5; font-family: 'Inter', 'Segoe UI', sans-serif; min-height: 100vh; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+        .back-btn { width: 40px; height: 40px; border-radius: 50%; background: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .back-btn i { color: #1a472a; }
+        .header h1 { color: #1a472a; font-size: 1.5rem; }
+
+        /* Portfolio Summary */
+        .portfolio-banner {
+            background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 50%, #1a472a 100%);
+            color: white;
+            padding: 28px 32px;
+            border-radius: 16px;
+            margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
         }
-        h1 {
-            color: #1a472a;
-            text-align: center;
-            margin-bottom: 30px;
+        .portfolio-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%);
+            pointer-events: none;
         }
-        .back-link {
-            color: #d4af37;
-            text-decoration: none;
-            cursor: pointer;
-            font-size: 14px;
-            margin-bottom: 20px;
-            display: inline-block;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .investment-item {
+        .portfolio-stats {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr auto;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 24px;
+            position: relative;
+        }
+        .portfolio-stat label { display: block; font-size: 0.75rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .portfolio-stat .value { font-size: 1.6rem; font-weight: 700; }
+        .portfolio-stat .value.gold { color: #d4af37; }
+
+        /* Products Grid */
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title i { color: #d4af37; }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 18px;
+            margin-bottom: 32px;
+        }
+        .product-card {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            cursor: pointer;
+            transition: all 0.25s;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); border-color: #d4af37; }
+        .product-card .risk-badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .risk-low { background: #d1fae5; color: #065f46; }
+        .risk-moderate { background: #fef3c7; color: #92400e; }
+        .risk-high { background: #fee2e2; color: #991b1b; }
+        .product-card .product-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+        }
+        .product-card h3 { font-size: 1rem; color: #1e293b; margin-bottom: 4px; }
+        .product-card .product-desc { font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px; line-height: 1.4; }
+        .product-card .product-rate { font-size: 1.5rem; font-weight: 700; color: #1a472a; margin-bottom: 2px; }
+        .product-card .product-rate span { font-size: 0.8rem; font-weight: 500; color: #64748b; }
+        .product-card .product-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+        .product-card .invest-action {
+            display: block;
+            width: 100%;
+            margin-top: 16px;
+            padding: 10px;
+            background: #1a472a;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+        .product-card .invest-action:hover { background: #245a36; }
+
+        /* Investment Form Card */
+        .invest-form-card {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            margin-bottom: 28px;
+        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 600; color: #374151; }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            background: #f8fafc;
+            transition: all 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #1a472a; background: white; box-shadow: 0 0 0 3px rgba(26,71,42,0.08); }
+        .estimate-preview {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 18px;
+            display: none;
+        }
+        .estimate-preview .est-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.88rem; color: #374151; }
+        .estimate-preview .est-row:last-child { margin-bottom: 0; font-weight: 700; color: #1a472a; font-size: 1rem; padding-top: 8px; border-top: 1px dashed #86efac; }
+        .submit-invest-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #1a472a, #2d5f3f);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .submit-invest-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .submit-invest-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* My Investments */
+        .investments-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            overflow: hidden;
+            margin-bottom: 28px;
+        }
+        .investments-card-header {
+            padding: 20px 28px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .investments-card-header h2 { font-size: 1.05rem; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        .investments-card-header h2 i { color: #d4af37; }
+        .inv-count-badge { background: #f0f2f5; color: #64748b; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600; }
+        .investments-list { padding: 16px 28px 20px; }
+        .inv-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
             gap: 20px;
             align-items: center;
-            padding: 20px;
-            background: #f5f7fa;
+            padding: 16px 0;
+            border-bottom: 1px solid #f8fafc;
+        }
+        .inv-row:last-child { border-bottom: none; }
+        .inv-product-name { font-weight: 600; color: #1e293b; font-size: 0.92rem; }
+        .inv-product-detail { font-size: 0.78rem; color: #94a3b8; margin-top: 3px; }
+        .inv-amount { font-weight: 600; color: #1e293b; font-size: 0.92rem; text-align: right; }
+        .inv-return { font-weight: 600; color: #16a34a; font-size: 0.92rem; text-align: right; }
+        .status-pill {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-matured-ready { background: #dbeafe; color: #1e40af; }
+        .status-collected { background: #e0e7ff; color: #3730a3; }
+        .status-withdrawn { background: #fef3c7; color: #92400e; }
+        .status-cancelled { background: #fee2e2; color: #991b1b; }
+        .inv-action-btn {
+            padding: 6px 16px;
             border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        .investment-info h3 {
-            color: #1a472a;
-            margin: 0 0 5px 0;
-        }
-        .investment-info p {
-            color: #94a3b8;
-            margin: 0;
-            font-size: 12px;
-        }
-        .investment-return {
-            font-size: 20px;
-            font-weight: bold;
-            color: #d4af37;
-        }
-        .invest-btn {
-            padding: 10px 20px;
-            background: #d4af37;
-            color: #1a472a;
-            border: none;
-            border-radius: 6px;
+            font-size: 0.78rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            border: none;
+            font-family: inherit;
         }
-        .invest-btn:hover {
-            background: #b8941f;
-            transform: translateY(-2px);
+        .btn-collect { background: #16a34a; color: white; }
+        .btn-collect:hover { background: #15803d; }
+        .btn-withdraw { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+        .btn-withdraw:hover { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: #94a3b8;
         }
-        .form-group {
+        .empty-state i { font-size: 2.5rem; color: #e2e8f0; margin-bottom: 12px; }
+        .empty-state p { font-size: 0.9rem; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.25s;
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-box {
+            background: white;
+            border-radius: 16px;
+            max-width: 440px;
+            width: 92%;
+            overflow: hidden;
+            transform: scale(0.95) translateY(10px);
+            transition: transform 0.25s;
+        }
+        .modal-overlay.active .modal-box { transform: scale(1) translateY(0); }
+        .modal-icon-area {
+            padding: 28px 28px 0;
+            text-align: center;
+        }
+        .modal-icon-area .icon-circle {
+            width: 56px; height: 56px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 12px;
+        }
+        .icon-success { background: #d1fae5; color: #16a34a; }
+        .icon-warning { background: #fef3c7; color: #f59e0b; }
+        .icon-info { background: #dbeafe; color: #3b82f6; }
+        .modal-title { font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+        .modal-subtitle { font-size: 0.88rem; color: #64748b; line-height: 1.5; }
+        .modal-details { padding: 20px 28px; }
+        .modal-detail-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.88rem; }
+        .modal-detail-row .label { color: #64748b; }
+        .modal-detail-row .val { font-weight: 600; color: #1e293b; }
+        .modal-detail-row.total { border-top: 1px dashed #e2e8f0; padding-top: 12px; margin-top: 4px; }
+        .modal-detail-row.total .val { color: #16a34a; font-size: 1rem; }
+        .modal-actions { padding: 0 28px 24px; display: flex; gap: 10px; }
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-family: inherit;
+        }
+        .modal-btn-primary { background: #1a472a; color: white; }
+        .modal-btn-primary:hover { background: #245a36; }
+        .modal-btn-danger { background: #dc2626; color: white; }
+        .modal-btn-danger:hover { background: #b91c1c; }
+        .modal-btn-secondary { background: #f1f5f9; color: #64748b; }
+        .modal-btn-secondary:hover { background: #e2e8f0; }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 3000;
             display: flex;
             flex-direction: column;
-            margin-bottom: 15px;
+            gap: 8px;
         }
-        .form-group label {
-            margin-bottom: 8px;
-            color: #1a472a;
-            font-weight: 600;
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            animation: slideIn 0.3s ease;
+            min-width: 280px;
         }
-        .form-group input {
-            padding: 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: #d4af37;
-            box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
-        }
+        .toast-success { background: #f0fdf4; color: #166534; border-left: 4px solid #16a34a; }
+        .toast-error { background: #fef2f2; color: #991b1b; border-left: 4px solid #dc2626; }
+        .toast-info { background: #eff6ff; color: #1e40af; border-left: 4px solid #3b82f6; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .disclaimer { font-size: 0.75rem; color: #94a3b8; text-align: center; padding: 10px 0 20px; }
 
         @media (max-width: 768px) {
-            .container { padding: 20px; }
-            .investment-item { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .form-row { grid-template-columns: 1fr; }
+            .inv-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .products-grid { grid-template-columns: 1fr 1fr; }
+            .portfolio-stats { grid-template-columns: 1fr 1fr; gap: 16px; }
         }
-
         @media (max-width: 480px) {
-            .container { padding: 15px; }
-            .investment-item { grid-template-columns: 1fr; gap: 8px; }
-            h2 { font-size: 1.3rem !important; }
+            .container { padding: 14px; }
+            .products-grid { grid-template-columns: 1fr; }
+            .inv-row { grid-template-columns: 1fr; gap: 8px; }
+            .portfolio-stat .value { font-size: 1.3rem; }
         }
     </style>
 </head>
 <body>
     <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="container">
-        <a class="back-link" onclick="window.location.href = 'dashboard.html'">← Back to Dashboard</a>
-        
-        <h1><i class="fas fa-chart-line"></i> Investments</h1>
+        <div class="header">
+            <button class="back-btn" onclick="location.href='dashboard.html'"><i class="fas fa-arrow-left"></i></button>
+            <h1><i class="fas fa-chart-line" style="color:#d4af37"></i> Investments</h1>
+        </div>
 
-        <div class="card">
-            <h2 class="invest-section-heading">Available Investment Products</h2>
-            
-            <div class="investment-item">
-                <div class="investment-info">
-                    <h3>Savings Bond</h3>
-                    <p>Low risk, guaranteed returns</p>
+        <!-- Portfolio Summary -->
+        <div class="portfolio-banner" id="portfolioBanner" style="display:none">
+            <div class="portfolio-stats">
+                <div class="portfolio-stat">
+                    <label>Total Invested</label>
+                    <div class="value" id="totalInvested">$0</div>
                 </div>
-                <div>
-                    <p class="invest-min-amount">Min: $500</p>
-                    <p class="invest-term-info">1-5 year terms</p>
+                <div class="portfolio-stat">
+                    <label>Estimated Returns</label>
+                    <div class="value gold" id="totalReturns">+$0</div>
                 </div>
-                <div class="investment-return">3.5% APY</div>
-                <button class="invest-btn" onclick="investNow('Savings Bond', 3.5)">Invest</button>
-            </div>
-
-            <div class="investment-item">
-                <div class="investment-info">
-                    <h3>Index Fund</h3>
-                    <p>Moderate risk, diversified portfolio</p>
+                <div class="portfolio-stat">
+                    <label>Active Investments</label>
+                    <div class="value" id="activeCount">0</div>
                 </div>
-                <div>
-                    <p class="invest-min-amount">Min: $1,000</p>
-                    <p class="invest-term-info">5+ year horizon</p>
+                <div class="portfolio-stat">
+                    <label>Portfolio Value</label>
+                    <div class="value" id="portfolioValue">$0</div>
                 </div>
-                <div class="investment-return">7.2% APY*</div>
-                <button class="invest-btn" onclick="investNow('Index Fund', 7.2)">Invest</button>
-            </div>
-
-            <div class="investment-item">
-                <div class="investment-info">
-                    <h3>Fixed Deposit</h3>
-                    <p>Flexible terms, competitive rates</p>
-                </div>
-                <div>
-                    <p class="invest-min-amount">Min: $1,000</p>
-                    <p class="invest-term-info">3-12 month terms</p>
-                </div>
-                <div class="investment-return">4.8% APY</div>
-                <button class="invest-btn" onclick="investNow('Fixed Deposit', 4.8)">Invest</button>
-            </div>
-
-            <div class="investment-item">
-                <div class="investment-info">
-                    <h3>Growth Fund</h3>
-                    <p>Higher risk, long-term growth potential</p>
-                </div>
-                <div>
-                    <p class="invest-min-amount">Min: $2,000</p>
-                    <p class="invest-term-info">10+ year horizon</p>
-                </div>
-                <div class="investment-return">9.5% APY*</div>
-                <button class="invest-btn" onclick="investNow('Growth Fund', 9.5)">Invest</button>
             </div>
         </div>
 
-        <div class="card">
-            <h2 class="invest-section-heading">Make an Investment</h2>
-            
-            <form onsubmit="handleInvestment(event)">
-                <div class="form-group">
-                    <label>Investment Product</label>
-                    <select id="product" class="invest-select" title="Investment Product" required>
-                        <option value="">Select a product...</option>
-                        <option value="Savings Bond">Savings Bond (3.5% APY)</option>
-                        <option value="Index Fund">Index Fund (7.2% APY)</option>
-                        <option value="Fixed Deposit">Fixed Deposit (4.8% APY)</option>
-                        <option value="Growth Fund">Growth Fund (9.5% APY)</option>
-                    </select>
+        <!-- Products -->
+        <h2 class="section-title"><i class="fas fa-cubes"></i> Investment Products</h2>
+        <div class="products-grid">
+            <div class="product-card" onclick="openInvestModal('Savings Bond')">
+                <span class="risk-badge risk-low">Low Risk</span>
+                <div class="product-icon" style="background:#d1fae5;color:#065f46"><i class="fas fa-shield-alt"></i></div>
+                <h3>Savings Bond</h3>
+                <p class="product-desc">Low risk, guaranteed returns backed by government securities.</p>
+                <div class="product-rate">3.5% <span>APY</span></div>
+                <div class="product-meta">
+                    <span><i class="fas fa-dollar-sign"></i> Min $500</span>
+                    <span><i class="fas fa-clock"></i> 1-5 years</span>
                 </div>
+                <button class="invest-action"><i class="fas fa-plus"></i> Invest Now</button>
+            </div>
 
-                <div class="form-group">
-                    <label>Investment Amount (USD)</label>
-                    <input type="number" id="investAmount" placeholder="1000" min="500" step="100" required>
+            <div class="product-card" onclick="openInvestModal('Index Fund')">
+                <span class="risk-badge risk-moderate">Moderate</span>
+                <div class="product-icon" style="background:#fef3c7;color:#92400e"><i class="fas fa-chart-bar"></i></div>
+                <h3>Index Fund</h3>
+                <p class="product-desc">Diversified portfolio tracking the market index for steady growth.</p>
+                <div class="product-rate">7.2% <span>APY*</span></div>
+                <div class="product-meta">
+                    <span><i class="fas fa-dollar-sign"></i> Min $1,000</span>
+                    <span><i class="fas fa-clock"></i> 5+ years</span>
                 </div>
+                <button class="invest-action"><i class="fas fa-plus"></i> Invest Now</button>
+            </div>
 
+            <div class="product-card" onclick="openInvestModal('Fixed Deposit')">
+                <span class="risk-badge risk-low">Low Risk</span>
+                <div class="product-icon" style="background:#dbeafe;color:#1e40af"><i class="fas fa-lock"></i></div>
+                <h3>Fixed Deposit</h3>
+                <p class="product-desc">Competitive rates with flexible terms and guaranteed principal.</p>
+                <div class="product-rate">4.8% <span>APY</span></div>
+                <div class="product-meta">
+                    <span><i class="fas fa-dollar-sign"></i> Min $1,000</span>
+                    <span><i class="fas fa-clock"></i> 3-12 months</span>
+                </div>
+                <button class="invest-action"><i class="fas fa-plus"></i> Invest Now</button>
+            </div>
+
+            <div class="product-card" onclick="openInvestModal('Growth Fund')">
+                <span class="risk-badge risk-high">Higher Risk</span>
+                <div class="product-icon" style="background:#fee2e2;color:#991b1b"><i class="fas fa-rocket"></i></div>
+                <h3>Growth Fund</h3>
+                <p class="product-desc">Aggressive growth targeting high-return opportunities over time.</p>
+                <div class="product-rate">9.5% <span>APY*</span></div>
+                <div class="product-meta">
+                    <span><i class="fas fa-dollar-sign"></i> Min $2,000</span>
+                    <span><i class="fas fa-clock"></i> 10+ years</span>
+                </div>
+                <button class="invest-action"><i class="fas fa-plus"></i> Invest Now</button>
+            </div>
+        </div>
+
+        <!-- Custom Investment Form -->
+        <div class="invest-form-card">
+            <h2 class="section-title"><i class="fas fa-pen-alt"></i> Custom Investment</h2>
+            <form id="investForm" onsubmit="handleInvestment(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Product</label>
+                        <select id="product" required>
+                            <option value="">Select a product...</option>
+                            <option value="Savings Bond">Savings Bond (3.5% APY)</option>
+                            <option value="Index Fund">Index Fund (7.2% APY)</option>
+                            <option value="Fixed Deposit">Fixed Deposit (4.8% APY)</option>
+                            <option value="Growth Fund">Growth Fund (9.5% APY)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount (USD)</label>
+                        <input type="number" id="investAmount" placeholder="1,000" min="500" step="100" required>
+                    </div>
+                </div>
                 <div class="form-group">
-                    <label>Investment Period (Years)</label>
+                    <label>Period (Years)</label>
                     <input type="number" id="period" placeholder="5" min="1" max="30" step="1" required>
                 </div>
 
-                <button type="submit" class="invest-submit-btn">
-                    <i class="fas fa-check"></i> Invest Now
+                <div class="estimate-preview" id="estimatePreview">
+                    <div class="est-row"><span>Principal</span><span id="estPrincipal">$0</span></div>
+                    <div class="est-row"><span>APY Rate</span><span id="estRate">0%</span></div>
+                    <div class="est-row"><span>Period</span><span id="estPeriod">0 years</span></div>
+                    <div class="est-row"><span>Estimated Return</span><span id="estReturn" style="color:#16a34a">+$0</span></div>
+                    <div class="est-row"><span>Total at Maturity</span><span id="estTotal">$0</span></div>
+                </div>
+
+                <button type="submit" class="submit-invest-btn" id="submitBtn">
+                    <i class="fas fa-chart-line"></i> <span>Invest Now</span>
                 </button>
             </form>
         </div>
-        
-        <!-- My Investments Section -->
-        <div class="card initially-hidden" id="myInvestments">
-            <h2 class="invest-section-heading"><i class="fas fa-chart-pie"></i> My Investments</h2>
-            <!-- Will be populated dynamically -->
+
+        <!-- My Investments -->
+        <div class="investments-card" id="myInvestments" style="display:none">
+            <div class="investments-card-header">
+                <h2><i class="fas fa-briefcase"></i> My Investments</h2>
+                <span class="inv-count-badge" id="invCount">0</span>
+            </div>
+            <div class="investments-list" id="investmentsList"></div>
         </div>
 
-        <p class="invest-disclaimer">
-            * Past performance does not guarantee future results. Please read all investment documents carefully.
-        </p>
+        <p class="disclaimer">* Past performance does not guarantee future results. Please read all investment documents carefully before investing.</p>
     </div>
-    
-    <!-- Notification toast -->
-    <div id="notification" class="invest-notification"></div>
+
+    <!-- Invest Modal -->
+    <div class="modal-overlay" id="investModal">
+        <div class="modal-box">
+            <div class="modal-icon-area">
+                <div class="icon-circle icon-info"><i class="fas fa-chart-line"></i></div>
+                <div class="modal-title" id="modalProductName">Savings Bond</div>
+                <div class="modal-subtitle" id="modalProductDesc">Low risk, guaranteed returns</div>
+            </div>
+            <div class="modal-details">
+                <div class="form-group">
+                    <label>Investment Amount (USD)</label>
+                    <input type="number" id="modalAmount" placeholder="1,000" min="500" step="100">
+                </div>
+                <div class="form-group">
+                    <label>Period (Years)</label>
+                    <input type="number" id="modalPeriod" placeholder="5" min="1" max="30" step="1">
+                </div>
+                <div id="modalEstimate" style="display:none">
+                    <div class="modal-detail-row"><span class="label">APY Rate</span><span class="val" id="modalRate">3.5%</span></div>
+                    <div class="modal-detail-row"><span class="label">Estimated Return</span><span class="val" id="modalReturn" style="color:#16a34a">+$0</span></div>
+                    <div class="modal-detail-row total"><span class="label">Total at Maturity</span><span class="val" id="modalTotal">$0</span></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('investModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" id="modalInvestBtn" onclick="submitModalInvestment()"><i class="fas fa-check"></i> Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Confirmation Modal -->
+    <div class="modal-overlay" id="withdrawModal">
+        <div class="modal-box">
+            <div class="modal-icon-area">
+                <div class="icon-circle" id="withdrawIcon"><i class="fas fa-hand-holding-usd"></i></div>
+                <div class="modal-title" id="withdrawTitle">Withdraw Investment</div>
+                <div class="modal-subtitle" id="withdrawSubtitle"></div>
+            </div>
+            <div class="modal-details" id="withdrawDetails"></div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('withdrawModal')">Cancel</button>
+                <button class="modal-btn" id="withdrawConfirmBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-box">
+            <div class="modal-icon-area">
+                <div class="icon-circle icon-success"><i class="fas fa-check"></i></div>
+                <div class="modal-title" id="successTitle">Investment Confirmed!</div>
+                <div class="modal-subtitle" id="successSubtitle"></div>
+            </div>
+            <div class="modal-details" id="successDetails"></div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-primary" onclick="closeModal('successModal')" style="flex:1">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <script src="script.js"></script>
     <script>
-        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:3001' 
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3001'
             : window.location.origin;
         let userId = null;
         const token = localStorage.getItem('token');
 
-        if (!token) {
-            window.location.href = 'signin.html';
-        }
+        if (!token) window.location.href = 'signin.html';
 
-        // Get user info on load
+        const PRODUCTS = {
+            'Savings Bond':  { rate: 3.5,  min: 500,  desc: 'Low risk, guaranteed returns backed by government securities.', icon: 'shield-alt' },
+            'Index Fund':    { rate: 7.2,  min: 1000, desc: 'Diversified portfolio tracking the market index for steady growth.', icon: 'chart-bar' },
+            'Fixed Deposit': { rate: 4.8,  min: 1000, desc: 'Competitive rates with flexible terms and guaranteed principal.', icon: 'lock' },
+            'Growth Fund':   { rate: 9.5,  min: 2000, desc: 'Aggressive growth targeting high-return opportunities over time.', icon: 'rocket' }
+        };
+
+        // Auth
         async function checkAuth() {
             try {
-                const res = await fetch(`${API_URL}/api/auth/profile`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    userId = data.user.id;
-                } else {
-                    window.location.href = 'signin.html';
-                }
-            } catch (err) {
-                console.error('Auth check failed:', err);
-                window.location.href = 'signin.html';
-            }
+                const res = await fetch(`${API_URL}/api/auth/profile`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) { const d = await res.json(); userId = d.user.id; }
+                else window.location.href = 'signin.html';
+            } catch { window.location.href = 'signin.html'; }
         }
 
-        async function investNow(product, rate) {
-            const amount = prompt(`Invest in ${product} (${rate}% APY)\n\nMinimum amount: $500\nEnter investment amount:`, '1000');
-            
-            if (amount && parseFloat(amount) >= 500) {
-                const amountNum = parseFloat(amount);
-                const periodYears = prompt('Investment period in years (1-30):', '5');
-                const period = parseInt(periodYears) || 5;
-                
-                const payload = {
-                    product: `${product} (${rate}% APY)`,
-                    amount: amountNum,
-                    period: period
-                };
-
-                try {
-                    const res = await fetch(`${API_URL}/api/investments/invest`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    const data = await res.json();
-                    
-                    if (data.success) {
-                        showNotification(`✓ Investment of $${amountNum.toFixed(2)} in ${product} confirmed! Est. Return: $${data.investment.estimatedReturn}`, 'success');
-                        loadMyInvestments();
-                    } else {
-                        showNotification('Error: ' + data.message, 'error');
-                    }
-                } catch (err) {
-                    showNotification('Error: ' + err.message, 'error');
-                }
-            } else if (amount) {
-                showNotification('Minimum investment amount is $500', 'error');
-            }
+        // Estimate calculation
+        function calcEstimate(amount, rate, years) {
+            const est = amount * Math.pow(1 + rate / 100, years) - amount;
+            return { returnAmt: est, total: amount + est };
         }
 
-        async function handleInvestment(e) {
-            e.preventDefault();
-
+        // Live estimate in custom form
+        function updateEstimate() {
             const product = document.getElementById('product').value;
             const amount = parseFloat(document.getElementById('investAmount').value);
             const period = parseInt(document.getElementById('period').value);
+            const preview = document.getElementById('estimatePreview');
 
-            if (!product || !amount || !period) {
-                showNotification('Please fill all fields', 'error');
-                return;
+            if (product && amount >= 500 && period >= 1) {
+                const info = PRODUCTS[product];
+                const { returnAmt, total } = calcEstimate(amount, info.rate, period);
+                document.getElementById('estPrincipal').textContent = '$' + amount.toLocaleString();
+                document.getElementById('estRate').textContent = info.rate + '% APY';
+                document.getElementById('estPeriod').textContent = period + (period === 1 ? ' year' : ' years');
+                document.getElementById('estReturn').textContent = '+$' + returnAmt.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                document.getElementById('estTotal').textContent = '$' + total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
             }
+        }
+        document.getElementById('product').addEventListener('change', updateEstimate);
+        document.getElementById('investAmount').addEventListener('input', updateEstimate);
+        document.getElementById('period').addEventListener('input', updateEstimate);
 
-            if (amount < 500) {
-                showNotification('Minimum investment amount is $500', 'error');
-                return;
-            }
+        // Modal helpers
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-            const payload = {
-                product: product,
-                amount: amount,
-                period: period
+        // Quick invest from product card
+        let currentModalProduct = null;
+        function openInvestModal(productName) {
+            currentModalProduct = productName;
+            const info = PRODUCTS[productName];
+            document.getElementById('modalProductName').textContent = productName;
+            document.getElementById('modalProductDesc').textContent = info.desc;
+            document.getElementById('modalAmount').value = '';
+            document.getElementById('modalPeriod').value = '';
+            document.getElementById('modalRate').textContent = info.rate + '% APY';
+            document.getElementById('modalEstimate').style.display = 'none';
+            document.getElementById('modalAmount').min = info.min;
+            document.getElementById('modalAmount').placeholder = info.min.toLocaleString();
+            openModal('investModal');
+
+            // Live modal estimate
+            const updateModalEst = () => {
+                const amt = parseFloat(document.getElementById('modalAmount').value);
+                const yrs = parseInt(document.getElementById('modalPeriod').value);
+                if (amt >= info.min && yrs >= 1) {
+                    const { returnAmt, total } = calcEstimate(amt, info.rate, yrs);
+                    document.getElementById('modalReturn').textContent = '+$' + returnAmt.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    document.getElementById('modalTotal').textContent = '$' + total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    document.getElementById('modalEstimate').style.display = 'block';
+                } else {
+                    document.getElementById('modalEstimate').style.display = 'none';
+                }
             };
+            document.getElementById('modalAmount').oninput = updateModalEst;
+            document.getElementById('modalPeriod').oninput = updateModalEst;
+        }
+
+        async function submitModalInvestment() {
+            const amount = parseFloat(document.getElementById('modalAmount').value);
+            const period = parseInt(document.getElementById('modalPeriod').value);
+            const info = PRODUCTS[currentModalProduct];
+
+            if (!amount || amount < info.min) { showToast(`Minimum investment is $${info.min.toLocaleString()}`, 'error'); return; }
+            if (!period || period < 1) { showToast('Please enter a valid period', 'error'); return; }
+
+            document.getElementById('modalInvestBtn').disabled = true;
+            document.getElementById('modalInvestBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
             try {
                 const res = await fetch(`${API_URL}/api/investments/invest`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(payload)
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ product: currentModalProduct, amount, period })
                 });
-
                 const data = await res.json();
-
                 if (data.success) {
-                    const { estimatedReturn, maturityDate } = data.investment;
-                    const confirmMsg = `
-Investment Confirmation
-========================
-Product: ${product}
-Amount: $${amount.toFixed(2)}
-Period: ${period} years
-Est. Returns: $${estimatedReturn.toFixed(2)}
-Maturity Date: ${new Date(maturityDate).toLocaleDateString()}
-
-Your investment has been confirmed!
-Funds have been invested immediately.
-`;
-                    alert(confirmMsg);
-                    showNotification('✓ Investment confirmed!', 'success');
+                    closeModal('investModal');
+                    showSuccessModal(currentModalProduct, amount, period, data.investment);
                     loadMyInvestments();
-                    document.getElementById('product').value = '';
-                    document.getElementById('investAmount').value = '';
-                    document.getElementById('period').value = '';
                 } else {
-                    showNotification('Error: ' + data.message, 'error');
+                    showToast(data.message, 'error');
                 }
             } catch (err) {
-                showNotification('Error: ' + err.message, 'error');
+                showToast(err.message, 'error');
+            } finally {
+                document.getElementById('modalInvestBtn').disabled = false;
+                document.getElementById('modalInvestBtn').innerHTML = '<i class="fas fa-check"></i> Confirm';
             }
         }
-        
-        // Load user's existing investments
+
+        // Custom form submit
+        async function handleInvestment(e) {
+            e.preventDefault();
+            const product = document.getElementById('product').value;
+            const amount = parseFloat(document.getElementById('investAmount').value);
+            const period = parseInt(document.getElementById('period').value);
+            if (!product || !amount || !period) { showToast('Please fill all fields', 'error'); return; }
+            const info = PRODUCTS[product];
+            if (amount < info.min) { showToast(`Minimum for ${product} is $${info.min.toLocaleString()}`, 'error'); return; }
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Processing...</span>';
+
+            try {
+                const res = await fetch(`${API_URL}/api/investments/invest`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ product, amount, period })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showSuccessModal(product, amount, period, data.investment);
+                    loadMyInvestments();
+                    document.getElementById('investForm').reset();
+                    document.getElementById('estimatePreview').style.display = 'none';
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-chart-line"></i> <span>Invest Now</span>';
+            }
+        }
+
+        function showSuccessModal(product, amount, period, inv) {
+            document.getElementById('successTitle').textContent = 'Investment Confirmed!';
+            document.getElementById('successSubtitle').textContent = `Your ${product} investment has been created.`;
+            document.getElementById('successDetails').innerHTML = `
+                <div class="modal-detail-row"><span class="label">Product</span><span class="val">${product}</span></div>
+                <div class="modal-detail-row"><span class="label">Amount</span><span class="val">$${amount.toLocaleString(undefined, {minimumFractionDigits:2})}</span></div>
+                <div class="modal-detail-row"><span class="label">Period</span><span class="val">${period} year${period > 1 ? 's' : ''}</span></div>
+                <div class="modal-detail-row"><span class="label">APY Rate</span><span class="val">${inv.apy}%</span></div>
+                <div class="modal-detail-row"><span class="label">Maturity Date</span><span class="val">${new Date(inv.maturityDate).toLocaleDateString()}</span></div>
+                <div class="modal-detail-row total"><span class="label">Estimated Return</span><span class="val">+$${parseFloat(inv.estimatedReturn).toLocaleString(undefined, {minimumFractionDigits:2})}</span></div>
+            `;
+            openModal('successModal');
+        }
+
+        // Load investments
         async function loadMyInvestments() {
             try {
-                const res = await fetch(`${API_URL}/api/investments/my-investments`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
+                const res = await fetch(`${API_URL}/api/investments/my-investments`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const data = await res.json();
-                if (data.success && data.investments.length > 0) {
-                    displayInvestments(data);
+                if (data.success) {
+                    if (data.investments.length > 0) {
+                        displayInvestments(data);
+                    } else {
+                        document.getElementById('myInvestments').style.display = 'block';
+                        document.getElementById('investmentsList').innerHTML = '<div class="empty-state"><i class="fas fa-seedling"></i><p>No investments yet. Start investing to grow your wealth!</p></div>';
+                        document.getElementById('invCount').textContent = '0';
+                        document.getElementById('portfolioBanner').style.display = 'none';
+                    }
                 }
-            } catch (e) {
-                console.error('Error loading investments:', e);
-            }
+            } catch (e) { console.error('Error loading investments:', e); }
         }
-        
+
         function displayInvestments(data) {
+            // Portfolio banner
+            const banner = document.getElementById('portfolioBanner');
+            banner.style.display = 'block';
+            const activeInvestments = data.investments.filter(i => i.status === 'active');
+            document.getElementById('totalInvested').textContent = '$' + parseFloat(data.totalInvested).toLocaleString(undefined, {minimumFractionDigits:2});
+            document.getElementById('totalReturns').textContent = '+$' + parseFloat(data.totalEstimatedReturn).toLocaleString(undefined, {minimumFractionDigits:2});
+            document.getElementById('activeCount').textContent = activeInvestments.length;
+            document.getElementById('portfolioValue').textContent = '$' + (parseFloat(data.totalInvested) + parseFloat(data.totalEstimatedReturn)).toLocaleString(undefined, {minimumFractionDigits:2});
+
+            // Investment list
             const container = document.getElementById('myInvestments');
-            if (!container) return;
-            
-            let html = `
-                <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #1a472a, #2d5a3d); color: white; border-radius: 10px;">
-                    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
-                        <div>
-                            <p style="margin: 0; font-size: 12px; opacity: 0.8;">Total Invested</p>
-                            <p style="margin: 5px 0; font-size: 24px; font-weight: bold;">$${data.totalInvested.toLocaleString()}</p>
-                        </div>
-                        <div>
-                            <p style="margin: 0; font-size: 12px; opacity: 0.8;">Estimated Returns</p>
-                            <p style="margin: 5px 0; font-size: 24px; font-weight: bold; color: #d4af37;">+$${data.totalEstimatedReturn.toLocaleString()}</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
+            container.style.display = 'block';
+            document.getElementById('invCount').textContent = data.investments.length;
+
+            let html = '';
             data.investments.forEach(inv => {
                 const isMatured = new Date(inv.maturityDate) <= new Date();
-                const statusMap = {
-                    active: `<span style="background: #d4edda; color: #155724; padding: 3px 8px; border-radius: 4px; font-size: 11px;">${isMatured ? 'Matured' : 'Active'}</span>`,
-                    matured: '<span style="background: #cce5ff; color: #004085; padding: 3px 8px; border-radius: 4px; font-size: 11px;">Matured - Collected</span>',
-                    withdrawn: '<span style="background: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 4px; font-size: 11px;">Withdrawn Early</span>',
-                    cancelled: '<span style="background: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-size: 11px;">Cancelled</span>'
-                };
-                const status = statusMap[inv.status] || statusMap.active;
-                const withdrawBtn = inv.status === 'active' ? `
-                    <button onclick="withdrawInvestment(${inv.id}, ${isMatured})" class="invest-btn" style="font-size:12px; padding:6px 14px; margin-top:6px;${isMatured ? 'background:#28a745;color:#fff;' : ''}">
-                        <i class="fas fa-${isMatured ? 'check-circle' : 'undo'}"></i> ${isMatured ? 'Collect Returns' : 'Withdraw'}
-                    </button>` : '';
-                    
+                let statusClass, statusText;
+                if (inv.status === 'active' && isMatured) { statusClass = 'status-matured-ready'; statusText = 'Matured'; }
+                else if (inv.status === 'active') { statusClass = 'status-active'; statusText = 'Active'; }
+                else if (inv.status === 'matured') { statusClass = 'status-collected'; statusText = 'Collected'; }
+                else if (inv.status === 'withdrawn') { statusClass = 'status-withdrawn'; statusText = 'Withdrawn'; }
+                else { statusClass = 'status-cancelled'; statusText = 'Cancelled'; }
+
+                let actionBtn = '';
+                if (inv.status === 'active' && isMatured) {
+                    actionBtn = `<button class="inv-action-btn btn-collect" onclick="event.stopPropagation();openWithdrawModal(${inv.id}, true, '${inv.product}', ${parseFloat(inv.amount)}, ${parseFloat(inv.estimatedReturn)})"><i class="fas fa-check-circle"></i> Collect</button>`;
+                } else if (inv.status === 'active') {
+                    actionBtn = `<button class="inv-action-btn btn-withdraw" onclick="event.stopPropagation();openWithdrawModal(${inv.id}, false, '${inv.product}', ${parseFloat(inv.amount)}, ${parseFloat(inv.estimatedReturn)})"><i class="fas fa-undo"></i> Withdraw</button>`;
+                }
+
                 html += `
-                    <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <div>
-                                <strong>${inv.product}</strong> ${status}
-                                <p style="margin: 5px 0 0; color: #64748b; font-size: 13px;">
-                                    $${parseFloat(inv.amount).toLocaleString()} • ${inv.apy}% APY • ${inv.period} years
-                                </p>
-                            </div>
-                            <div style="text-align: right;">
-                                <p style="margin: 0; color: #d4af37; font-weight: bold;">+$${parseFloat(inv.estimatedReturn).toLocaleString()}</p>
-                                <p style="margin: 3px 0 0; color: #94a3b8; font-size: 12px;">Matures: ${new Date(inv.maturityDate).toLocaleDateString()}</p>
-                                ${withdrawBtn}
-                            </div>
+                    <div class="inv-row">
+                        <div>
+                            <div class="inv-product-name">${inv.product} <span class="status-pill ${statusClass}">${statusText}</span></div>
+                            <div class="inv-product-detail">${inv.apy}% APY &middot; ${inv.period}yr &middot; Matures ${new Date(inv.maturityDate).toLocaleDateString()}</div>
                         </div>
+                        <div class="inv-amount">$${parseFloat(inv.amount).toLocaleString(undefined, {minimumFractionDigits:2})}</div>
+                        <div class="inv-return">+$${parseFloat(inv.estimatedReturn).toLocaleString(undefined, {minimumFractionDigits:2})}</div>
+                        <div>${actionBtn}</div>
                     </div>
                 `;
             });
-            
-            container.innerHTML = html;
-            container.style.display = 'block';
+
+            document.getElementById('investmentsList').innerHTML = html;
         }
-        
-        async function withdrawInvestment(investmentId, isMatured) {
-            const msg = isMatured 
-                ? 'Your investment has matured! You will receive your principal + estimated returns.'
-                : 'WARNING: Early withdrawal incurs a 10% penalty on your principal. Continue?';
-            
-            if (!confirm(msg)) return;
-            
+
+        // Withdraw modal
+        function openWithdrawModal(id, isMatured, product, amount, estReturn) {
+            const iconEl = document.getElementById('withdrawIcon');
+            const titleEl = document.getElementById('withdrawTitle');
+            const subtitleEl = document.getElementById('withdrawSubtitle');
+            const detailsEl = document.getElementById('withdrawDetails');
+            const confirmBtn = document.getElementById('withdrawConfirmBtn');
+
+            if (isMatured) {
+                iconEl.className = 'icon-circle icon-success';
+                titleEl.textContent = 'Collect Returns';
+                subtitleEl.textContent = 'Your investment has matured! Collect your principal and returns.';
+                const payout = amount + estReturn;
+                detailsEl.innerHTML = `
+                    <div class="modal-detail-row"><span class="label">Product</span><span class="val">${product}</span></div>
+                    <div class="modal-detail-row"><span class="label">Principal</span><span class="val">$${amount.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>
+                    <div class="modal-detail-row"><span class="label">Returns</span><span class="val" style="color:#16a34a">+$${estReturn.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>
+                    <div class="modal-detail-row total"><span class="label">Total Payout</span><span class="val">$${payout.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>
+                `;
+                confirmBtn.className = 'modal-btn modal-btn-primary';
+                confirmBtn.innerHTML = '<i class="fas fa-check"></i> Collect';
+            } else {
+                iconEl.className = 'icon-circle icon-warning';
+                titleEl.textContent = 'Early Withdrawal';
+                subtitleEl.textContent = 'Withdrawing before maturity incurs a 10% penalty on your principal.';
+                const penalty = amount * 0.10;
+                const payout = amount - penalty;
+                detailsEl.innerHTML = `
+                    <div class="modal-detail-row"><span class="label">Product</span><span class="val">${product}</span></div>
+                    <div class="modal-detail-row"><span class="label">Principal</span><span class="val">$${amount.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>
+                    <div class="modal-detail-row"><span class="label">Early Penalty (10%)</span><span class="val" style="color:#dc2626">-$${penalty.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>
+                    <div class="modal-detail-row total"><span class="label">You Receive</span><span class="val">$${payout.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>
+                `;
+                confirmBtn.className = 'modal-btn modal-btn-danger';
+                confirmBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Withdraw';
+            }
+
+            confirmBtn.onclick = () => executeWithdraw(id, isMatured);
+            openModal('withdrawModal');
+        }
+
+        async function executeWithdraw(investmentId, isMatured) {
+            const btn = document.getElementById('withdrawConfirmBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
             try {
                 const res = await fetch(`${API_URL}/api/investments/${investmentId}/withdraw`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
                 });
-                
                 const data = await res.json();
                 if (data.success) {
-                    let detail = `Payout: $${data.payout.toLocaleString(undefined, {minimumFractionDigits:2})}`;
-                    if (data.penalty > 0) detail += `\nEarly withdrawal penalty: -$${data.penalty.toLocaleString(undefined, {minimumFractionDigits:2})}`;
-                    detail += `\nNew balance: $${data.newBalance.toLocaleString(undefined, {minimumFractionDigits:2})}`;
-                    alert(detail);
-                    showNotification('Investment withdrawn successfully!', 'success');
+                    closeModal('withdrawModal');
+                    document.getElementById('successTitle').textContent = isMatured ? 'Returns Collected!' : 'Investment Withdrawn';
+                    document.getElementById('successSubtitle').textContent = isMatured ? 'Your matured investment has been paid out.' : 'Your investment has been withdrawn with a penalty.';
+                    let details = `<div class="modal-detail-row"><span class="label">Payout</span><span class="val" style="color:#16a34a">$${parseFloat(data.payout).toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>`;
+                    if (data.penalty > 0) {
+                        details += `<div class="modal-detail-row"><span class="label">Penalty Applied</span><span class="val" style="color:#dc2626">-$${parseFloat(data.penalty).toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>`;
+                    }
+                    details += `<div class="modal-detail-row total"><span class="label">New Balance</span><span class="val">$${parseFloat(data.newBalance).toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>`;
+                    document.getElementById('successDetails').innerHTML = details;
+                    openModal('successModal');
                     loadMyInvestments();
                 } else {
-                    showNotification('Error: ' + data.message, 'error');
+                    showToast(data.message, 'error');
                 }
             } catch (err) {
-                showNotification('Error: ' + err.message, 'error');
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
             }
-        }
-        
-        // Show notification toast
-        function showNotification(message, type = 'info') {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.style.display = 'block';
-            
-            if (type === 'success') {
-                notification.style.background = '#d4edda';
-                notification.style.color = '#155724';
-            } else if (type === 'error') {
-                notification.style.background = '#f8d7da';
-                notification.style.color = '#721c24';
-            } else {
-                notification.style.background = '#cce5ff';
-                notification.style.color = '#004085';
-            }
-            
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 4000);
         }
 
-        // Initialize
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            const icons = { success: 'check-circle', error: 'exclamation-circle', info: 'info-circle' };
+            toast.innerHTML = `<i class="fas fa-${icons[type] || icons.info}"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 4000);
+        }
+
+        // Backward compat
+        function showNotification(msg, type) { showToast(msg, type); }
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(el => {
+            el.addEventListener('click', (e) => { if (e.target === el) el.classList.remove('active'); });
+        });
+
+        // Init
         checkAuth();
         loadMyInvestments();
     </script>
@@ -503,8 +908,7 @@ Funds have been invested immediately.
         </div>
     </footer>
     <script src="cookie-consent.js"></script>
-<script src="app-sidebar.js"></script>
-<script src="app-sidebar.js"></script>
-<script>window.addEventListener('load',function(){var l=document.getElementById('pageLoader');if(l)l.classList.add('hidden');setTimeout(function(){if(l)l.remove()},500)});</script>
+    <script src="app-sidebar.js"></script>
+    <script>window.addEventListener('load',function(){var l=document.getElementById('pageLoader');if(l)l.classList.add('hidden');setTimeout(function(){if(l)l.remove()},500)});</script>
 </body>
 </html>
