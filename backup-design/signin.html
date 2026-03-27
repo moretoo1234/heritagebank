@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sign in to your Heritage Bank account to manage your finances securely.">
+    <title>Sign In - Heritage Bank</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>
+        .auth-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%); padding: 20px; }
+        .auth-card { background: white; border-radius: 16px; padding: 40px; max-width: 450px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .auth-header { text-align: center; margin-bottom: 30px; }
+        .auth-header h1 { color: #1a472a; font-size: 28px; margin-bottom: 10px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #1a472a; font-weight: 600; }
+        .form-group input { width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
+        .form-group input:focus { outline: none; border-color: #d4af37; }
+        .password-wrapper { position: relative; }
+        .password-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #666; }
+        .form-options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 0.9rem; }
+        .remember-me { display: flex; align-items: center; gap: 8px; }
+        .forgot-link { color: #1a472a; text-decoration: none; }
+        .forgot-link:hover { text-decoration: underline; }
+        .btn-primary { width: 100%; padding: 16px; background: #1a472a; color: white; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; }
+        .btn-primary:hover { background: #2d5f3f; }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+        .auth-links { text-align: center; margin-top: 20px; }
+        .auth-links a { color: #1a472a; text-decoration: none; }
+        .alert { padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .alert-danger { background: #f8d7da; color: #721c24; }
+        .alert-warning { background: #fff3cd; color: #856404; }
+        .login-attempts { text-align: center; color: #dc3545; font-size: 0.9rem; margin-top: 10px; }
+        .security-notice { background: #e7f3ff; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem; color: #004085; }
+
+        @media (max-width: 480px) {
+            .auth-container { padding: 15px; }
+            .auth-card { padding: 25px 20px; }
+            .auth-header h1 { font-size: 22px; }
+            .form-group input { padding: 12px; font-size: 0.95rem; }
+            .btn-primary { padding: 14px; font-size: 1rem; }
+            .form-options { font-size: 0.82rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1><i class="fas fa-landmark"></i> Heritage Bank</h1>
+                <p>Sign in to your account</p>
+            </div>
+            
+            <div class="security-notice">
+                <i class="fas fa-shield-alt"></i> Your session is encrypted and secure
+            </div>
+            
+            <div id="alertBox"></div>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email Address or Account Number</label>
+                    <input type="text" id="email" placeholder="Enter email or account number" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password">
+                        <i class="fas fa-eye password-toggle" id="togglePassword" onclick="togglePasswordVisibility()"></i>
+                    </div>
+                </div>
+                
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" id="rememberMe">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="forgot-password.html" class="forgot-link">Forgot Password?</a>
+                </div>
+                
+                <button type="submit" class="btn-primary" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+                
+                <div id="loginAttempts" class="login-attempts"></div>
+            </form>
+            
+            <div class="auth-links">
+                <p>Don't have an account? <a href="open-account.html">Open Account</a></p>
+                <p class="signin-back-link"><a href="index.html">← Back to Home</a></p>
+            </div>
+            <p class="signin-legal">By signing in, you agree to our <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a>.</p>
+        </div>
+    </div>
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3001' 
+            : window.location.origin;
+
+        // Redirect authenticated users to dashboard
+        (function() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                fetch(`${API_URL}/api/auth/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => r.json()).then(data => {
+                    if (data.success && data.user) {
+                        window.location.href = data.user.isAdmin ? 'admin.html' : 'dashboard.html';
+                    }
+                }).catch(() => {});
+            }
+        })();
+
+        let failedAttempts = parseInt(localStorage.getItem('failedAttempts') || '0');
+        let lockoutUntil = localStorage.getItem('lockoutUntil');
+
+        // Check if account is locked
+        if (lockoutUntil && new Date() < new Date(lockoutUntil)) {
+            const remainingMinutes = Math.ceil((new Date(lockoutUntil) - new Date()) / 60000);
+            document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-lock"></i> Account temporarily locked. Try again in ${remainingMinutes} minute(s).</div>`;
+            document.getElementById('loginBtn').disabled = true;
+            setTimeout(() => {
+                localStorage.removeItem('lockoutUntil');
+                location.reload();
+            }, remainingMinutes * 60000);
+        }
+
+        // Show failed attempts warning
+        if (failedAttempts > 0) {
+            document.getElementById('loginAttempts').innerHTML = `⚠️ ${failedAttempts} failed attempt(s). Account will lock after 5 attempts.`;
+        }
+
+        // Toggle password visibility
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('togglePassword');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Check lockout
+            if (lockoutUntil && new Date() < new Date(lockoutUntil)) {
+                return;
+            }
+            
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+            
+            try {
+                const res = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('email').value,
+                        password: document.getElementById('password').value,
+                        rememberMe: document.getElementById('rememberMe').checked
+                    })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    // Clear failed attempts
+                    localStorage.removeItem('failedAttempts');
+                    localStorage.removeItem('lockoutUntil');
+                    
+                    // Save session
+                    if (document.getElementById('rememberMe').checked) {
+                        localStorage.setItem('rememberMe', 'true');
+                    }
+                    localStorage.setItem('token', data.token);
+                    const safeUser = { id: data.user.id, firstName: data.user.firstName, lastName: data.user.lastName, email: data.user.email, accountNumber: data.user.accountNumber, accountType: data.user.accountType };
+                    localStorage.setItem('user', JSON.stringify(safeUser));
+                    
+                    // Show success
+                    document.getElementById('alertBox').innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle"></i> Login successful! Redirecting...</div>`;
+                    
+                    // Show last login if available
+                    if (data.lastLogin) {
+                        document.getElementById('alertBox').innerHTML += `<div class="security-notice">Last login: ${new Date(data.lastLogin).toLocaleString()}</div>`;
+                    }
+                    
+                    setTimeout(() => {
+                        window.location.href = data.user.isAdmin ? 'admin.html' : 'dashboard.html';
+                    }, 1500);
+                } else {
+                    // Increment failed attempts
+                    failedAttempts++;
+                    localStorage.setItem('failedAttempts', failedAttempts);
+                    
+                    if (failedAttempts >= 5) {
+                        // Lock account for 15 minutes
+                        const lockoutTime = new Date(Date.now() + 15 * 60000);
+                        localStorage.setItem('lockoutUntil', lockoutTime.toISOString());
+                        document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-lock"></i> Too many failed attempts. Account locked for 15 minutes.</div>`;
+                        document.getElementById('loginBtn').disabled = true;
+                        setTimeout(() => {
+                            localStorage.removeItem('lockoutUntil');
+                            localStorage.removeItem('failedAttempts');
+                            location.reload();
+                        }, 15 * 60000);
+                    } else {
+                        const safeMsg = (data.message || 'Login failed').replace(/[<>"'&]/g, c => ({'<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','&':'&amp;'}[c]));
+                        document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ${safeMsg}</div>`;
+                        document.getElementById('loginAttempts').innerHTML = `⚠️ ${failedAttempts} failed attempt(s). ${5 - failedAttempts} remaining before lockout.`;
+                    }
+                    
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+                }
+            } catch (e) {
+                document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Connection error. Please try again.</div>`;
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+            }
+        });
+
+        // Auto-fill if remember me was checked
+        window.addEventListener('load', () => {
+            if (localStorage.getItem('rememberMe') === 'true') {
+                document.getElementById('rememberMe').checked = true;
+            }
+        });
+    </script>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>

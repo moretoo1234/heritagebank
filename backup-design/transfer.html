@@ -1,0 +1,1948 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Transfer funds securely between accounts or send domestic and international wire transfers with Heritage Bank.">
+    <title>Transfer - Heritage Bank</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+        
+        .container { max-width: 700px; margin: 30px auto; padding: 20px; }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .back-btn i { color: #1a472a; }
+        .header h1 { color: #1a472a; }
+        
+        .balance-card {
+            background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+        .balance-card p { opacity: 0.9; font-size: 0.9rem; }
+        .balance-card h2 { font-size: 2rem; margin-top: 10px; }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+        .card h2 {
+            color: #1a472a;
+            margin-bottom: 25px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .transfer-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            border-color: #1a472a;
+            background: #f0f7f2;
+            color: #1a472a;
+            font-weight: 600;
+        }
+        .tab-btn i { margin-right: 8px; }
+
+        /* UK Bank selector */
+        .bank-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
+            margin-bottom: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+        .bank-option {
+            padding: 10px 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.82rem;
+            font-weight: 500;
+            background: white;
+        }
+        .bank-option:hover { border-color: #1a472a; background: #f0f7f2; }
+        .bank-option.selected {
+            border-color: #1a472a;
+            background: #1a472a;
+            color: white;
+        }
+        .bank-option .bank-icon {
+            display: block;
+            font-size: 1.3rem;
+            margin-bottom: 4px;
+        }
+        .bank-option .bank-logo {
+            display: block;
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            margin: 0 auto 4px;
+            border-radius: 4px;
+        }
+        .sort-code-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f0f7f2;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #1a472a;
+        }
+        .sort-code-display i { color: #d4af37; }
+
+        /* ── Receipt Modal ── */
+        .receipt-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.65);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .receipt-overlay.active { opacity: 1; pointer-events: all; }
+        .receipt-card {
+            background: white; border-radius: 16px; width: 420px; max-width: 95vw;
+            max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+            animation: receiptSlide 0.4s ease;
+        }
+        @keyframes receiptSlide {
+            from { transform: translateY(40px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .receipt-header {
+            background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%);
+            padding: 28px 28px 32px;
+            border-radius: 16px 16px 0 0;
+            text-align: center; color: white;
+            position: relative;
+        }
+        .receipt-header .receipt-logo {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 10px; font-size: 22px;
+        }
+        .receipt-header .receipt-logo img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+        .receipt-header h3 { font-size: 1.15rem; margin-bottom: 4px; }
+        .receipt-header p { opacity: 0.85; font-size: 0.82rem; margin-bottom: 0; }
+        .receipt-check-3d {
+            width: 64px; height: 64px; border-radius: 50%;
+            margin: -32px auto 0;
+            position: relative;
+            z-index: 2;
+        }
+        .receipt-check-3d .check-sphere {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #5bea7a, #28a745 60%, #1a8c35);
+            border: 4px solid white;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 20px rgba(40,167,69,0.45), inset 0 -3px 6px rgba(0,0,0,0.15), inset 0 3px 6px rgba(255,255,255,0.25);
+            animation: check3dPop 0.6s ease-out;
+        }
+        .receipt-check-3d .check-sphere i {
+            font-size: 26px; color: white; 
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+            animation: checkDraw 0.4s ease-out 0.3s both;
+        }
+        @keyframes check3dPop {
+            0% { transform: scale(0) rotateY(180deg); }
+            60% { transform: scale(1.15) rotateY(-10deg); }
+            80% { transform: scale(0.95) rotateY(5deg); }
+            100% { transform: scale(1) rotateY(0deg); }
+        }
+        @keyframes checkDraw {
+            0% { opacity: 0; transform: scale(0) rotate(-45deg); }
+            50% { opacity: 1; transform: scale(1.2) rotate(5deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+        .receipt-body { padding: 16px 28px 20px; }
+        .receipt-amount-display {
+            text-align: center; margin-bottom: 20px;
+        }
+        .receipt-amount-display .label { color: #999; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        .receipt-amount-display .amount { font-size: 2.2rem; font-weight: 700; color: #1a472a; }
+        .receipt-divider {
+            border: none; border-top: 2px dashed #e0e0e0;
+            margin: 16px 0;
+        }
+        .receipt-row {
+            display: flex; justify-content: space-between;
+            padding: 8px 0; font-size: 0.9rem;
+        }
+        .receipt-row .rlabel { color: #888; }
+        .receipt-row .rvalue { color: #333; font-weight: 500; text-align: right; max-width: 55%; }
+        .receipt-footer {
+            text-align: center; padding: 16px 28px 24px;
+            border-top: 1px solid #eee;
+        }
+        .receipt-footer .receipt-actions {
+            display: flex; gap: 10px; justify-content: center; margin-bottom: 12px;
+        }
+        .receipt-footer .btn-receipt-action {
+            padding: 10px 20px; border-radius: 8px; border: none;
+            cursor: pointer; font-weight: 600; font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .btn-download-receipt { background: #1a472a; color: white; }
+        .btn-download-receipt:hover { background: #2d5f3f; }
+        .btn-close-receipt { background: #f0f0f0; color: #333; }
+        .btn-close-receipt:hover { background: #e0e0e0; }
+        .receipt-footer .receipt-ref { font-size: 0.75rem; color: #aaa; }
+        .receipt-stamp {
+            display: inline-block; border: 2px solid #28a745; color: #28a745;
+            padding: 3px 14px; border-radius: 4px; font-size: 0.75rem;
+            font-weight: 700; letter-spacing: 2px; transform: rotate(-3deg);
+            margin-bottom: 12px;
+        }
+
+        /* ── Bank Logo in Receipt ── */
+        .receipt-bank-logo-row {
+            display: flex; align-items: center; justify-content: center;
+            gap: 12px; margin-bottom: 16px;
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e8e8e8;
+        }
+        .receipt-bank-logo-row img {
+            width: 42px; height: 42px; border-radius: 8px; object-fit: contain;
+            border: 1px solid #e0e0e0; background: white; padding: 3px;
+        }
+        .receipt-bank-logo-row .bank-name-label {
+            font-size: 1.05rem; font-weight: 600; color: #1a472a;
+        }
+
+        /* ── Transfer Complete Animation ── */
+        .transfer-complete-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(26,71,42,0.92);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 99999; opacity: 0; pointer-events: none;
+            transition: opacity 0.4s;
+        }
+        .transfer-complete-overlay.active { opacity: 1; pointer-events: all; }
+        .tc-check-circle {
+            width: 100px; height: 100px; border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 24px;
+            animation: tcPulse 0.6s ease-out;
+        }
+        .tc-check-circle .tc-check-inner {
+            width: 74px; height: 74px; border-radius: 50%;
+            background: #28a745;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 30px rgba(40,167,69,0.5);
+        }
+        .tc-check-circle .tc-check-inner i {
+            font-size: 36px; color: white;
+            animation: tcCheckPop 0.5s ease 0.3s both;
+        }
+        .tc-congrats {
+            font-size: 1.6rem; font-weight: 700; color: #d4af37;
+            margin-bottom: 4px;
+            animation: tcFadeUp 0.5s ease 0.35s both;
+        }
+        .tc-message {
+            font-size: 0.95rem; color: rgba(255,255,255,0.85);
+            margin-bottom: 16px;
+            animation: tcFadeUp 0.5s ease 0.4s both;
+        }
+        .tc-amount-display {
+            font-size: 2.4rem; font-weight: 700; color: white;
+            margin-bottom: 18px;
+            animation: tcFadeUp 0.5s ease 0.45s both;
+        }
+        .tc-detail-card {
+            background: rgba(255,255,255,0.1); border-radius: 14px;
+            padding: 16px 24px; min-width: 260px; max-width: 340px;
+            backdrop-filter: blur(8px);
+            animation: tcFadeUp 0.5s ease 0.55s both;
+        }
+        .tc-detail-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0;
+        }
+        .tc-detail-row + .tc-detail-row {
+            border-top: 1px solid rgba(255,255,255,0.12);
+        }
+        .tc-detail-label {
+            font-size: 0.85rem; color: rgba(255,255,255,0.6);
+        }
+        .tc-detail-value {
+            font-size: 0.95rem; color: white; font-weight: 600;
+        }
+        .tc-bank-val {
+            display: flex; align-items: center; gap: 6px;
+        }
+        .tc-bank-val img {
+            width: 20px; height: 20px; border-radius: 4px; object-fit: contain;
+            border: 1px solid rgba(255,255,255,0.3); background: white; padding: 1px;
+        }
+        .tc-bank-val span { color: white; font-size: 0.95rem; }
+        .tc-confetti {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; overflow: hidden;
+        }
+        .tc-confetti-piece {
+            position: absolute; width: 8px; height: 8px; border-radius: 2px;
+            animation: tcConfettiFall linear forwards;
+        }
+        @keyframes tcPulse {
+            0% { transform: scale(0); opacity: 0; }
+            60% { transform: scale(1.15); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes tcCheckPop {
+            0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+            60% { transform: scale(1.2) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes tcFadeUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes tcConfettiFall {
+            0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* ── Currency Conversion ── */
+        .currency-selector {
+            display: flex; gap: 8px; margin-bottom: 12px;
+        }
+        .currency-option {
+            flex: 1; padding: 10px 6px; border: 2px solid #e0e0e0; border-radius: 8px;
+            text-align: center; cursor: pointer; transition: all 0.2s;
+            font-weight: 600; font-size: 0.9rem; background: white;
+        }
+        .currency-option:hover { border-color: #1a472a; background: #f0f7f2; }
+        .currency-option.active {
+            border-color: #1a472a; background: #1a472a; color: white;
+        }
+        .currency-option .cur-symbol {
+            display: block; font-size: 1.2rem; margin-bottom: 2px;
+        }
+        .currency-option .cur-label {
+            font-size: 0.72rem; font-weight: 400; opacity: 0.8;
+        }
+        .conversion-box {
+            background: linear-gradient(135deg, #f0f7f2 0%, #e8f5ec 100%);
+            border: 1px solid #c8e6c9;
+            border-radius: 10px; padding: 16px 18px; margin-bottom: 18px;
+            display: none;
+        }
+        .conversion-box.show { display: block; }
+        .conversion-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .conversion-row:last-child { margin-bottom: 0; }
+        .conversion-arrow {
+            display: flex; align-items: center; justify-content: center;
+            margin: 8px 0; color: #1a472a;
+        }
+        .conversion-arrow i { font-size: 1.1rem; }
+        .conv-send {
+            background: white; border-radius: 8px; padding: 10px 14px;
+            display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid #e0e0e0;
+        }
+        .conv-receive {
+            background: #1a472a; color: white; border-radius: 8px; padding: 10px 14px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .conv-label { font-size: 0.78rem; opacity: 0.7; }
+        .conv-amount { font-size: 1.15rem; font-weight: 700; }
+        .conv-rate {
+            text-align: center; font-size: 0.78rem; color: #666;
+            margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ccc;
+        }
+        .conv-rate i { color: #d4af37; margin-right: 4px; }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 14px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #1a472a;
+        }
+        .form-group small {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: block;
+        }
+        
+        .amount-input {
+            position: relative;
+        }
+        .amount-input span {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 1.2rem;
+        }
+        .amount-input input {
+            padding-left: 35px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .quick-amounts {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .quick-amount {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .quick-amount:hover {
+            border-color: #1a472a;
+            background: #f0f7f2;
+        }
+        
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: #1a472a;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-primary:hover { background: #2d5f3f; }
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .alert i { margin-top: 3px; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-danger { background: #f8d7da; color: #721c24; }
+        .alert-info { background: #d1ecf1; color: #0c5460; }
+        .alert-warning { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        
+        .recipient-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .recipient-preview.show { display: block; }
+        .recipient-preview h4 { color: #1a472a; margin-bottom: 5px; }
+        .recipient-preview p { color: #666; font-size: 0.9rem; }
+        
+        .transfer-summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .summary-row:last-child { border-bottom: none; }
+        .summary-row.total {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #1a472a;
+        }
+        
+        .recent-transfers {
+            margin-top: 20px;
+        }
+        .recent-transfers h3 {
+            color: #1a472a;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+        .transfer-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .transfer-item:hover { background: #f8f9fa; }
+        .transfer-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f0f7f2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+        .transfer-icon i { color: #1a472a; }
+        .transfer-details { flex: 1; }
+        .transfer-details h4 { font-size: 0.95rem; color: #333; }
+        .transfer-details span { font-size: 0.85rem; color: #666; }
+        
+        /* Global word-wrap */
+        h1, h2, h3, h4, p, span, strong, .rvalue { overflow-wrap: break-word; word-wrap: break-word; }
+
+        @media (max-width: 600px) {
+            .container { padding: 15px; margin: 15px auto; }
+            .card { padding: 20px 16px; }
+            .transfer-tabs { flex-direction: column; }
+            .quick-amounts { flex-wrap: wrap; }
+            .header h1 { font-size: 1.2rem; }
+            .balance-card h2 { font-size: 1.5rem; }
+            .balance-card { padding: 18px; }
+            .form-group input, .form-group select, .form-group textarea { padding: 12px; font-size: 0.95rem; }
+            .amount-input input { font-size: 1.1rem; }
+            .btn-primary { padding: 14px; font-size: 1rem; }
+            .tab-btn { padding: 10px; font-size: 0.85rem; }
+            .bank-selector { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
+            .bank-option { padding: 8px 6px; font-size: 0.75rem; }
+            .bank-option .bank-icon { font-size: 1.1rem; }
+            .sort-code-display { padding: 8px 10px; font-size: 0.85rem; }
+            .currency-option { padding: 8px 4px; font-size: 0.8rem; }
+            .currency-option .cur-symbol { font-size: 1rem; }
+            .currency-option .cur-label { font-size: 0.65rem; }
+            .conversion-box { padding: 12px; }
+            .conv-amount { font-size: 1rem; }
+            .receipt-card { width: 95vw; }
+            .receipt-header { padding: 18px 18px 16px; }
+            .receipt-header h3 { font-size: 1rem; }
+            .receipt-body { padding: 30px 18px 16px; }
+            .receipt-amount-display .amount { font-size: 1.6rem; }
+            .receipt-row { font-size: 0.82rem; padding: 6px 0; }
+            .receipt-row .rvalue { max-width: 60%; font-size: 0.82rem; }
+            .receipt-footer { padding: 12px 18px 18px; }
+            .receipt-footer .btn-receipt-action { padding: 8px 14px; font-size: 0.82rem; }
+            .summary-row { font-size: 0.9rem; padding: 8px 0; }
+            .summary-row.total { font-size: 1rem; }
+            .alert { padding: 12px; font-size: 0.88rem; }
+            .quick-amount { padding: 6px 12px; font-size: 0.82rem; }
+            .transfer-item { padding: 10px; }
+            .transfer-icon { width: 34px; height: 34px; margin-right: 10px; }
+            .transfer-details h4 { font-size: 0.88rem; }
+            .transfer-details span { font-size: 0.78rem; }
+        }
+
+        @media (max-width: 380px) {
+            .container { padding: 10px; margin: 10px auto; }
+            .card { padding: 16px 12px; }
+            .header h1 { font-size: 1.05rem; }
+            .balance-card h2 { font-size: 1.3rem; }
+            .bank-selector { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+            .currency-selector { flex-wrap: wrap; }
+            .currency-option { min-width: calc(50% - 4px); }
+            .receipt-amount-display .amount { font-size: 1.4rem; }
+            .receipt-row .rvalue { max-width: 58%; }
+        }
+        .app-footer { background: #1a2332; padding: 20px 0; margin-top: 40px; text-align: center; }
+        .app-footer-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .app-footer-links { margin-bottom: 10px; }
+        .app-footer-links a { color: #8899aa; text-decoration: none; margin: 0 10px; font-size: 0.8rem; }
+        .app-footer-links a:hover { color: #aabbcc; }
+        .app-footer-copy { color: #556677; font-size: 0.75rem; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="location.href='dashboard.html'" title="Back to Dashboard"><i class="fas fa-arrow-left"></i></button>
+            <h1>Send Money</h1>
+        </div>
+        
+        <div class="balance-card">
+            <p>Available Balance</p>
+            <h2 id="currentBalance">$0.00</h2>
+        </div>
+        
+        <div class="card">
+            <h2><i class="fas fa-paper-plane"></i> Transfer Details</h2>
+            
+            <div id="alertBox"></div>
+            
+            <div class="transfer-tabs">
+                <button class="tab-btn active" onclick="setTransferType('email', this)">
+                    <i class="fas fa-envelope"></i> By Email
+                </button>
+                <button class="tab-btn" onclick="setTransferType('account', this)">
+                    <i class="fas fa-university"></i> Heritage Account
+                </button>
+                <button class="tab-btn" onclick="setTransferType('ukbank', this)">
+                    <i class="fas fa-landmark"></i> UK Bank Transfer
+                </button>
+                <button class="tab-btn" onclick="setTransferType('usbank', this)">
+                    <i class="fas fa-flag-usa"></i> US Wire/ACH
+                </button>
+            </div>
+            
+            <form id="transferForm">
+                <div class="form-group" id="emailGroup">
+                    <label>Recipient Email</label>
+                    <input type="email" id="toEmail" placeholder="recipient@email.com" oninput="lookupRecipient()">
+                    <small>Enter the email address of the Heritage Bank user</small>
+                </div>
+                
+                <div class="form-group initially-hidden" id="accountGroup">
+                    <label>Recipient Account Number</label>
+                    <input type="text" id="toAccountNumber" placeholder="10-digit account number" maxlength="10" oninput="lookupRecipient()">
+                    <small>Enter the 10-digit Heritage Bank account number</small>
+                </div>
+
+                <!-- UK Bank Transfer Fields -->
+                <div id="ukBankGroup" class="initially-hidden">
+                    <div class="form-group">
+                        <label>Select Bank</label>
+                        <div class="bank-selector" id="bankSelector"></div>
+                    </div>
+                    <div class="sort-code-display initially-hidden" id="sortCodeDisplay">
+                        <i class="fas fa-building-columns"></i>
+                        <span>Sort Code: <span id="selectedSortCode">--</span></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Recipient Account Number</label>
+                        <input type="text" id="ukAccountNumber" placeholder="8-digit account number" maxlength="8" oninput="lookupRecipient()">
+                        <small>Enter the 8-digit UK bank account number</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Recipient Full Name</label>
+                        <input type="text" id="ukRecipientName" placeholder="Full name as on their account">
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Reference</label>
+                        <input type="text" id="ukReference" placeholder="e.g., Invoice 12345" maxlength="18">
+                        <small>Up to 18 characters — shown on the recipient's statement</small>
+                    </div>
+                </div>
+
+                <!-- US Wire/ACH Transfer Fields -->
+                <div id="usBankGroup" class="initially-hidden">
+                    <div class="form-group">
+                        <label>Select Bank</label>
+                        <div class="bank-selector" id="usBankSelector"></div>
+                    </div>
+                    <div class="sort-code-display initially-hidden" id="routingDisplay">
+                        <i class="fas fa-building-columns"></i>
+                        <span>Routing Number: <strong id="selectedRouting">-</strong></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Transfer Type</label>
+                        <select id="usTransferMethod" class="form-select-styled" title="Transfer Type">
+                            <option value="ach">ACH Transfer (1-3 business days)</option>
+                            <option value="wire">Wire Transfer (same day)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Recipient Account Number</label>
+                        <input type="text" id="usAccountNumber" placeholder="Account number" maxlength="17">
+                        <small>Enter the recipient's bank account number</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Account Type</label>
+                        <select id="usAccountType" class="form-select-styled" title="Account Type">
+                            <option value="checking">Checking</option>
+                            <option value="savings">Savings</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Recipient Full Name</label>
+                        <input type="text" id="usRecipientName" placeholder="Full name as on their account">
+                    </div>
+                    <div class="form-group">
+                        <label>Memo / Reference (Optional)</label>
+                        <input type="text" id="usReference" placeholder="e.g., Invoice payment" maxlength="40">
+                    </div>
+                </div>
+                
+                <div class="recipient-preview" id="recipientPreview">
+                    <h4 id="recipientName">-</h4>
+                    <p id="recipientInfo">-</p>
+                </div>
+                
+                <div class="form-group">
+                    <label>Amount</label>
+                    <div class="amount-input">
+                        <span>$</span>
+                        <input type="number" id="amount" min="1" step="0.01" placeholder="0.00" required oninput="updateSummary()">
+                    </div>
+                    <div class="quick-amounts">
+                        <button type="button" class="quick-amount" onclick="setAmount(50)">$50</button>
+                        <button type="button" class="quick-amount" onclick="setAmount(100)">$100</button>
+                        <button type="button" class="quick-amount" onclick="setAmount(250)">$250</button>
+                        <button type="button" class="quick-amount" onclick="setAmount(500)">$500</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Recipient's Currency</label>
+                    <div class="currency-selector">
+                        <div class="currency-option active" onclick="setRecipientCurrency('USD', this)">
+                            <span class="cur-symbol">$</span>
+                            USD
+                            <span class="cur-label">US Dollar</span>
+                        </div>
+                        <div class="currency-option" onclick="setRecipientCurrency('GBP', this)">
+                            <span class="cur-symbol">Â£</span>
+                            GBP
+                            <span class="cur-label">British Pound</span>
+                        </div>
+                        <div class="currency-option" onclick="setRecipientCurrency('EUR', this)">
+                            <span class="cur-symbol">€</span>
+                            EUR
+                            <span class="cur-label">Euro</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="conversion-box" id="conversionBox">
+                    <div class="conv-send">
+                        <div><div class="conv-label">You Send</div></div>
+                        <div class="conv-amount" id="convSendAmount">$0.00</div>
+                    </div>
+                    <div class="conversion-arrow"><i class="fas fa-arrow-down"></i></div>
+                    <div class="conv-receive">
+                        <div><div class="conv-label">Recipient Receives</div></div>
+                        <div class="conv-amount" id="convReceiveAmount">Â£0.00</div>
+                    </div>
+                    <div class="conv-rate" id="convRate">
+                        <i class="fas fa-chart-line"></i> Exchange rate: 1 USD = 0.79 GBP
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Note (Optional)</label>
+                    <textarea id="description" rows="2" placeholder="What's this for?"></textarea>
+                </div>
+                
+                <div class="transfer-summary initially-hidden" id="transferSummary">
+                    <div class="summary-row">
+                        <span>You Send (USD)</span>
+                        <span id="summaryAmount">$0.00</span>
+                    </div>
+                    <div class="summary-row initially-hidden" id="summaryConvRow">
+                        <span>Recipient Receives (<span id="summaryRecvCurrency">USD</span>)</span>
+                        <span id="summaryRecvAmount">$0.00</span>
+                    </div>
+                    <div class="summary-row initially-hidden" id="summaryRateRow">
+                        <span>Exchange Rate</span>
+                        <span id="summaryRate">-</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Transfer Fee</span>
+                        <span>$0.00</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total Debited</span>
+                        <span id="summaryTotal">$0.00</span>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-primary" id="submitBtn">
+                    <i class="fas fa-paper-plane"></i> Send Money
+                </button>
+            </form>
+        </div>
+        
+        <div class="card recent-transfers initially-hidden" id="recentTransfersSection">
+            <h3><i class="fas fa-history"></i> Recent Recipients</h3>
+            <div id="recentRecipients"></div>
+        </div>
+
+        <div class="card">
+            <div class="beneficiary-header">
+                <h3><i class="fas fa-address-book"></i> Saved Beneficiaries</h3>
+                <button class="btn-action" onclick="showAddBeneficiaryModal()">
+                    <i class="fas fa-plus"></i> Add Beneficiary
+                </button>
+            </div>
+            <div id="beneficiariesList"></div>
+        </div>
+    </div>
+
+    <!-- Transfer Complete Animation Overlay -->
+    <div class="transfer-complete-overlay" id="tcOverlay">
+        <div class="tc-confetti" id="tcConfetti"></div>
+        <div class="tc-check-circle">
+            <div class="tc-check-inner"><i class="fas fa-check"></i></div>
+        </div>
+        <div class="tc-congrats">Congratulations!</div>
+        <div class="tc-message">Your transfer has been sent successfully</div>
+        <div class="tc-amount-display" id="tcAmount">$0.00</div>
+        <div class="tc-detail-card">
+            <div class="tc-detail-row">
+                <span class="tc-detail-label">Sent to</span>
+                <span class="tc-detail-value" id="tcRecipient">Recipient</span>
+            </div>
+            <div class="tc-detail-row">
+                <span class="tc-detail-label">Account</span>
+                <span class="tc-detail-value" id="tcAccountMask">****0000</span>
+            </div>
+            <div class="tc-detail-row" id="tcBankRow">
+                <span class="tc-detail-label">Bank</span>
+                <span class="tc-detail-value tc-bank-val">
+                    <img id="tcBankLogo" src="" alt="" style="display:none;">
+                    <span id="tcBankName"></span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div class="receipt-overlay" id="receiptOverlay">
+        <div class="receipt-card" id="receiptCard">
+            <div class="receipt-header">
+                <div class="receipt-logo">
+                    <img src="assets/logo.png" alt="Heritage Bank" onerror="this.parentElement.innerHTML='<i class=\'fas fa-university\'></i>'">
+                </div>
+                <h3>Heritage Bank</h3>
+                <p>Transaction Receipt</p>
+            </div>
+            <div class="receipt-check-3d">
+                <div class="check-sphere"><i class="fas fa-check"></i></div>
+            </div>
+            <div class="receipt-body">
+                <div class="receipt-amount-display">
+                    <div class="label">Amount Sent</div>
+                    <div class="amount" id="receiptAmount">$0.00</div>
+                </div>
+                <div id="receiptConversionRow" class="receipt-conversion-row">
+                    <div class="receipt-conversion-label">Recipient Receives</div>
+                    <div class="receipt-conversion-amount" id="receiptRecvAmount">$0.00</div>
+                    <div class="receipt-conversion-rate" id="receiptExRate">Rate: 1 USD = 0.79 GBP</div>
+                </div>
+                <div class="receipt-bank-logo-row" id="receiptBankLogoRow" style="display:none;">
+                    <img id="receiptBankLogo" src="" alt="">
+                    <span class="bank-name-label" id="receiptBankLabel"></span>
+                </div>
+                <div class="receipt-stamp" id="receiptStamp">SUCCESSFUL</div>
+                <hr class="receipt-divider">
+                <div class="receipt-row"><span class="rlabel">To</span><span class="rvalue" id="receiptTo">-</span></div>
+                <div class="receipt-row"><span class="rlabel">Bank</span><span class="rvalue" id="receiptBank" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;"><img id="receiptBankIcon" src="" alt="" style="width:22px;height:22px;border-radius:4px;object-fit:contain;display:none;border:1px solid #e0e0e0;"><span id="receiptBankText">Heritage Bank</span></span></div>
+                <div class="receipt-row"><span class="rlabel">Date & Time</span><span class="rvalue" id="receiptDate">-</span></div>
+                <div class="receipt-row"><span class="rlabel">Reference</span><span class="rvalue" id="receiptRef">-</span></div>
+                <div class="receipt-row"><span class="rlabel">Description</span><span class="rvalue" id="receiptDesc">-</span></div>
+                <div class="receipt-row initially-hidden" id="receiptCurrencyRow"><span class="rlabel">Currency</span><span class="rvalue" id="receiptCurrency">-</span></div>
+                <div class="receipt-row"><span class="rlabel">Status</span><span class="rvalue receipt-status-success" id="receiptStatus">Completed ✓</span></div>
+                <hr class="receipt-divider">
+                <div class="receipt-row"><span class="rlabel">Transaction Fee</span><span class="rvalue" id="receiptFee">$0.00</span></div>
+                <div class="receipt-row receipt-total-row"><span class="rlabel">Total Debited</span><span class="rvalue" id="receiptTotal">$0.00</span></div>
+            </div>
+            <div class="receipt-footer">
+                <div class="receipt-actions">
+                    <button class="btn-receipt-action btn-download-receipt" onclick="downloadLastReceipt()"><i class="fas fa-download"></i> Download PDF</button>
+                    <button class="btn-receipt-action btn-close-receipt" onclick="closeReceipt()"><i class="fas fa-times"></i> Close</button>
+                </div>
+                <div class="receipt-ref" id="receiptFooterRef">Heritage Bank N.A. - Member FDIC - Equal Housing Lender</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3001' 
+            : window.location.origin;
+        
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+        }
+
+        let userId = null;
+        let currentBalance = 0;
+        let transferType = 'email';
+        let recentRecipients = [];
+        let selectedUkBank = null;
+        let selectedUsBank = null;
+        let lastTransactionId = null;
+        let recipientCurrency = 'USD';
+
+        // Exchange rates (USD base → target)
+        const EXCHANGE_RATES = {
+            USD: 1.00,
+            GBP: 0.79,
+            EUR: 0.92
+        };
+        const CURRENCY_SYMBOLS = { GBP: 'Â£', USD: '$', EUR: '€' };
+        const CURRENCY_NAMES = { GBP: 'British Pound', USD: 'US Dollar', EUR: 'Euro' };
+
+        function setRecipientCurrency(cur, el) {
+            recipientCurrency = cur;
+            document.querySelectorAll('.currency-option').forEach(o => o.classList.remove('active'));
+            if (el) el.closest('.currency-option').classList.add('active');
+            updateSummary();
+        }
+
+        function convertAmount(usdAmount, toCurrency) {
+            return usdAmount * EXCHANGE_RATES[toCurrency];
+        }
+
+        function formatCur(amount, currency) {
+            return CURRENCY_SYMBOLS[currency] + amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // UK Banks with sort codes
+        const UK_BANKS = [
+            { name: 'Barclays', sortCode: '20-00-00', logo: 'https://www.google.com/s2/favicons?domain=barclays.co.uk&sz=64' },
+            { name: 'HSBC', sortCode: '40-00-00', logo: 'https://www.google.com/s2/favicons?domain=hsbc.co.uk&sz=64' },
+            { name: 'Lloyds Bank', sortCode: '30-00-00', logo: 'https://www.google.com/s2/favicons?domain=lloydsbank.com&sz=64' },
+            { name: 'NatWest', sortCode: '60-00-00', logo: 'https://www.google.com/s2/favicons?domain=natwest.com&sz=64' },
+            { name: 'Santander', sortCode: '09-00-00', logo: 'https://www.google.com/s2/favicons?domain=santander.co.uk&sz=64' },
+            { name: 'Halifax', sortCode: '11-00-00', logo: 'https://www.google.com/s2/favicons?domain=halifax.co.uk&sz=64' },
+            { name: 'Nationwide', sortCode: '07-00-00', logo: 'https://www.google.com/s2/favicons?domain=nationwide.co.uk&sz=64' },
+            { name: 'TSB', sortCode: '77-00-00', logo: 'https://www.google.com/s2/favicons?domain=tsb.co.uk&sz=64' },
+            { name: 'RBS', sortCode: '83-00-00', logo: 'https://www.google.com/s2/favicons?domain=rbs.co.uk&sz=64' },
+            { name: 'Metro Bank', sortCode: '23-05-80', logo: 'https://www.google.com/s2/favicons?domain=metrobankonline.co.uk&sz=64' },
+            { name: 'Monzo', sortCode: '04-00-04', logo: 'https://www.google.com/s2/favicons?domain=monzo.com&sz=64' },
+            { name: 'Starling', sortCode: '60-83-71', logo: 'https://www.google.com/s2/favicons?domain=starlingbank.com&sz=64' },
+            { name: 'Revolut', sortCode: '04-00-75', logo: 'https://www.google.com/s2/favicons?domain=revolut.com&sz=64' },
+            { name: 'Virgin Money', sortCode: '05-00-00', logo: 'https://www.google.com/s2/favicons?domain=virginmoney.com&sz=64' },
+            { name: 'Co-op Bank', sortCode: '08-90-00', logo: 'https://www.google.com/s2/favicons?domain=co-operativebank.co.uk&sz=64' },
+            { name: 'Clydesdale', sortCode: '82-60-00', logo: 'https://www.google.com/s2/favicons?domain=cbonline.co.uk&sz=64' },
+            { name: 'Yorkshire Bank', sortCode: '05-09-00', logo: 'https://www.google.com/s2/favicons?domain=ybonline.co.uk&sz=64' },
+            { name: 'Bank of Scotland', sortCode: '80-00-00', logo: 'https://www.google.com/s2/favicons?domain=bankofscotland.co.uk&sz=64' },
+            { name: 'Danske Bank', sortCode: '95-00-00', logo: 'https://www.google.com/s2/favicons?domain=danskebank.co.uk&sz=64' },
+            { name: 'First Direct', sortCode: '40-47-84', logo: 'https://www.google.com/s2/favicons?domain=firstdirect.com&sz=64' },
+            { name: 'Tesco Bank', sortCode: '16-33-00', logo: 'https://www.google.com/s2/favicons?domain=tescobank.com&sz=64' },
+            { name: 'Post Office', sortCode: '60-13-14', logo: 'https://www.google.com/s2/favicons?domain=postoffice.co.uk&sz=64' },
+            { name: 'Chase UK', sortCode: '04-00-26', logo: 'https://www.google.com/s2/favicons?domain=chase.co.uk&sz=64' },
+            { name: 'Atom Bank', sortCode: '23-22-28', logo: 'https://www.google.com/s2/favicons?domain=atombank.co.uk&sz=64' },
+        ];
+
+        // US Banks with routing numbers
+        const US_BANKS = [
+            { name: 'Chase', routing: '021000021', logo: 'https://www.google.com/s2/favicons?domain=chase.com&sz=64' },
+            { name: 'Bank of America', routing: '026009593', logo: 'https://www.google.com/s2/favicons?domain=bankofamerica.com&sz=64' },
+            { name: 'Wells Fargo', routing: '121000248', logo: 'https://www.google.com/s2/favicons?domain=wellsfargo.com&sz=64' },
+            { name: 'Citibank', routing: '021000089', logo: 'https://www.google.com/s2/favicons?domain=citibank.com&sz=64' },
+            { name: 'Capital One', routing: '051405515', logo: 'https://www.google.com/s2/favicons?domain=capitalone.com&sz=64' },
+            { name: 'PNC Bank', routing: '043000096', logo: 'https://www.google.com/s2/favicons?domain=pnc.com&sz=64' },
+            { name: 'US Bank', routing: '091000022', logo: 'https://www.google.com/s2/favicons?domain=usbank.com&sz=64' },
+            { name: 'TD Bank', routing: '031101266', logo: 'https://www.google.com/s2/favicons?domain=td.com&sz=64' },
+            { name: 'Truist', routing: '053101121', logo: 'https://www.google.com/s2/favicons?domain=truist.com&sz=64' },
+            { name: 'Goldman Sachs', routing: '124085024', logo: 'https://www.google.com/s2/favicons?domain=goldmansachs.com&sz=64' },
+            { name: 'Morgan Stanley', routing: '036001808', logo: 'https://www.google.com/s2/favicons?domain=morganstanley.com&sz=64' },
+            { name: 'Ally Bank', routing: '124003116', logo: 'https://www.google.com/s2/favicons?domain=ally.com&sz=64' },
+            { name: 'Discover Bank', routing: '031100649', logo: 'https://www.google.com/s2/favicons?domain=discover.com&sz=64' },
+            { name: 'Charles Schwab', routing: '121202211', logo: 'https://www.google.com/s2/favicons?domain=schwab.com&sz=64' },
+            { name: 'Fifth Third', routing: '042000314', logo: 'https://www.google.com/s2/favicons?domain=53.com&sz=64' },
+            { name: 'Regions Bank', routing: '062000019', logo: 'https://www.google.com/s2/favicons?domain=regions.com&sz=64' },
+            { name: 'KeyBank', routing: '041001039', logo: 'https://www.google.com/s2/favicons?domain=key.com&sz=64' },
+            { name: 'M&T Bank', routing: '022000046', logo: 'https://www.google.com/s2/favicons?domain=mtb.com&sz=64' },
+            { name: 'Huntington', routing: '044000024', logo: 'https://www.google.com/s2/favicons?domain=huntington.com&sz=64' },
+            { name: 'BMO Harris', routing: '071000288', logo: 'https://www.google.com/s2/favicons?domain=bmo.com&sz=64' },
+            { name: 'USAA', routing: '314074269', logo: 'https://www.google.com/s2/favicons?domain=usaa.com&sz=64' },
+            { name: 'Navy Federal', routing: '256074974', logo: 'https://www.google.com/s2/favicons?domain=navyfederal.org&sz=64' },
+            { name: 'SoFi', routing: '084006470', logo: 'https://www.google.com/s2/favicons?domain=sofi.com&sz=64' },
+            { name: 'Chime', routing: '031101279', logo: 'https://www.google.com/s2/favicons?domain=chime.com&sz=64' },
+            // Virtual Banks & Fintech
+            { name: 'Venmo', routing: '031101279', logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%233D95CE'/%3E%3Cpath d='M42.5 14c1.5 2.6 2.2 5.3 2.2 8.7 0 10.8-9.2 24.9-16.7 34.8H17.2L12.5 17l9.8-0.9 2.8 22.5c2.6-4.2 5.8-10.9 5.8-15.4 0-3.2-0.5-5.3-1.3-7.1L42.5 14z' fill='white'/%3E%3C/svg%3E" },
+            { name: 'PayPal', routing: '031101279', logo: 'https://www.google.com/s2/favicons?domain=paypal.com&sz=64' },
+            { name: 'Cash App', routing: '073923033', logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2300D632'/%3E%3Ctext x='32' y='44' font-family='Arial' font-weight='bold' font-size='36' fill='white' text-anchor='middle'%3E%24%3C/text%3E%3C/svg%3E" },
+            { name: 'Zelle', routing: '021000021', logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%236D1ED4'/%3E%3Cpath d='M18 18h28v6H27l19 16v6H18v-6h17L16 24v-6z' fill='white'/%3E%3C/svg%3E" },
+            { name: 'Varo Bank', routing: '091311229', logo: 'https://www.google.com/s2/favicons?domain=varomoney.com&sz=64' },
+            { name: 'Current', routing: '021214891', logo: 'https://www.google.com/s2/favicons?domain=current.com&sz=64' },
+            { name: 'Dave', routing: '091311229', logo: 'https://www.google.com/s2/favicons?domain=dave.com&sz=64' },
+            { name: 'MoneyLion', routing: '031101279', logo: 'https://www.google.com/s2/favicons?domain=moneylion.com&sz=64' },
+            { name: 'Aspiration', routing: '021214891', logo: 'https://www.google.com/s2/favicons?domain=aspiration.com&sz=64' },
+            { name: 'N26', routing: '021214891', logo: 'https://www.google.com/s2/favicons?domain=n26.com&sz=64' },
+            { name: 'Revolut US', routing: '084009519', logo: 'https://www.google.com/s2/favicons?domain=revolut.com&sz=64' },
+            { name: 'Wise', routing: '026073150', logo: 'https://www.google.com/s2/favicons?domain=wise.com&sz=64' },
+            { name: 'Mercury', routing: '091311229', logo: 'https://www.google.com/s2/favicons?domain=mercury.com&sz=64' },
+            { name: 'Greenlight', routing: '061120084', logo: 'https://www.google.com/s2/favicons?domain=greenlight.com&sz=64' },
+            { name: 'GO2bank', routing: '124303120', logo: 'https://www.google.com/s2/favicons?domain=go2bank.com&sz=64' },
+            { name: 'Netspend', routing: '073972181', logo: 'https://www.google.com/s2/favicons?domain=netspend.com&sz=64' },
+            { name: 'Apple Cash', routing: '021214891', logo: 'https://www.google.com/s2/favicons?domain=apple.com&sz=64' },
+            { name: 'Google Pay', routing: '021214891', logo: 'https://www.google.com/s2/favicons?domain=pay.google.com&sz=64' },
+        ];
+
+        function renderBankSelector() {
+            const container = document.getElementById('bankSelector');
+            container.innerHTML = UK_BANKS.map((bank, i) => `
+                <div class="bank-option" data-bank-index="${i}" onclick="selectUkBank(${i})">
+                    <img class="bank-logo" src="${bank.logo}" alt="${bank.name}" onerror="this.style.display='none'">
+                    ${bank.name}
+                </div>
+            `).join('');
+        }
+
+        function selectUkBank(index) {
+            selectedUkBank = UK_BANKS[index];
+            document.querySelectorAll('#bankSelector .bank-option').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`#bankSelector [data-bank-index="${index}"]`).classList.add('selected');
+            document.getElementById('sortCodeDisplay').style.display = 'flex';
+            document.getElementById('selectedSortCode').textContent = selectedUkBank.sortCode;
+            lookupRecipient();
+        }
+
+        function renderUsBankSelector() {
+            const container = document.getElementById('usBankSelector');
+            container.innerHTML = US_BANKS.map((bank, i) => `
+                <div class="bank-option" data-usbank-index="${i}" onclick="selectUsBank(${i})">
+                    <img class="bank-logo" src="${bank.logo}" alt="${bank.name}" onerror="this.style.display='none'">
+                    ${bank.name}
+                </div>
+            `).join('');
+        }
+
+        function selectUsBank(index) {
+            selectedUsBank = US_BANKS[index];
+            document.querySelectorAll('#usBankSelector .bank-option').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`#usBankSelector [data-usbank-index="${index}"]`).classList.add('selected');
+            document.getElementById('routingDisplay').style.display = 'flex';
+            document.getElementById('selectedRouting').textContent = selectedUsBank.routing;
+        }
+        
+        // Check authentication and load user data
+        async function init() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'signin.html';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_URL}/api/auth/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success && data.user) {
+                    userId = data.user.id;
+                    currentBalance = data.user.balance || 0;
+                    document.getElementById('currentBalance').textContent = '$' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    loadRecentRecipients();
+                } else {
+                    window.location.href = 'signin.html';
+                }
+            } catch (e) {
+                console.error('Auth error:', e);
+            }
+        }
+        
+        function setTransferType(type, btn) {
+            transferType = type;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.closest('.tab-btn').classList.add('active');
+            
+            document.getElementById('emailGroup').style.display = type === 'email' ? 'block' : 'none';
+            document.getElementById('accountGroup').style.display = type === 'account' ? 'block' : 'none';
+            document.getElementById('ukBankGroup').style.display = type === 'ukbank' ? 'block' : 'none';
+            document.getElementById('usBankGroup').style.display = type === 'usbank' ? 'block' : 'none';
+
+            if (type === 'email') {
+                document.getElementById('toEmail').required = true;
+                document.getElementById('toAccountNumber').required = false;
+            } else if (type === 'account') {
+                document.getElementById('toEmail').required = false;
+                document.getElementById('toAccountNumber').required = true;
+            } else if (type === 'ukbank') {
+                document.getElementById('toEmail').required = false;
+                document.getElementById('toAccountNumber').required = false;
+                renderBankSelector();
+            } else if (type === 'usbank') {
+                document.getElementById('toEmail').required = false;
+                document.getElementById('toAccountNumber').required = false;
+                renderUsBankSelector();
+            }
+            
+            document.getElementById('recipientPreview').classList.remove('show');
+        }
+        
+        function setAmount(amount) {
+            document.getElementById('amount').value = amount;
+            updateSummary();
+        }
+        
+        function updateSummary() {
+            const amount = parseFloat(document.getElementById('amount').value) || 0;
+            if (amount > 0) {
+                document.getElementById('transferSummary').style.display = 'block';
+                document.getElementById('summaryAmount').textContent = '$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('summaryTotal').textContent = '$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+                const isForeignCurrency = recipientCurrency !== 'USD';
+                const convBox = document.getElementById('conversionBox');
+                const convRowEl = document.getElementById('summaryConvRow');
+                const rateRowEl = document.getElementById('summaryRateRow');
+
+                if (isForeignCurrency) {
+                    const converted = convertAmount(amount, recipientCurrency);
+                    const sym = CURRENCY_SYMBOLS[recipientCurrency];
+                    const rate = EXCHANGE_RATES[recipientCurrency];
+
+                    // Conversion box
+                    convBox.classList.add('show');
+                    document.getElementById('convSendAmount').textContent = '$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('convReceiveAmount').textContent = sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('convRate').innerHTML = `<i class="fas fa-chart-line"></i> Exchange rate: 1 USD = ${rate.toFixed(4)} ${escapeHtml(recipientCurrency)}`;
+
+                    // Summary rows
+                    convRowEl.style.display = 'flex';
+                    rateRowEl.style.display = 'flex';
+                    document.getElementById('summaryRecvCurrency').textContent = recipientCurrency;
+                    document.getElementById('summaryRecvAmount').textContent = sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('summaryRate').textContent = `1 USD = ${rate.toFixed(4)} ${recipientCurrency}`;
+                } else {
+                    convBox.classList.remove('show');
+                    convRowEl.style.display = 'none';
+                    rateRowEl.style.display = 'none';
+                }
+            } else {
+                document.getElementById('transferSummary').style.display = 'none';
+                document.getElementById('conversionBox').classList.remove('show');
+            }
+        }
+        
+        async function lookupRecipient() {
+            const preview = document.getElementById('recipientPreview');
+            if (transferType === 'email') {
+                const email = document.getElementById('toEmail').value;
+                if (email && email.includes('@')) {
+                    preview.classList.add('show');
+                    document.getElementById('recipientName').textContent = 'Heritage Bank User';
+                    document.getElementById('recipientInfo').textContent = email;
+                } else {
+                    preview.classList.remove('show');
+                }
+            } else if (transferType === 'account') {
+                const account = document.getElementById('toAccountNumber').value;
+                if (account && account.length >= 8) {
+                    preview.classList.add('show');
+                    document.getElementById('recipientName').textContent = 'Heritage Bank Account';
+                    document.getElementById('recipientInfo').textContent = 'Account: ****' + account.slice(-4);
+                } else {
+                    preview.classList.remove('show');
+                }
+            } else if (transferType === 'ukbank') {
+                const ukAcc = document.getElementById('ukAccountNumber').value;
+                const recipName = document.getElementById('ukRecipientName').value;
+                if (selectedUkBank && ukAcc && ukAcc.length >= 6) {
+                    preview.classList.add('show');
+                    document.getElementById('recipientName').textContent = recipName || selectedUkBank.name + ' Account';
+                    document.getElementById('recipientInfo').textContent = `${selectedUkBank.name} • Sort: ${selectedUkBank.sortCode} • Acc: ****${ukAcc.slice(-4)}`;
+                } else {
+                    preview.classList.remove('show');
+                }
+            }
+        }
+        
+        async function loadRecentRecipients() {
+            // Load from localStorage or API
+            const saved = localStorage.getItem('recentRecipients');
+            if (saved) {
+                recentRecipients = JSON.parse(saved);
+                displayRecentRecipients();
+            }
+        }
+        
+        function displayRecentRecipients() {
+            if (recentRecipients.length === 0) return;
+            
+            document.getElementById('recentTransfersSection').style.display = 'block';
+            const container = document.getElementById('recentRecipients');
+            
+            container.innerHTML = recentRecipients.slice(0, 5).map(r => `
+                <div class="transfer-item" onclick="selectRecipient('${escapeHtml(r.email || '')}', '${escapeHtml(r.accountNumber || '')}')">
+                    <div class="transfer-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="transfer-details">
+                        <h4>${escapeHtml(r.name)}</h4>
+                        <span>${escapeHtml(r.email || ('Account: ****' + (r.accountNumber||'').slice(-4)))}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function selectRecipient(email, accountNumber) {
+            if (email) {
+                setTransferType('email');
+                document.getElementById('toEmail').value = email;
+            } else {
+                setTransferType('account');
+                document.getElementById('toAccountNumber').value = accountNumber;
+            }
+            lookupRecipient();
+            document.getElementById('amount').focus();
+        }
+        
+        function showAlert(message, type) {
+            const iconMap = {
+                success: 'check-circle',
+                danger: 'exclamation-circle',
+                warning: 'exclamation-triangle',
+                info: 'info-circle'
+            };
+            document.getElementById('alertBox').innerHTML = `
+                <div class="alert alert-${escapeHtml(type)}">
+                    <i class="fas fa-${escapeHtml(iconMap[type] || 'info-circle')}"></i>
+                    ${escapeHtml(message)}
+                </div>
+            `;
+        }
+        
+        // Form submission
+        let lastSubmitTime = 0;
+        document.getElementById('transferForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Rate limit: prevent submissions within 3 seconds of each other
+            const now = Date.now();
+            if (now - lastSubmitTime < 3000) {
+                showAlert('Please wait a moment before submitting again', 'warning');
+                return;
+            }
+            lastSubmitTime = now;
+            
+            const token = localStorage.getItem('token');
+            if (!token || !userId) {
+                window.location.href = 'signin.html';
+                return;
+            }
+            
+            const amount = parseFloat(document.getElementById('amount').value);
+            
+            // Validate amount
+            if (!amount || amount <= 0) {
+                showAlert('Please enter a valid amount', 'danger');
+                return;
+            }
+            if (amount > currentBalance) {
+                showAlert('Insufficient balance for this transfer', 'danger');
+                return;
+            }
+
+            // UK bank validation
+            if (transferType === 'ukbank') {
+                if (!selectedUkBank) {
+                    showAlert('Please select a UK bank', 'danger');
+                    return;
+                }
+                const ukAcc = document.getElementById('ukAccountNumber').value;
+                if (!ukAcc || ukAcc.length < 8) {
+                    showAlert('Please enter a valid 8-digit UK account number', 'danger');
+                    return;
+                }
+                const ukName = document.getElementById('ukRecipientName').value;
+                if (!ukName) {
+                    showAlert('Please enter the recipient\'s full name', 'danger');
+                    return;
+                }
+            }
+
+            // US bank validation
+            if (transferType === 'usbank') {
+                if (!selectedUsBank) {
+                    showAlert('Please select a US bank', 'danger');
+                    return;
+                }
+                const usAcc = document.getElementById('usAccountNumber').value;
+                if (!usAcc || usAcc.length < 4) {
+                    showAlert('Please enter a valid account number', 'danger');
+                    return;
+                }
+                const usName = document.getElementById('usRecipientName').value;
+                if (!usName) {
+                    showAlert('Please enter the recipient\'s full name', 'danger');
+                    return;
+                }
+            }
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            
+            try {
+                const body = {
+                    fromUserId: userId,
+                    amount: amount,
+                    description: document.getElementById('description').value || 'Money transfer'
+                };
+
+                // Build conversion info
+                const isForeignCurrency = recipientCurrency !== 'USD';
+                const convertedAmount = isForeignCurrency ? convertAmount(amount, recipientCurrency) : amount;
+                const exchangeRate = EXCHANGE_RATES[recipientCurrency];
+                const recvSym = CURRENCY_SYMBOLS[recipientCurrency];
+
+                if (transferType === 'email') {
+                    body.toEmail = document.getElementById('toEmail').value;
+                } else if (transferType === 'account') {
+                    body.toAccountNumber = document.getElementById('toAccountNumber').value;
+                } else if (transferType === 'ukbank') {
+                    body.toAccountNumber = document.getElementById('ukAccountNumber').value;
+                    body.description = `UK Transfer to ${document.getElementById('ukRecipientName').value} at ${selectedUkBank.name} (${selectedUkBank.sortCode}) | Ref: ${document.getElementById('ukReference').value || 'N/A'}`;
+                    body.destinationCountry = 'GB';
+                } else if (transferType === 'usbank') {
+                    const method = document.getElementById('usTransferMethod').value.toUpperCase();
+                    body.toAccountNumber = document.getElementById('usAccountNumber').value;
+                    body.description = `US ${method} Transfer to ${document.getElementById('usRecipientName').value} at ${selectedUsBank.name} (Routing: ${selectedUsBank.routing}) | ${document.getElementById('usAccountType').value} account | Ref: ${document.getElementById('usReference').value || 'N/A'}`;
+                    body.destinationCountry = 'US';
+                }
+
+                if (isForeignCurrency) {
+                    body.description += ` | Converted: $${amount.toFixed(2)} → ${recvSym}${convertedAmount.toFixed(2)} (Rate: 1 USD = ${exchangeRate.toFixed(4)} ${recipientCurrency})`;
+                }
+                
+                const res = await fetch(`${API_URL}/api/user/transfer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    // Determine recipient display
+                    let recipientDisplay = data.transaction?.to || 'Recipient';
+                    let bankDisplay = 'Heritage Bank';
+                    if (transferType === 'ukbank') {
+                        recipientDisplay = document.getElementById('ukRecipientName').value;
+                        bankDisplay = selectedUkBank.name;
+                    } else if (transferType === 'usbank') {
+                        recipientDisplay = document.getElementById('usRecipientName').value;
+                        bankDisplay = selectedUsBank.name;
+                    }
+
+                    // Show receipt modal — pending or completed
+                    // Determine account number for display
+                    let acctDisplay = '';
+                    if (transferType === 'usbank') {
+                        acctDisplay = document.getElementById('usAccountNumber').value;
+                    } else if (transferType === 'ukbank') {
+                        acctDisplay = document.getElementById('ukAccountNumber').value;
+                    } else if (transferType === 'account') {
+                        acctDisplay = document.getElementById('toAccountNumber').value;
+                    } else if (transferType === 'email') {
+                        acctDisplay = document.getElementById('toEmail').value;
+                    }
+
+                    showReceiptModal({
+                        amount: amount,
+                        to: recipientDisplay,
+                        bank: bankDisplay,
+                        accountNumber: acctDisplay,
+                        bankLogo: (transferType === 'usbank' && selectedUsBank) ? selectedUsBank.logo : (transferType === 'ukbank' && selectedUkBank) ? selectedUkBank.logo : null,
+                        reference: data.reference || 'N/A',
+                        description: document.getElementById('description').value || body.description || 'Money transfer',
+                        transactionId: data.transactionId,
+                        recipientCurrency: recipientCurrency,
+                        convertedAmount: convertedAmount,
+                        exchangeRate: exchangeRate,
+                        fee: data.fee || 0,
+                        pending: !!data.pending
+                    });
+                    
+                    // Save to recent recipients
+                    const recipient = {
+                        name: recipientDisplay,
+                        email: body.toEmail || null,
+                        accountNumber: body.toAccountNumber || null,
+                        timestamp: new Date().toISOString()
+                    };
+                    recentRecipients = [recipient, ...recentRecipients.filter(r => 
+                        r.email !== recipient.email && r.accountNumber !== recipient.accountNumber
+                    )].slice(0, 10);
+                    localStorage.setItem('recentRecipients', JSON.stringify(recentRecipients));
+                    displayRecentRecipients();
+                    
+                    // Reset form
+                    e.target.reset();
+                    document.getElementById('recipientPreview').classList.remove('show');
+                    document.getElementById('transferSummary').style.display = 'none';
+                    selectedUkBank = null;
+                    document.querySelectorAll('.bank-option').forEach(el => el.classList.remove('selected'));
+                    document.getElementById('sortCodeDisplay').style.display = 'none';
+                } else {
+                    if (data.transferRestricted || data.pendingApproval) {
+                        showAlert(`<strong>Transfer Unsuccessful</strong><br>Your transfer could not be completed at this time. Please contact bank support for assistance or try again later.`, 'warning');
+                        e.target.reset();
+                        document.getElementById('recipientPreview').classList.remove('show');
+                        document.getElementById('transferSummary').style.display = 'none';
+                    } else {
+                        showAlert(data.message || 'Transfer failed', 'danger');
+                    }
+                }
+            } catch (err) {
+                showAlert('Connection error. Please try again.', 'danger');
+                console.error('Transfer error:', err);
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Money';
+        });
+
+        // ── Receipt Modal Functions ──
+        function showTransferCompleteAnimation(details, onDone) {
+            const overlay = document.getElementById('tcOverlay');
+            document.getElementById('tcAmount').textContent = '$' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById('tcRecipient').textContent = details.to;
+
+            // Show last 4 digits of account number
+            const acctEl = document.getElementById('tcAccountMask');
+            if (details.accountNumber && details.accountNumber.length >= 4) {
+                acctEl.textContent = '****' + details.accountNumber.slice(-4);
+            } else {
+                acctEl.textContent = details.accountNumber || '****';
+            }
+
+            const bankLogoEl = document.getElementById('tcBankLogo');
+            const bankNameEl = document.getElementById('tcBankName');
+            const bankRow = document.getElementById('tcBankRow');
+            if (details.bank && details.bank !== 'Heritage Bank') {
+                bankRow.style.display = 'flex';
+                bankNameEl.textContent = details.bank;
+                if (details.bankLogo) {
+                    bankLogoEl.src = details.bankLogo;
+                    bankLogoEl.style.display = 'inline-block';
+                } else {
+                    bankLogoEl.style.display = 'none';
+                }
+            } else {
+                bankRow.style.display = 'none';
+            }
+
+            // Create confetti
+            const confettiContainer = document.getElementById('tcConfetti');
+            confettiContainer.innerHTML = '';
+            const colors = ['#d4af37', '#28a745', '#ffffff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24'];
+            for (let i = 0; i < 40; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'tc-confetti-piece';
+                piece.style.left = Math.random() * 100 + '%';
+                piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+                piece.style.animationDelay = Math.random() * 0.8 + 's';
+                piece.style.width = (Math.random() * 6 + 4) + 'px';
+                piece.style.height = (Math.random() * 6 + 4) + 'px';
+                confettiContainer.appendChild(piece);
+            }
+
+            overlay.classList.add('active');
+
+            // Dismiss on tap/click, or auto after 5s
+            const dismiss = () => {
+                overlay.classList.remove('active');
+                overlay.removeEventListener('click', dismiss);
+                if (onDone) onDone();
+            };
+            overlay.addEventListener('click', dismiss);
+            setTimeout(dismiss, 5000);
+        }
+
+        function showReceiptModal(details) {
+            const now = new Date();
+            document.getElementById('receiptAmount').textContent = '$' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById('receiptTotal').textContent = '$' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById('receiptTo').textContent = details.to;
+
+            // Bank row with inline logo
+            const bankIcon = document.getElementById('receiptBankIcon');
+            const bankText = document.getElementById('receiptBankText');
+            bankText.textContent = details.bank;
+            if (details.bankLogo) {
+                bankIcon.src = details.bankLogo;
+                bankIcon.alt = details.bank;
+                bankIcon.style.display = 'block';
+            } else {
+                bankIcon.style.display = 'none';
+            }
+
+            // Show bank logo prominently in receipt header area
+            const logoRow = document.getElementById('receiptBankLogoRow');
+            const logoImg = document.getElementById('receiptBankLogo');
+            const logoLabel = document.getElementById('receiptBankLabel');
+            if (details.bankLogo) {
+                logoImg.src = details.bankLogo;
+                logoImg.alt = details.bank;
+                logoLabel.textContent = details.bank;
+                logoRow.style.display = 'flex';
+            } else {
+                logoRow.style.display = 'none';
+            }
+
+            // Update stamp and status based on pending flag
+            const stampEl = document.getElementById('receiptStamp');
+            const statusEl = document.getElementById('receiptStatus');
+            if (details.pending) {
+                stampEl.textContent = 'PENDING';
+                stampEl.style.borderColor = '#f0ad4e';
+                stampEl.style.color = '#f0ad4e';
+                statusEl.textContent = 'Pending Approval ⏳';
+                statusEl.style.color = '#f0ad4e';
+            } else {
+                stampEl.textContent = 'SUCCESSFUL';
+                stampEl.style.borderColor = '';
+                stampEl.style.color = '';
+                statusEl.textContent = 'Completed ✓';
+                statusEl.style.color = '#28a745';
+            }
+            document.getElementById('receiptDate').textContent = now.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) + ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('receiptRef').textContent = details.reference;
+            document.getElementById('receiptDesc').textContent = details.description;
+            lastTransactionId = details.transactionId;
+
+            // Fee display
+            const fee = parseFloat(details.fee) || 0;
+            document.getElementById('receiptFee').textContent = fee > 0 ? '$' + fee.toLocaleString(undefined, {minimumFractionDigits: 2}) : '$0.00 (Waived)';
+            const totalDebited = details.amount + fee;
+            document.getElementById('receiptTotal').textContent = '$' + totalDebited.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+            // Currency conversion display on receipt
+            const convRow = document.getElementById('receiptConversionRow');
+            const curRow = document.getElementById('receiptCurrencyRow');
+            if (details.recipientCurrency && details.recipientCurrency !== 'USD') {
+                const sym = CURRENCY_SYMBOLS[details.recipientCurrency];
+                const converted = details.convertedAmount;
+                const rate = details.exchangeRate;
+                convRow.style.display = 'block';
+                curRow.style.display = 'flex';
+                document.getElementById('receiptRecvAmount').textContent = sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('receiptExRate').textContent = `Rate: 1 USD = ${rate.toFixed(4)} ${details.recipientCurrency}`;
+                document.getElementById('receiptCurrency').textContent = `USD → ${details.recipientCurrency}`;
+            } else {
+                convRow.style.display = 'none';
+                curRow.style.display = 'none';
+            }
+
+            document.getElementById('receiptOverlay').classList.add('active');
+
+            // Show transfer complete animation first (skip for pending)
+            if (!details.pending) {
+                document.getElementById('receiptOverlay').classList.remove('active');
+                showTransferCompleteAnimation(details, () => {
+                    document.getElementById('receiptOverlay').classList.add('active');
+                });
+            }
+        }
+
+        function closeReceipt() {
+            document.getElementById('receiptOverlay').classList.remove('active');
+        }
+
+        async function downloadLastReceipt() {
+            if (!lastTransactionId) return;
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_URL}/api/transactions/${lastTransactionId}/receipt`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) {
+                    showAlert('Error downloading receipt', 'danger');
+                    return;
+                }
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Heritage_Bank_Receipt_${lastTransactionId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                showAlert('Error downloading receipt', 'danger');
+            }
+        }
+
+        // Close receipt with ESC key or clicking overlay
+        document.getElementById('receiptOverlay').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('receiptOverlay')) closeReceipt();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeReceipt();
+        });
+        
+        // Initialize
+        init();
+        loadBeneficiaries();
+
+        // ==================== BENEFICIARY MANAGEMENT ====================
+        async function loadBeneficiaries() {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/beneficiaries`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    displayBeneficiaries(data.beneficiaries);
+                }
+            } catch (err) {
+                console.error('Error loading beneficiaries:', err);
+            }
+        }
+
+        function displayBeneficiaries(beneficiaries) {
+            const container = document.getElementById('beneficiariesList');
+            
+            if (beneficiaries.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No saved beneficiaries. Add one to make transfers easier!</p>';
+                return;
+            }
+            
+            container.innerHTML = beneficiaries.map(b => `
+                <div class="beneficiary-item">
+                    <div>
+                        <h4>${escapeHtml(b.nickname || b.name)}</h4>
+                        <p>${escapeHtml(b.accountNumber)} ${b.bankName !== 'Heritage Bank' ? ' • ' + escapeHtml(b.bankName) : ''}</p>
+                        ${b.email ? `<p style="font-size: 12px; color: #999;">${escapeHtml(b.email)}</p>` : ''}
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-small" onclick="transferToBeneficiary('${escapeHtml(b.accountNumber)}', '${escapeHtml(b.email || '')}', '${escapeHtml(b.name)}')">
+                            <i class="fas fa-paper-plane"></i> Transfer
+                        </button>
+                        <button class="btn-small btn-secondary" onclick="editBeneficiary(${parseInt(b.id)}, '${escapeHtml(b.name)}', '${escapeHtml(b.accountNumber)}', '${escapeHtml(b.bankName)}', '${escapeHtml(b.email || '')}', '${escapeHtml(b.nickname || '')}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-small btn-danger" onclick="deleteBeneficiary(${parseInt(b.id)})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function transferToBeneficiary(accountNumber, email, name) {
+            if (accountNumber) {
+                // Click the account tab button
+                const tabs = document.querySelectorAll('.tab-btn');
+                tabs.forEach(btn => {
+                    if (btn.textContent.includes('Account')) btn.click();
+                });
+                setTransferType('account');
+                document.getElementById('toAccountNumber').value = accountNumber;
+            } else if (email) {
+                const tabs = document.querySelectorAll('.tab-btn');
+                tabs.forEach(btn => {
+                    if (btn.textContent.includes('Email')) btn.click();
+                });
+                setTransferType('email');
+                document.getElementById('toEmail').value = email;
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showAddBeneficiaryModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2><i class="fas fa-user-plus"></i> Add Beneficiary</h2>
+                    <form onsubmit="saveBeneficiary(event)">
+                        <div class="form-group">
+                            <label>Full Name *</label>
+                            <input type="text" id="benName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nickname (Optional)</label>
+                            <input type="text" id="benNickname" placeholder="e.g., Mom, John's Account">
+                        </div>
+                        <div class="form-group">
+                            <label>Account Number *</label>
+                            <input type="text" id="benAccount" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Bank Name</label>
+                            <input type="text" id="benBank" value="Heritage Bank">
+                        </div>
+                        <div class="form-group">
+                            <label>Email (Optional)</label>
+                            <input type="email" id="benEmail">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="submit" class="btn" style="flex: 1;">
+                                <i class="fas fa-save"></i> Save Beneficiary
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()" style="flex: 1;">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <style>
+                    .modal {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0,0,0,0.6);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 1000;
+                    }
+                    .modal-content {
+                        background: white;
+                        border-radius: 12px;
+                        padding: 30px;
+                        max-width: 500px;
+                        width: 90%;
+                        max-height: 90vh;
+                        overflow-y: auto;
+                    }
+                    .modal-content h2 {
+                        color: #1a472a;
+                        margin-top: 0;
+                    }
+                    .beneficiary-item {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 8px;
+                        margin-bottom: 10px;
+                    }
+                    .beneficiary-item h4 {
+                        margin: 0 0 5px 0;
+                        color: #1a472a;
+                    }
+                    .beneficiary-item p {
+                        margin: 0;
+                        color: #666;
+                        font-size: 14px;
+                    }
+                    .btn-small {
+                        padding: 8px 12px;
+                        font-size: 13px;
+                        background: #d4af37;
+                        color: #1a472a;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-weight: 600;
+                    }
+                    .btn-small:hover {
+                        background: #c19b2e;
+                    }
+                    .btn-small.btn-secondary {
+                        background: #6c757d;
+                        color: white;
+                    }
+                    .btn-small.btn-danger {
+                        background: #dc3545;
+                        color: white;
+                    }
+                    .btn-action {
+                        padding: 10px 15px;
+                        background: #1a472a;
+                        color: white;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-weight: 600;
+                    }
+                </style>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function saveBeneficiary(e, beneficiaryId = null) {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            
+            const data = {
+                name: document.getElementById('benName').value,
+                accountNumber: document.getElementById('benAccount').value,
+                bankName: document.getElementById('benBank').value,
+                email: document.getElementById('benEmail').value || null,
+                nickname: document.getElementById('benNickname').value || null
+            };
+            
+            try {
+                const url = beneficiaryId 
+                    ? `${API_URL}/api/beneficiaries/${beneficiaryId}`
+                    : `${API_URL}/api/beneficiaries`;
+                    
+                const res = await fetch(url, {
+                    method: beneficiaryId ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    showAlert(beneficiaryId ? 'Beneficiary updated!' : 'Beneficiary added!', 'success');
+                    document.querySelector('.modal').remove();
+                    loadBeneficiaries();
+                } else {
+                    showAlert(result.message, 'danger');
+                }
+            } catch (err) {
+                showAlert('Error saving beneficiary', 'danger');
+            }
+        }
+
+        function editBeneficiary(id, name, account, bank, email, nickname) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2><i class="fas fa-edit"></i> Edit Beneficiary</h2>
+                    <form onsubmit="saveBeneficiary(event, ${parseInt(id)})">
+                        <div class="form-group">
+                            <label>Full Name *</label>
+                            <input type="text" id="benName" value="${escapeHtml(name)}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nickname (Optional)</label>
+                            <input type="text" id="benNickname" value="${escapeHtml(nickname)}" placeholder="e.g., Mom, John's Account">
+                        </div>
+                        <div class="form-group">
+                            <label>Account Number *</label>
+                            <input type="text" id="benAccount" value="${escapeHtml(account)}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Bank Name</label>
+                            <input type="text" id="benBank" value="${escapeHtml(bank)}">
+                        </div>
+                        <div class="form-group">
+                            <label>Email (Optional)</label>
+                            <input type="email" id="benEmail" value="${escapeHtml(email)}">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="submit" class="btn" style="flex: 1;">
+                                <i class="fas fa-save"></i> Update
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()" style="flex: 1;">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function deleteBeneficiary(id) {
+            if (!confirm('Delete this beneficiary?')) return;
+            
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/beneficiaries/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showAlert('Beneficiary deleted', 'success');
+                    loadBeneficiaries();
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            } catch (err) {
+                showAlert('Error deleting beneficiary', 'danger');
+            }
+        }
+    </script>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
+            </div>
+            <p class="app-footer-copy">&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+        </div>
+    </footer>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>
+

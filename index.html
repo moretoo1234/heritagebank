@@ -1,16 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
+    <script>document.documentElement.classList.remove('no-js')</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="manifest" href="manifest.json">
     <meta name="description" content="Heritage Bank USA - Trusted personal and business banking with checking, savings, loans, and investment services.">
     <title>Heritage Bank - Your Trusted Financial Partner</title>
+    <meta property="og:title" content="Heritage Bank - Your Trusted Financial Partner">
+    <meta property="og:description" content="Secure online banking with Heritage Bank. Savings, loans, investments, and more.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="assets/og-image.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="loading.css">
     <link rel="stylesheet" href="styles.css">
+    <style>html { scroll-behavior: smooth; }</style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body>
     <!-- Navigation Bar -->
-    <nav class="navbar">
+    <nav class="navbar navbar-transparent" id="mainNav">
         <div class="container">
             <div class="navbar-wrapper">
                 <div class="logo-section">
@@ -42,44 +54,55 @@
     <!-- Hero Section -->
     <section class="hero" id="home">
         <div class="hero-background">
-            <img src="./assets/landscape-hero.jpg" alt="Heritage Bank" class="hero-img">
+            <img src="./assets/landscape-hero.jpg" alt="Heritage Bank" class="hero-img" fetchpriority="high">
             <div class="hero-overlay"></div>
         </div>
         
+        <div class="hero-particles" aria-hidden="true">
+            <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+            <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+        </div>
+
         <div class="container">
-            <div class="hero-content">
-                <h1>Your Legacy of Financial Trust</h1>
-                <p>Heritage Bank combines timeless values with modern banking solutions. Build your financial future with us.</p>
+            <div class="hero-content reveal-up">
+                <span class="hero-badge"><i class="fas fa-shield-alt"></i> FDIC Insured &bull; 256-bit Encryption</span>
+                <h1>Banking Built for<br><span class="text-gradient">Your Legacy</span></h1>
+                <p>Heritage Bank combines timeless values with modern banking solutions. Build your financial future with a partner you can trust.</p>
                 <div class="hero-buttons">
-                    <a href="open-account.html" class="btn btn-primary">Get Started</a>
+                    <a href="open-account.html" class="btn btn-primary btn-glow">Get Started <i class="fas fa-arrow-right"></i></a>
                     <a href="#services" class="btn btn-secondary">Learn More</a>
                 </div>
             </div>
+        </div>
+
+        <div class="hero-scroll-indicator" aria-hidden="true">
+            <div class="scroll-mouse"><div class="scroll-wheel"></div></div>
+            <span>Scroll to explore</span>
         </div>
     </section>
 
     <!-- Quick Stats Section -->
     <section class="quick-stats">
         <div class="container">
-            <div class="stats-grid">
+            <div class="stats-grid reveal-up">
                 <div class="stat-card">
-                    <i class="fas fa-users"></i>
-                    <h3>50,000+</h3>
+                    <div class="stat-icon-wrap"><i class="fas fa-users"></i></div>
+                    <h3 class="counter" data-target="50000">0</h3>
                     <p>Trusted Customers</p>
                 </div>
                 <div class="stat-card">
-                    <i class="fas fa-lock"></i>
-                    <h3>100%</h3>
+                    <div class="stat-icon-wrap"><i class="fas fa-lock"></i></div>
+                    <h3><span class="counter" data-target="100">0</span>%</h3>
                     <p>Secure & Encrypted</p>
                 </div>
                 <div class="stat-card">
-                    <i class="fas fa-history"></i>
-                    <h3>25+ Years</h3>
-                    <p>Industry Experience</p>
+                    <div class="stat-icon-wrap"><i class="fas fa-history"></i></div>
+                    <h3><span class="counter" data-target="25">0</span>+</h3>
+                    <p>Years Experience</p>
                 </div>
                 <div class="stat-card">
-                    <i class="fas fa-star"></i>
-                    <h3>4.9/5</h3>
+                    <div class="stat-icon-wrap"><i class="fas fa-star"></i></div>
+                    <h3><span class="counter" data-target="4.9" data-decimal="true">0</span>/5</h3>
                     <p>Customer Rating</p>
                 </div>
             </div>
@@ -89,90 +112,102 @@
     <!-- Services Section -->
     <section class="services" id="services">
         <div class="container">
-            <div class="section-header">
-                <h2>Our Banking Services</h2>
+            <div class="section-header reveal-up">
+                <span class="section-tag">What We Offer</span>
+                <h2>Banking Services</h2>
                 <p>Comprehensive financial solutions tailored for every life stage</p>
             </div>
 
-            <div class="services-grid">
-                <div class="service-card">
+            <div class="services-bento">
+                <div class="bento-card bento-large reveal-up">
+                    <div class="bento-glow"></div>
                     <div class="service-icon"><i class="fas fa-credit-card"></i></div>
                     <h3>Checking Accounts</h3>
-                    <p>Flexible checking accounts with competitive rates and no hidden fees. Manage your daily finances with ease.</p>
+                    <p>Flexible checking accounts with competitive rates and no hidden fees. Manage your daily finances with ease and confidence.</p>
                     <a href="open-account.html" class="service-link">Open Account <i class="fas fa-arrow-right"></i></a>
                 </div>
-                <div class="service-card">
+                <div class="bento-card reveal-up">
+                    <div class="bento-glow"></div>
                     <div class="service-icon"><i class="fas fa-piggy-bank"></i></div>
                     <h3>Savings Plans</h3>
-                    <p>High-yield savings accounts to help your money grow. Earn competitive interest rates on your deposits.</p>
+                    <p>High-yield savings accounts to help your money grow with competitive interest rates.</p>
                     <a href="open-account.html" class="service-link">Start Saving <i class="fas fa-arrow-right"></i></a>
                 </div>
-                <div class="service-card">
+                <div class="bento-card reveal-up">
+                    <div class="bento-glow"></div>
                     <div class="service-icon"><i class="fas fa-home"></i></div>
                     <h3>Mortgages</h3>
-                    <p>Competitive mortgage rates with flexible terms. Make your dream home a reality with our home loans.</p>
+                    <p>Competitive mortgage rates with flexible terms. Make your dream home a reality.</p>
                     <a href="request-loan.html" class="service-link">Apply Now <i class="fas fa-arrow-right"></i></a>
                 </div>
-                <div class="service-card">
+                <div class="bento-card reveal-up">
+                    <div class="bento-glow"></div>
                     <div class="service-icon"><i class="fas fa-chart-line"></i></div>
                     <h3>Investment Services</h3>
-                    <p>Professional investment guidance for long-term wealth building. Diversify your portfolio with expert advice.</p>
+                    <p>Professional investment guidance for long-term wealth building and portfolio diversification.</p>
                     <a href="investment.html" class="service-link">Invest Now <i class="fas fa-arrow-right"></i></a>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-car"></i></div>
-                    <h3>Auto Loans</h3>
-                    <p>Get behind the wheel with our competitive auto financing options. Low rates and flexible payment terms.</p>
-                    <a href="request-loan.html" class="service-link">Get Pre-Approved <i class="fas fa-arrow-right"></i></a>
-                </div>
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-briefcase"></i></div>
-                    <h3>Business Banking</h3>
-                    <p>Complete banking solutions for businesses of all sizes. From startups to established enterprises.</p>
-                    <a href="open-account.html" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                <div class="bento-card bento-wide reveal-up">
+                    <div class="bento-glow"></div>
+                    <div class="bento-wide-inner">
+                        <div>
+                            <div class="service-icon"><i class="fas fa-car"></i></div>
+                            <h3>Auto Loans</h3>
+                            <p>Get behind the wheel with our competitive auto financing. Low rates and flexible payment terms available.</p>
+                            <a href="request-loan.html" class="service-link">Get Pre-Approved <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                        <div>
+                            <div class="service-icon"><i class="fas fa-briefcase"></i></div>
+                            <h3>Business Banking</h3>
+                            <p>Complete banking solutions for businesses of all sizes. From startups to established enterprises.</p>
+                            <a href="open-account.html" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Why Us Section -->
+    <!-- Why Us Section - Dark -->
     <section class="why-us" id="why-us">
+        <div class="why-us-bg" aria-hidden="true"></div>
         <div class="container">
-            <div class="section-header">
+            <div class="section-header section-header-light reveal-up">
+                <span class="section-tag section-tag-gold">Our Advantage</span>
                 <h2>Why Choose Heritage Bank</h2>
                 <p>Experience banking that puts your needs first</p>
             </div>
 
             <div class="why-us-grid">
-                <div class="why-card">
+                <div class="why-card reveal-up">
                     <div class="why-icon"><i class="fas fa-shield-alt"></i></div>
                     <h3>Bank-Level Security</h3>
-                    <p>Your money and data are protected with state-of-the-art encryption, multi-factor authentication, and 24/7 fraud monitoring.</p>
+                    <p>State-of-the-art encryption, multi-factor authentication, and 24/7 fraud monitoring protect your assets.</p>
                 </div>
-                <div class="why-card">
+                <div class="why-card reveal-up">
                     <div class="why-icon"><i class="fas fa-headset"></i></div>
                     <h3>24/7 Customer Support</h3>
-                    <p>Our dedicated support team is available around the clock to assist you with any questions or concerns.</p>
+                    <p>Our dedicated support team is available around the clock to assist you with any questions.</p>
                 </div>
-                <div class="why-card">
+                <div class="why-card reveal-up">
                     <div class="why-icon"><i class="fas fa-mobile-alt"></i></div>
                     <h3>Modern Digital Banking</h3>
-                    <p>Access your accounts anytime, anywhere with our intuitive mobile app and online banking platform.</p>
+                    <p>Access your accounts anytime, anywhere with our intuitive mobile and online platform.</p>
                 </div>
-                <div class="why-card">
+                <div class="why-card reveal-up">
                     <div class="why-icon"><i class="fas fa-percentage"></i></div>
                     <h3>Competitive Rates</h3>
-                    <p>Enjoy industry-leading interest rates on savings and competitive loan rates that help you save more.</p>
+                    <p>Industry-leading interest rates on savings and competitive loan rates that save you more.</p>
                 </div>
-                <div class="why-card">
+                <div class="why-card reveal-up">
                     <div class="why-icon"><i class="fas fa-hand-holding-usd"></i></div>
                     <h3>No Hidden Fees</h3>
-                    <p>Transparent pricing with no surprise charges. What you see is what you get - simple and honest banking.</p>
+                    <p>Transparent pricing with no surprise charges. Simple and honest banking, always.</p>
                 </div>
-                <div class="why-card">
+                <div class="why-card reveal-up">
                     <div class="why-icon"><i class="fas fa-university"></i></div>
                     <h3>FDIC Insured</h3>
-                    <p>Your deposits are insured up to $250,000 by the Federal Deposit Insurance Corporation for your peace of mind.</p>
+                    <p>Your deposits are insured up to $250,000 by the Federal Deposit Insurance Corporation.</p>
                 </div>
             </div>
         </div>
@@ -181,25 +216,21 @@
     <!-- Testimonials Section -->
     <section class="testimonials" id="testimonials">
         <div class="container">
-            <div class="section-header">
+            <div class="section-header reveal-up">
+                <span class="section-tag">Testimonials</span>
                 <h2>What Our Customers Say</h2>
                 <p>Real stories from real customers who trust Heritage Bank</p>
             </div>
 
             <div class="testimonials-grid">
-                <div class="testimonial-card">
+                <div class="testimonial-card reveal-up">
+                    <div class="testimonial-quote" aria-hidden="true"><i class="fas fa-quote-left"></i></div>
                     <div class="testimonial-stars">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
                     </div>
                     <p class="testimonial-text">"Heritage Bank made buying my first home so easy! Their mortgage team was incredibly helpful and found me the best rate. I couldn't be happier with my experience."</p>
                     <div class="testimonial-author">
-                        <div class="author-avatar">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
+                        <div class="author-avatar"><span>SJ</span></div>
                         <div class="author-info">
                             <h4>Sarah Johnson</h4>
                             <span>Homeowner since 2023</span>
@@ -207,19 +238,14 @@
                     </div>
                 </div>
 
-                <div class="testimonial-card">
+                <div class="testimonial-card testimonial-featured reveal-up">
+                    <div class="testimonial-quote" aria-hidden="true"><i class="fas fa-quote-left"></i></div>
                     <div class="testimonial-stars">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
                     </div>
                     <p class="testimonial-text">"The mobile app is fantastic! I can do everything from my phone - transfers, bill payments, even deposit checks. It's made managing my finances so convenient."</p>
                     <div class="testimonial-author">
-                        <div class="author-avatar">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
+                        <div class="author-avatar"><span>MC</span></div>
                         <div class="author-info">
                             <h4>Michael Chen</h4>
                             <span>Customer for 5 years</span>
@@ -227,19 +253,14 @@
                     </div>
                 </div>
 
-                <div class="testimonial-card">
+                <div class="testimonial-card reveal-up">
+                    <div class="testimonial-quote" aria-hidden="true"><i class="fas fa-quote-left"></i></div>
                     <div class="testimonial-stars">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
                     </div>
                     <p class="testimonial-text">"As a small business owner, Heritage Bank has been a true partner. Their business banking solutions have helped my company grow beyond what I imagined."</p>
                     <div class="testimonial-author">
-                        <div class="author-avatar">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
+                        <div class="author-avatar"><span>DW</span></div>
                         <div class="author-info">
                             <h4>David Williams</h4>
                             <span>Business Owner</span>
@@ -250,39 +271,132 @@
         </div>
     </section>
 
+    <!-- Rates Showcase -->
+    <section class="rates-showcase" id="rates">
+        <div class="container">
+            <div class="section-header reveal-up">
+                <span class="section-tag">Competitive Rates</span>
+                <h2>Today's Featured Rates</h2>
+                <p>Industry-leading rates that help your money work harder</p>
+            </div>
+            <div class="rates-grid reveal-up">
+                <div class="rate-card">
+                    <div class="rate-type">High-Yield Savings</div>
+                    <div class="rate-value">4.25<span class="rate-unit">% APY</span></div>
+                    <p class="rate-detail">No minimum balance required</p>
+                    <a href="open-account.html" class="btn btn-primary">Open Account</a>
+                </div>
+                <div class="rate-card rate-card-featured">
+                    <div class="rate-badge">Best Value</div>
+                    <div class="rate-type">12-Month CD</div>
+                    <div class="rate-value">4.75<span class="rate-unit">% APY</span></div>
+                    <p class="rate-detail">$500 minimum deposit</p>
+                    <a href="open-account.html" class="btn btn-primary btn-glow">Get This Rate</a>
+                </div>
+                <div class="rate-card">
+                    <div class="rate-type">Home Mortgage</div>
+                    <div class="rate-value">5.99<span class="rate-unit">% APR</span></div>
+                    <p class="rate-detail">30-year fixed rate</p>
+                    <a href="request-loan.html" class="btn btn-primary">Apply Now</a>
+                </div>
+                <div class="rate-card">
+                    <div class="rate-type">Auto Loan</div>
+                    <div class="rate-value">3.49<span class="rate-unit">% APR</span></div>
+                    <p class="rate-detail">New vehicles, 60 months</p>
+                    <a href="request-loan.html" class="btn btn-primary">Get Pre-Approved</a>
+                </div>
+            </div>
+            <p class="rates-disclaimer">* Rates effective as of March 2026. Rates subject to change without notice. APY = Annual Percentage Yield. APR = Annual Percentage Rate.</p>
+        </div>
+    </section>
+
+    <!-- CTA Banner -->
+    <section class="cta-banner">
+        <div class="container">
+            <div class="cta-inner reveal-up">
+                <div class="cta-text">
+                    <h2>Ready to Start Your Journey?</h2>
+                    <p>Open your account in minutes and experience modern banking with Heritage Bank.</p>
+                </div>
+                <div class="cta-actions">
+                    <a href="open-account.html" class="btn btn-primary btn-glow btn-lg">Open Account <i class="fas fa-arrow-right"></i></a>
+                    <a href="contact.html" class="btn btn-outline-light btn-lg">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mobile App Section -->
+    <section class="mobile-app-section">
+        <div class="container">
+            <div class="app-showcase reveal-up">
+                <div class="app-info">
+                    <span class="section-tag">Mobile Banking</span>
+                    <h2>Bank Anytime, Anywhere</h2>
+                    <p>Download the Heritage Bank app and take control of your finances on the go. Deposit checks, transfer funds, pay bills, and more — all from your phone.</p>
+                    <ul class="app-features">
+                        <li><i class="fas fa-check-circle"></i> Instant mobile check deposit</li>
+                        <li><i class="fas fa-check-circle"></i> Real-time transaction alerts</li>
+                        <li><i class="fas fa-check-circle"></i> Biometric login (Face ID & Touch ID)</li>
+                        <li><i class="fas fa-check-circle"></i> Send money with Zelle&reg;</li>
+                    </ul>
+                    <div class="app-store-badges">
+                        <a href="#" class="store-badge" aria-label="Download on the App Store"><i class="fab fa-apple"></i> App Store</a>
+                        <a href="#" class="store-badge" aria-label="Get it on Google Play"><i class="fab fa-google-play"></i> Google Play</a>
+                    </div>
+                </div>
+                <div class="app-phone-mockup" aria-hidden="true">
+                    <div class="phone-frame">
+                        <div class="phone-screen">
+                            <div class="phone-header">Heritage Bank</div>
+                            <div class="phone-balance">$12,458.32</div>
+                            <div class="phone-label">Available Balance</div>
+                            <div class="phone-actions">
+                                <span><i class="fas fa-paper-plane"></i> Send</span>
+                                <span><i class="fas fa-qrcode"></i> Scan</span>
+                                <span><i class="fas fa-plus"></i> More</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Contact Section -->
     <section class="contact" id="contact">
         <div class="container">
-            <div class="section-header">
-                <h2>Get In Touch</h2>
+            <div class="section-header reveal-up">
+                <span class="section-tag">Get in Touch</span>
+                <h2>Contact Us</h2>
                 <p>We're here to help with all your banking needs</p>
             </div>
 
-            <div class="contact-wrapper">
+            <div class="contact-wrapper reveal-up">
                 <div class="contact-info">
                     <div class="contact-item">
-                        <i class="fas fa-map-marker-alt"></i>
+                        <div class="contact-icon-wrap"><i class="fas fa-map-marker-alt"></i></div>
                         <div>
                             <h4>Main Office</h4>
                             <p>123 Financial District<br>New York, NY 10004</p>
                         </div>
                     </div>
                     <div class="contact-item">
-                        <i class="fas fa-phone"></i>
+                        <div class="contact-icon-wrap"><i class="fas fa-phone"></i></div>
                         <div>
                             <h4>Phone</h4>
                             <p>1-800-HERITAGE<br>(1-800-437-4824)</p>
                         </div>
                     </div>
                     <div class="contact-item">
-                        <i class="fas fa-envelope"></i>
+                        <div class="contact-icon-wrap"><i class="fas fa-envelope"></i></div>
                         <div>
                             <h4>Email</h4>
                             <p>support@heritagebank.com<br>info@heritagebank.com</p>
                         </div>
                     </div>
                     <div class="contact-item">
-                        <i class="fas fa-clock"></i>
+                        <div class="contact-icon-wrap"><i class="fas fa-clock"></i></div>
                         <div>
                             <h4>Business Hours</h4>
                             <p>Mon - Fri: 9AM - 6PM<br>Sat: 9AM - 1PM</p>
@@ -317,7 +431,7 @@
                             <label for="message">Message</label>
                             <textarea id="message" name="message" rows="5" required placeholder="How can we help you?"></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary">Send Message</button>
+                        <button type="submit" class="btn btn-primary btn-glow">Send Message <i class="fas fa-paper-plane"></i></button>
                     </form>
                 </div>
             </div>
@@ -384,8 +498,17 @@
                 </div>
             </div>
 
+            <div class="trust-partners">
+                <span class="trust-badge"><i class="fab fa-cc-visa"></i></span>
+                <span class="trust-badge"><i class="fab fa-cc-mastercard"></i></span>
+                <span class="trust-badge"><i class="fab fa-cc-amex"></i></span>
+                <span class="trust-badge"><i class="fas fa-shield-alt"></i> FDIC</span>
+                <span class="trust-badge"><i class="fas fa-home"></i> Equal Housing</span>
+                <span class="trust-badge"><i class="fas fa-lock"></i> 256-bit SSL</span>
+            </div>
+
             <div class="footer-bottom">
-                <p>&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+                <p>&copy; 2026 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
                 <div class="footer-badges">
                     <span><i class="fas fa-lock"></i> SSL Secured</span>
                     <span><i class="fas fa-shield-alt"></i> FDIC Insured</span>
@@ -394,7 +517,129 @@
         </div>
     </footer>
 
+    <!-- Back to Top -->
+    <button class="back-to-top" id="backToTop" title="Back to top" aria-label="Back to top">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <!-- No-JS fallback -->
+    <noscript>
+        <style>
+            .reveal-up { opacity: 1 !important; transform: none !important; }
+            .counter { display: none; }
+            .hero-particles, .hero-scroll-indicator { display: none; }
+            .navbar-transparent { background: var(--primary-green) !important; }
+        </style>
+    </noscript>
+
+    <!-- Page Loader -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-content">
+            <div class="loader-logo">HB</div>
+            <div class="loader-spinner"></div>
+            <p class="loader-text">Loading...</p>
+        </div>
+    </div>
+
     <script src="script.js"></script>
     <script src="cookie-consent.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(function(){});
+        }
+
+        // --- Transparent navbar on scroll ---
+        (function() {
+            var nav = document.getElementById('mainNav');
+            if (!nav) return;
+            function onScroll() {
+                if (window.scrollY > 80) {
+                    nav.classList.remove('navbar-transparent');
+                    nav.classList.add('navbar-solid');
+                } else {
+                    nav.classList.add('navbar-transparent');
+                    nav.classList.remove('navbar-solid');
+                }
+            }
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+        })();
+
+        // --- Scroll reveal animation ---
+        (function() {
+            var reveals = document.querySelectorAll('.reveal-up');
+            if (!reveals.length) return;
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('revealed');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+            reveals.forEach(function(el) { observer.observe(el); });
+        })();
+
+        // --- Animated counters ---
+        (function() {
+            var counters = document.querySelectorAll('.counter');
+            if (!counters.length) return;
+            var started = false;
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting && !started) {
+                        started = true;
+                        counters.forEach(function(c) {
+                            var isDecimal = c.getAttribute('data-decimal') === 'true';
+                            var target = isDecimal ? parseFloat(c.getAttribute('data-target')) : parseInt(c.getAttribute('data-target'), 10);
+                            var duration = 2000;
+                            var startTime = null;
+                            function step(ts) {
+                                if (!startTime) startTime = ts;
+                                var progress = Math.min((ts - startTime) / duration, 1);
+                                var eased = 1 - Math.pow(1 - progress, 3);
+                                var current = eased * target;
+                                if (isDecimal) {
+                                    c.textContent = current.toFixed(1);
+                                } else {
+                                    c.textContent = Math.floor(current).toLocaleString();
+                                }
+                                if (progress < 1) requestAnimationFrame(step);
+                                else {
+                                    if (isDecimal) c.textContent = target.toFixed(1);
+                                    else c.textContent = target.toLocaleString() + (target === 50000 ? '+' : '');
+                                }
+                            }
+                            requestAnimationFrame(step);
+                        });
+                    }
+                });
+            }, { threshold: 0.3 });
+            observer.observe(document.querySelector('.stats-grid'));
+        })();
+
+        // --- Back to top button ---
+        (function() {
+            var btn = document.getElementById('backToTop');
+            if (!btn) return;
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 600) btn.classList.add('visible');
+                else btn.classList.remove('visible');
+            }, { passive: true });
+            btn.addEventListener('click', function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        })();
+
+        // --- Page loader ---
+        (function() {
+            var loader = document.getElementById('pageLoader');
+            if (!loader) return;
+            window.addEventListener('load', function() {
+                loader.classList.add('loaded');
+                setTimeout(function() { loader.style.display = 'none'; }, 500);
+            });
+        })();
+    </script>
 </body>
 </html>

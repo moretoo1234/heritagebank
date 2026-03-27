@@ -3,34 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="manifest" href="manifest.json">
     <meta name="description" content="Learn how Heritage Bank protects your accounts with advanced security measures and fraud prevention.">
     <title>Security - Heritage Bank</title>
+    <meta property="og:title" content="Security - Heritage Bank">
+    <meta property="og:description" content="Learn how Heritage Bank protects your accounts and personal information.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="assets/og-image.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
-        .terms-hero { background: linear-gradient(135deg, #1a5f7a 0%, #2c3e50 100%); padding: 100px 0 60px; color: white; text-align: center; }
-        .terms-hero h1 { font-size: 2.5rem; margin-bottom: 1rem; }
-        .terms-content { padding: 60px 0; background: #f8f9fa; }
-        .terms-container { max-width: 900px; margin: 0 auto; background: white; padding: 50px; border-radius: 20px; box-shadow: 0 5px 30px rgba(0,0,0,0.1); }
-        .terms-container h2 { color: #1a5f7a; margin: 30px 0 15px; font-size: 1.4rem; padding-bottom: 10px; border-bottom: 2px solid #e8f4f8; }
+        .terms-hero { background: linear-gradient(135deg, #1a472a 0%, #0f2b1a 100%); padding: 110px 0 60px; color: white; text-align: center; }
+        .terms-hero h1 { font-size: 2.2rem; margin-bottom: 1rem; }
+        .terms-content { padding: 60px 0; background: #f0f2f5; }
+        .terms-container { max-width: 900px; margin: 0 auto; background: white; padding: 50px; border-radius: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+        .terms-container h2 { color: #1a472a; margin: 30px 0 15px; font-size: 1.4rem; padding-bottom: 10px; border-bottom: 2px solid #e8f5e9; }
         .terms-container h2:first-of-type { margin-top: 0; }
-        .terms-container h3 { color: #2c3e50; margin: 20px 0 10px; font-size: 1.15rem; }
-        .terms-container p { color: #555; line-height: 1.8; margin-bottom: 15px; }
+        .terms-container h3 { color: #0f2b1a; margin: 20px 0 10px; font-size: 1.15rem; }
+        .terms-container p { color: #64748b; line-height: 1.8; margin-bottom: 15px; }
         .terms-container ul { margin: 15px 0; padding-left: 25px; }
-        .terms-container li { color: #555; margin-bottom: 10px; line-height: 1.7; }
-        .last-updated { background: #e8f4f8; padding: 15px 20px; border-radius: 10px; margin-bottom: 30px; color: #1a5f7a; font-weight: 500; }
+        .terms-container li { color: #64748b; margin-bottom: 10px; line-height: 1.7; }
+        .last-updated { background: #e8f5e9; padding: 15px 20px; border-radius: 10px; margin-bottom: 30px; color: #1a472a; font-weight: 500; }
         .highlight-box { background: #fff9e6; border-left: 4px solid #f0ad4e; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
-        .info-box { background: #e8f4f8; border-left: 4px solid #1a5f7a; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
+        .info-box { background: #e8f5e9; border-left: 4px solid #1a472a; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
         .danger-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
         .security-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin: 25px 0; }
-        .security-card { background: #f8f9fa; padding: 25px; border-radius: 15px; text-align: center; }
-        .security-card i { font-size: 2.5rem; color: #1a5f7a; margin-bottom: 15px; }
-        .security-card h3 { color: #2c3e50; margin-bottom: 10px; border: none; }
+        .security-card { background: #f0f2f5; padding: 25px; border-radius: 16px; text-align: center; }
+        .security-card i { font-size: 2.5rem; color: #1a472a; margin-bottom: 15px; }
+        .security-card h3 { color: #0f2b1a; margin-bottom: 10px; border: none; }
         .security-card p { font-size: 0.9rem; margin-bottom: 0; }
         .tips-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 25px 0; }
-        .tip-item { display: flex; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
-        .tip-item .tip-icon { flex-shrink: 0; width: 40px; height: 40px; background: #e8f4f8; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #1a5f7a; }
-        .tip-item .tip-text h4 { color: #2c3e50; font-size: 0.95rem; margin-bottom: 5px; }
+        .tip-item { display: flex; gap: 15px; padding: 15px; background: #f0f2f5; border-radius: 10px; }
+        .tip-item .tip-icon { flex-shrink: 0; width: 40px; height: 40px; background: #e8f5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #1a472a; }
+        .tip-item .tip-text h4 { color: #0f2b1a; font-size: 0.95rem; margin-bottom: 5px; }
         .tip-item .tip-text p { font-size: 0.85rem; margin-bottom: 0; }
         @media (max-width: 768px) {
             .terms-hero { padding: 70px 0 40px; }
@@ -258,7 +267,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+                <p>&copy; 2026 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
             </div>
         </div>
     </footer>

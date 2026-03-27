@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="View and search your Heritage Bank transaction history with detailed records and PDF receipts.">
+    <title>Transactions - Heritage Bank</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+        .container { max-width: 1100px; margin: 30px auto; padding: 20px; }
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .back-btn { width: 40px; height: 40px; border-radius: 50%; background: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .back-btn i { color: #1a472a; }
+        h1 { color: #1a472a; }
+
+        .card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .toolbar-left { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .input { padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; min-width: 240px; }
+        .btn { padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: #1a472a; color: white; }
+        .btn-primary:hover { background: #2d5f3f; }
+        .btn-secondary { background: #d4af37; color: #1a472a; }
+        .btn-secondary:hover { background: #c19b2e; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 10px; border-bottom: 1px solid #eee; text-align: left; vertical-align: middle; }
+        th { color: #1a472a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { color: #333; font-size: 14px; }
+        .muted { color: #777; font-size: 12px; }
+        .amount.credit { color: #28a745; font-weight: 700; }
+        .amount.debit { color: #dc3545; font-weight: 700; }
+
+        .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+        .pill.completed { background: #d4edda; color: #155724; }
+        .pill.pending { background: #fff3cd; color: #856404; }
+        .pill.failed { background: #f8d7da; color: #721c24; }
+
+        /* Global word-wrap */
+        h1, h2, h3, h4, p, span, td, th { overflow-wrap: break-word; word-wrap: break-word; }
+
+        .empty { padding: 40px; text-align: center; color: #666; }
+        .empty i { font-size: 42px; color: #ddd; display: block; margin-bottom: 10px; }
+
+        /* Clickable rows */
+        tbody tr { cursor: pointer; transition: background 0.2s; }
+        tbody tr:hover { background: #f8f9fa; }
+
+        /* Transaction Detail Modal */
+        .txn-modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center; }
+        .txn-modal-overlay.active { display:flex; }
+        .txn-modal { background:white; border-radius:16px; width:90%; max-width:500px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation: txnSlideUp 0.3s ease; }
+        @keyframes txnSlideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+        .txn-modal-header { display:flex; justify-content:space-between; align-items:center; padding:20px 25px; border-bottom:1px solid #eee; }
+        .txn-modal-header h3 { color:#1a472a; font-size:1.1rem; display:flex; align-items:center; gap:10px; }
+        .txn-modal-close { background:none; border:none; font-size:1.5rem; cursor:pointer; color:#999; padding:5px; }
+        .txn-modal-close:hover { color:#333; }
+        .txn-modal-body { padding:25px; }
+        .txn-modal-amount { text-align:center; padding:20px 0; border-bottom:1px solid #f0f0f0; margin-bottom:20px; }
+        .txn-modal-amount .amount-value { font-size:2rem; font-weight:700; }
+        .txn-modal-amount .amount-value.credit { color:#28a745; }
+        .txn-modal-amount .amount-value.debit { color:#dc3545; }
+        .txn-modal-amount .amount-label { color:#888; font-size:0.85rem; margin-top:5px; }
+        .txn-detail-row { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f5f5f5; }
+        .txn-detail-row:last-child { border-bottom:none; }
+        .txn-detail-label { color:#888; font-size:0.85rem; }
+        .txn-detail-value { color:#333; font-weight:500; font-size:0.9rem; text-align:right; max-width:60%; word-break:break-word; }
+        .txn-status-badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:600; }
+        .txn-status-badge.completed { background:#d4edda; color:#155724; }
+        .txn-status-badge.pending { background:#fff3cd; color:#856404; }
+        .txn-status-badge.rejected, .txn-status-badge.failed { background:#f8d7da; color:#721c24; }
+        .txn-modal-footer { padding:15px 25px 20px; display:flex; gap:10px; }
+        .txn-modal-footer button { flex:1; padding:12px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:0.9rem; }
+        .txn-btn-receipt { background:#1a472a; color:white; }
+        .txn-btn-receipt:hover { background:#2d5f3f; }
+        .txn-btn-close-modal { background:#f0f0f0; color:#555; }
+        .txn-btn-close-modal:hover { background:#e0e0e0; }
+
+        @media (max-width: 700px) {
+            .container { padding: 15px; margin: 15px auto; }
+            .input { min-width: 0; width: 100%; }
+            .toolbar { gap: 8px; }
+            .toolbar-left { width: 100%; }
+            th:nth-child(3), td:nth-child(3), th:nth-child(4), td:nth-child(4) { display: none; }
+            h1 { font-size: 1.2rem; }
+            .card { padding: 15px 12px; overflow-x: auto; }
+            th { padding: 10px 6px; font-size: 11px; }
+            td { padding: 10px 6px; font-size: 12px; }
+            .pill { font-size: 10px; padding: 3px 7px; }
+            .muted { font-size: 11px; }
+            .btn { padding: 8px 10px; font-size: 12px; }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 10px; margin: 10px auto; }
+            h1 { font-size: 1.05rem; }
+            th:nth-child(5), td:nth-child(5) { display: none; }
+            th { padding: 8px 4px; font-size: 10px; }
+            td { padding: 8px 4px; font-size: 11px; }
+            .toolbar { flex-direction: column; }
+            .toolbar-left { flex-direction: column; }
+            .input { min-width: 0; width: 100%; }
+            .btn { width: 100%; justify-content: center; text-align: center; }
+        }
+        .app-footer { background: #1a2332; padding: 20px 0; margin-top: 40px; text-align: center; }
+        .app-footer-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .app-footer-links { margin-bottom: 10px; }
+        .app-footer-links a { color: #8899aa; text-decoration: none; margin: 0 10px; font-size: 0.8rem; }
+        .app-footer-links a:hover { color: #aabbcc; }
+        .app-footer-copy { color: #556677; font-size: 0.75rem; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="location.href='dashboard.html'" title="Back to Dashboard"><i class="fas fa-arrow-left"></i></button>
+            <div>
+                <h1>Transactions</h1>
+                <div class="muted">Full transaction history (latest 100)</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <input class="input" id="search" placeholder="Search description, reference, type…" oninput="applyFilter()" />
+                    <button class="btn btn-secondary" onclick="refresh()"><i class="fas fa-sync"></i> Refresh</button>
+                </div>
+                <button class="btn btn-primary" onclick="downloadCurrentStatement()"><i class="fas fa-file-invoice"></i> Download Statement</button>
+            </div>
+
+            <div id="tableWrap"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3001'
+            : window.location.origin;
+
+        let userId = null;
+        let allTx = [];
+
+        function formatMoney(amount) {
+            const v = Number(amount || 0);
+            return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function cleanType(type) {
+            const map = { 'direct_deposit': 'Direct Deposit', 'admin_transfer': 'Transfer', 'admin_debit': 'Debit', 'admin_credit': 'Credit', 'wire_transfer': 'Wire Transfer', 'bank_transfer': 'Bank Transfer', 'bill_payment': 'Bill Payment' };
+            if (map[(type || '').toLowerCase()]) return map[(type || '').toLowerCase()];
+            return (type || 'Transfer').replace(/_/g, ' ').replace(/\badmin\b\s*/gi, '').replace(/\b\w/g, c => c.toUpperCase()).trim() || 'Transfer';
+        }
+
+        function isBillPayment(tx) {
+            return (tx.type || '').toLowerCase() === 'bill_payment';
+        }
+
+        function formatDate(d) {
+            try {
+                return new Date(d).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            } catch {
+                return '-';
+            }
+        }
+
+        function pill(status) {
+            const s = (status || 'completed').toLowerCase();
+            const cls = (s === 'completed' || s === 'success') ? 'completed' : (s === 'pending' ? 'pending' : 'failed');
+            return `<span class="pill ${cls}">${s}</span>`;
+        }
+
+        function isCredit(tx) {
+            return tx.type === 'credit' || tx.type === 'deposit' || tx.type === 'received';
+        }
+
+        function formatNameAcct(firstName, lastName, accountNumber) {
+            const f = firstName ? firstName.charAt(0) + '.' : '';
+            const l = lastName || '';
+            const name = [f, l].filter(Boolean).join(' ') || '-';
+            if (accountNumber) return `${name} (...${String(accountNumber).slice(-5)})`;
+            return name;
+        }
+
+        const COUNTRY_MAP = {
+            US: { flag: '🇺🇸', name: 'United States' },
+            GB: { flag: '🇬🇧', name: 'United Kingdom' },
+            CA: { flag: '🇨🇦', name: 'Canada' },
+            MX: { flag: '🇲🇽', name: 'Mexico' },
+            DE: { flag: '🇩🇪', name: 'Germany' },
+            FR: { flag: '🇫🇷', name: 'France' },
+            ES: { flag: '🇪🇸', name: 'Spain' },
+            IT: { flag: '🇮🇹', name: 'Italy' },
+            CH: { flag: '🇨🇭', name: 'Switzerland' },
+            NG: { flag: '🇳🇬', name: 'Nigeria' },
+            GH: { flag: '🇬🇭', name: 'Ghana' },
+            IN: { flag: '🇮🇳', name: 'India' },
+            CN: { flag: '🇨🇳', name: 'China' },
+            JP: { flag: '🇯🇵', name: 'Japan' },
+            AU: { flag: '🇦🇺', name: 'Australia' },
+            BR: { flag: '🇧🇷', name: 'Brazil' },
+            AE: { flag: '🇦🇪', name: 'United Arab Emirates' },
+            PH: { flag: '🇵🇭', name: 'Philippines' },
+            JM: { flag: '🇯🇲', name: 'Jamaica' },
+            KR: { flag: '🇰🇷', name: 'South Korea' }
+        };
+
+        function getCountryFlag(tx) {
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return COUNTRY_MAP[code].flag;
+            const d = String((tx && tx.description) || '').toLowerCase();
+            if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return COUNTRY_MAP.GB.flag;
+            return COUNTRY_MAP.US.flag;
+        }
+
+        function getCountryCode(tx) {
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return code;
+            const d = String((tx && tx.description) || '').toLowerCase();
+            if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return 'GB';
+            return 'US';
+        }
+
+        function flagImg(code) {
+            const c = (code || 'US').toUpperCase();
+            const entry = COUNTRY_MAP[c] || COUNTRY_MAP.US;
+            return `<img src="https://flagcdn.com/w40/${c.toLowerCase()}.png" alt="${entry.name}" style="width:20px;height:14px;vertical-align:middle;margin-right:4px;border-radius:2px;">`;
+        }
+
+        function getCountryName(tx) {
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return COUNTRY_MAP[code].name;
+            return null;
+        }
+
+        async function init() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                location.href = 'signin.html';
+                return;
+            }
+
+            const profileRes = await fetch(`${API_URL}/api/auth/profile`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const profile = await profileRes.json();
+            if (!profile.success || !profile.user) {
+                location.href = 'signin.html';
+                return;
+            }
+            userId = profile.user.id;
+            await refresh();
+        }
+
+        async function refresh() {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/user/${userId}/transactions`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            allTx = (data && data.success && Array.isArray(data.transactions)) ? data.transactions : [];
+            applyFilter();
+        }
+
+        function applyFilter() {
+            const q = (document.getElementById('search').value || '').trim().toLowerCase();
+            const filtered = !q
+                ? allTx
+                : allTx.filter(t => {
+                    const hay = `${t.description || ''} ${t.reference || ''} ${t.type || ''}`.toLowerCase();
+                    return hay.includes(q);
+                });
+            renderTable(filtered);
+        }
+
+        function renderTable(list) {
+            const wrap = document.getElementById('tableWrap');
+            if (!list.length) {
+                wrap.innerHTML = `
+                    <div class="empty">
+                        <i class="fas fa-receipt"></i>
+                        <div>No transactions found.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            wrap.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Reference</th>
+                            <th>Status</th>
+                            <th style="text-align:right;">Amount</th>
+                            <th>Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${list.map(tx => {
+                            const credit = isCredit(tx);
+                            const cls = credit ? 'credit' : 'debit';
+                            const sign = credit ? '+' : '-';
+                            const date = tx.createdAt || tx.date || tx.created_at;
+                            // Clean up description - remove "Admin" references and parse UK bank transfers
+                            let desc = tx.description || tx.type || 'Transaction';
+                            desc = desc.replace(/Admin\s*/gi, '').trim() || tx.type || 'Transaction';
+                            // Parse UK bank transfer description for cleaner display
+                            const ukMatch = desc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
+                            const fromDisp = formatNameAcct(tx.fromFirstName, tx.fromLastName, tx.fromAccountNumber);
+                            const toCode = getCountryCode(tx);
+                            let toName = formatNameAcct(tx.toFirstName, tx.toLastName, tx.toAccountNumber);
+                            if (toName === '-' && tx.recipientName) toName = tx.recipientName;
+                            let fromTo;
+                            if (isBillPayment(tx)) {
+                                const lastFour = tx.fromAccountNumber ? String(tx.fromAccountNumber).slice(-4) : '7890';
+                                const billerName = tx.recipientName || desc.replace(/Bill payment to\s*/i, '').split('(')[0].trim() || 'Biller';
+                                fromTo = `<i class="fas fa-credit-card" style="color:#1a472a;margin-right:4px;"></i> Paid via Virtual Debit Card ****${lastFour} &bull; To: ${billerName}`;
+                            } else if (ukMatch) {
+                                const bankName = ukMatch[1].trim();
+                                const recipientName = ukMatch[2].trim();
+                                desc = `UK Transfer to ${bankName}`;
+                                fromTo = `${flagImg('US')} Heritage Bank, USA &rarr; ${flagImg('GB')} ${recipientName} &bull; ${bankName}, United Kingdom`;
+                            } else if (toCode !== 'US') {
+                                const destName = getCountryName(tx) || 'International';
+                                fromTo = `${flagImg('US')} Heritage Bank, USA &rarr; ${flagImg(toCode)} ${toName} &bull; ${destName}`;
+                            } else {
+                                fromTo = `${flagImg('US')} ${fromDisp} &rarr; ${flagImg('US')} ${toName} &bull; Heritage Bank, USA`;
+                            }
+                            return `
+                                <tr onclick="showTransactionDetail(${tx.id})">
+                                    <td>${formatDate(date)}</td>
+                                    <td>
+                                        <div>${desc}</div>
+                                        <div class="muted">${fromTo}</div>
+                                    </td>
+                                    <td>${cleanType(tx.type)}</td>
+                                    <td>${tx.reference || '-'}</td>
+                                    <td>${pill(tx.status)}</td>
+                                    <td class="amount ${cls}" style="text-align:right;">
+                                        ${sign}$${formatMoney(Math.abs(parseFloat(tx.amount) + (credit ? 0 : (parseFloat(tx.fee) || 0))))}
+                                        ${(parseFloat(tx.fee) || 0) > 0 ? `<div class="muted" style="font-size:11px;">Fee: $${formatMoney(parseFloat(tx.fee))}</div>` : ''}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-secondary" style="padding:8px 10px;" onclick="event.stopPropagation(); downloadReceipt(${tx.id})" title="Download Receipt">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function downloadReceipt(id) {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/transactions/${id}/receipt`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!response.ok) {
+                alert('Error downloading receipt');
+                return;
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Heritage_Bank_Receipt_${id}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function downloadCurrentStatement() {
+            location.href = 'statements.html';
+        }
+
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = text || '';
+            return d.innerHTML;
+        }
+
+        function showTransactionDetail(txId) {
+            const tx = allTx.find(t => t.id == txId);
+            if (!tx) return;
+
+            const credit = isCredit(tx);
+            const amountClass = credit ? 'credit' : 'debit';
+            const sign = credit ? '+' : '-';
+            const fee = parseFloat(tx.fee) || 0;
+            const totalAmount = Math.abs(parseFloat(tx.amount)) + (credit ? 0 : fee);
+
+            const ts = tx.createdAt || tx.date || tx.created_at;
+            const d = ts ? new Date(ts) : null;
+            const dateStr = d && !isNaN(d.getTime()) ? d.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+
+            let desc = tx.description ? String(tx.description) : (tx.type || 'Transaction');
+            desc = desc.replace(/Admin\s*/gi, '').trim() || tx.type || 'Transaction';
+
+            const statusClass = (tx.status || 'completed').toLowerCase();
+            const statusLabel = statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
+            const typeLabel = cleanType(tx.type);
+
+            const fromDisplay = formatNameAcct(tx.fromFirstName, tx.fromLastName, tx.fromAccountNumber);
+            let toDisplay = formatNameAcct(tx.toFirstName, tx.toLastName, tx.toAccountNumber);
+            if (toDisplay === '-' && tx.recipientName) toDisplay = tx.recipientName;
+            const rawDesc = String(tx.description || '');
+            const toCode = getCountryCode(tx);
+            const toCountryName = getCountryName(tx);
+            const ukDetailMatch = rawDesc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
+            if (ukDetailMatch) toDisplay = ukDetailMatch[2].trim() + ' via ' + ukDetailMatch[1].trim();
+
+            const isBill = isBillPayment(tx);
+            const lastFour = tx.fromAccountNumber ? String(tx.fromAccountNumber).slice(-4) : '7890';
+            const billerName = tx.recipientName || desc.replace(/Bill payment to\s*/i, '').replace(/AT&T Phone Payment.*/i, 'AT&T').split('(')[0].trim() || 'Biller';
+
+            let html = `
+                <div class="txn-modal-amount">
+                    <div class="amount-value ${amountClass}">${sign}$${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</div>
+                    <div class="amount-label">${escapeHtml(typeLabel)}</div>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Description</span>
+                    <span class="txn-detail-value">${escapeHtml(desc)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Date & Time</span>
+                    <span class="txn-detail-value">${escapeHtml(dateStr)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Status</span>
+                    <span class="txn-detail-value"><span class="txn-status-badge ${statusClass}">${escapeHtml(statusLabel)}</span></span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Type</span>
+                    <span class="txn-detail-value">${escapeHtml(typeLabel)}</span>
+                </div>`;
+
+            if (isBill) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Paid To</span>
+                    <span class="txn-detail-value">${escapeHtml(billerName)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Payment Method</span>
+                    <span class="txn-detail-value"><i class="fas fa-credit-card" style="color:#1a472a;margin-right:4px;"></i> Virtual Debit Card ****${lastFour}</span>
+                </div>`;
+            } else {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">From</span>
+                    <span class="txn-detail-value">${flagImg('US')} ${escapeHtml(fromDisplay)} &mdash; Heritage Bank, USA</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">To</span>
+                    <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toDisplay)}${toCode !== 'US' ? ' &mdash; ' + escapeHtml(toCountryName || 'International') : ' &mdash; Heritage Bank, USA'}</span>
+                </div>`;
+            }
+
+            html += `
+                ${!isBill && toCode !== 'US' ? `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Destination Country</span>
+                    <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toCountryName || 'International')}</span>
+                </div>` : ''}`;
+
+            if (tx.recipientAddress && !isBill) {
+                html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Recipient Address</span>
+                    <span class="txn-detail-value" style="white-space:pre-line;">${escapeHtml(tx.recipientAddress)}</span>
+                </div>`;
+            }
+
+            if (tx.bankName || tx.swiftCode || tx.iban) {
+                html += `<div class="txn-detail-row" style="margin-top:8px;border-top:1px solid var(--border-color,#eee);padding-top:8px;">
+                    <span class="txn-detail-label" style="font-weight:700;">Recipient Bank</span>
+                    <span class="txn-detail-value"></span>
+                </div>`;
+                if (tx.bankName) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Bank Name</span>
+                    <span class="txn-detail-value">${escapeHtml(tx.bankName)}</span>
+                </div>`;
+                if (tx.swiftCode) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Bank ID (SWIFT)</span>
+                    <span class="txn-detail-value" style="font-family:monospace;">${escapeHtml(tx.swiftCode)}</span>
+                </div>`;
+                if (tx.iban) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Account / IBAN</span>
+                    <span class="txn-detail-value" style="font-family:monospace;font-size:0.85rem;">${escapeHtml(tx.iban)}</span>
+                </div>`;
+            }
+
+            if (tx.exchangeRate || tx.recipientAmount) {
+                html += `<div class="txn-detail-row" style="margin-top:8px;border-top:1px solid var(--border-color,#eee);padding-top:8px;">
+                    <span class="txn-detail-label" style="font-weight:700;">Exchange</span>
+                    <span class="txn-detail-value"></span>
+                </div>`;
+                if (tx.exchangeRate) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Exchange Rate</span>
+                    <span class="txn-detail-value">${escapeHtml(tx.exchangeRate)}</span>
+                </div>`;
+                if (tx.recipientAmount) {
+                    const cur = tx.recipientCurrency || '';
+                    const sym = {'GBP':'£','EUR':'€','JPY':'¥','CNY':'¥','INR':'₹','BRL':'R$','KRW':'₩','AED':'AED','NGN':'₦','GHS':'₵','CAD':'C$','MXN':'MX$','AUD':'A$','CHF':'CHF','PHP':'₱','JMD':'J$'}[cur] || cur;
+                    html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Recipient Receives</span>
+                    <span class="txn-detail-value" style="font-weight:700;">${sym ? sym : ''}${parseFloat(tx.recipientAmount).toLocaleString(undefined, {minimumFractionDigits:2})} ${cur}</span>
+                </div>`;
+                }
+            }
+
+            if (tx.reference) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Reference</span>
+                    <span class="txn-detail-value" style="font-family:monospace; font-size:0.8rem;">${escapeHtml(tx.reference)}</span>
+                </div>`;
+            }
+
+            html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Amount</span>
+                    <span class="txn-detail-value">${sign}$${Math.abs(parseFloat(tx.amount)).toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>`;
+
+            if (fee > 0) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Fee</span>
+                    <span class="txn-detail-value">$${fee.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Total</span>
+                    <span class="txn-detail-value" style="font-weight:700;">${sign}$${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>`;
+            }
+
+            if (tx.category) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Category</span>
+                    <span class="txn-detail-value">${escapeHtml(tx.category)}</span>
+                </div>`;
+            }
+
+            document.getElementById('txnModalBody').innerHTML = html;
+            document.getElementById('txnModalReceiptBtn').onclick = function() { downloadReceipt(tx.id); };
+            document.getElementById('txnModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeTxnModal() {
+            document.getElementById('txnModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeTxnModal();
+        });
+
+        init().catch(err => {
+            console.error(err);
+            alert('Failed to load transactions. Please sign in again.');
+            location.href = 'signin.html';
+        });
+    </script>
+
+    <!-- Transaction Detail Modal -->
+    <div class="txn-modal-overlay" id="txnModal" onclick="if(event.target===this)closeTxnModal()">
+        <div class="txn-modal">
+            <div class="txn-modal-header">
+                <h3><i class="fas fa-receipt"></i> Transaction Details</h3>
+                <button class="txn-modal-close" onclick="closeTxnModal()">&times;</button>
+            </div>
+            <div class="txn-modal-body" id="txnModalBody"></div>
+            <div class="txn-modal-footer">
+                <button class="txn-btn-receipt" id="txnModalReceiptBtn"><i class="fas fa-download"></i> Download Receipt</button>
+                <button class="txn-btn-close-modal" onclick="closeTxnModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
+            </div>
+            <p class="app-footer-copy">&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+        </div>
+    </footer>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>

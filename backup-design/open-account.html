@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Create a new Heritage Bank account online with quick and simple registration.">
+    <title>Open Account - Heritage Bank</title>
+    <script>
+        // Redirect authenticated users to dashboard, otherwise to enhanced signup
+        if (localStorage.getItem('token')) {
+            window.location.href = 'dashboard.html';
+        } else {
+            window.location.href = 'open-account-enhanced.html';
+        }
+    </script>
+</head>
+<body>
+    <p>Redirecting to account opening page...</p>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>

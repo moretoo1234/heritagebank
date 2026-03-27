@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Read the latest financial tips, banking news, and insights from Heritage Bank.">
+    <title>Blog & News - Heritage Bank</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>
+        .blog-hero { background: linear-gradient(135deg, #1a5f7a 0%, #2c3e50 100%); padding: 100px 0 60px; color: white; text-align: center; }
+        .blog-hero h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .blog-section { padding: 60px 0; background: #f8f9fa; }
+        .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 30px; }
+        .blog-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.1); transition: transform 0.3s; }
+        .blog-card:hover { transform: translateY(-5px); }
+        .blog-image { height: 200px; background: linear-gradient(135deg, #1a5f7a, #2c3e50); display: flex; align-items: center; justify-content: center; }
+        .blog-image i { font-size: 4rem; color: rgba(255,255,255,0.3); }
+        .blog-content { padding: 25px; }
+        .blog-category { display: inline-block; background: #e8f4f8; color: #1a5f7a; padding: 5px 15px; border-radius: 20px; font-size: 0.85rem; margin-bottom: 15px; }
+        .blog-card h3 { margin-bottom: 10px; font-size: 1.3rem; }
+        .blog-card h3 a { color: #333; text-decoration: none; }
+        .blog-card h3 a:hover { color: #1a5f7a; }
+        .blog-excerpt { color: #666; line-height: 1.7; margin-bottom: 15px; }
+        .blog-meta { display: flex; justify-content: space-between; align-items: center; color: #999; font-size: 0.9rem; }
+        .blog-meta span { display: flex; align-items: center; gap: 5px; }
+        .read-more { color: #1a5f7a; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+        .read-more:hover { gap: 10px; }
+        .featured-post { grid-column: span 2; }
+        .featured-post .blog-image { height: 300px; }
+        @media (max-width: 768px) {
+            .featured-post { grid-column: span 1; }
+            .featured-post .blog-image { height: 200px; }
+            .blog-hero { padding: 70px 0 40px; }
+            .blog-hero h1 { font-size: 1.6rem; }
+            .blog-grid { grid-template-columns: 1fr; }
+            .blog-content { padding: 18px; }
+            .blog-card h3 { font-size: 1.1rem; }
+            .newsletter-box { padding: 22px; }
+        }
+
+        @media (max-width: 480px) {
+            .blog-hero { padding: 60px 0 30px; }
+            .blog-hero h1 { font-size: 1.3rem; }
+            .blog-content { padding: 15px; }
+            .blog-meta { font-size: 0.8rem; flex-wrap: wrap; gap: 5px; }
+        }
+        .categories-sidebar { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .categories-sidebar h3 { margin-bottom: 20px; color: #1a5f7a; }
+        .category-list { list-style: none; }
+        .category-list li { padding: 10px 0; border-bottom: 1px solid #eee; }
+        .category-list li:last-child { border-bottom: none; }
+        .category-list a { color: #666; text-decoration: none; display: flex; justify-content: space-between; }
+        .category-list a:hover { color: #1a5f7a; }
+        .newsletter-box { background: linear-gradient(135deg, #1a5f7a, #2c3e50); padding: 30px; border-radius: 15px; color: white; text-align: center; }
+        .newsletter-box h3 { margin-bottom: 15px; }
+        .newsletter-box p { margin-bottom: 20px; opacity: 0.9; }
+        .newsletter-box input { width: 100%; padding: 12px; border: none; border-radius: 8px; margin-bottom: 10px; }
+        .newsletter-box button { width: 100%; padding: 12px; background: white; color: #1a5f7a; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-wrapper">
+                <div class="logo-section">
+                    <a href="index.html"><img src="./assets/logo.png" alt="Heritage Bank" class="logo"></a>
+                </div>
+                <button class="hamburger" id="hamburger" title="Toggle Navigation"><span></span><span></span><span></span></button>
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="index.html#services">Services</a></li>
+                    <li><a href="faq.html">FAQ</a></li>
+                    <li><a href="blog.html" class="active">Blog</a></li>
+                    <li><a href="branches.html">Branches</a></li>
+                    <li><a href="signin.html" class="signin-link"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
+                    <li class="cta-button"><a href="open-account.html">Open Account</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="blog-hero">
+        <div class="container">
+            <h1>Blog & Financial News</h1>
+            <p>Expert insights, tips, and updates to help you make smarter financial decisions</p>
+        </div>
+    </section>
+
+    <!-- Blog Section -->
+    <section class="blog-section">
+        <div class="container">
+            <div class="blog-layout">
+                <div>
+                    <div class="blog-grid">
+                        <!-- Featured Post -->
+                        <div class="blog-card featured-post">
+                            <div class="blog-image"><i class="fas fa-chart-line"></i></div>
+                            <div class="blog-content">
+                                <span class="blog-category">Featured</span>
+                                <h3><a href="#">2024 Investment Outlook: What to Expect in the Coming Year</a></h3>
+                                <p class="blog-excerpt">As we enter 2024, market analysts are predicting significant shifts in investment trends. From emerging technologies to sustainable investing, here's what savvy investors should watch for in the months ahead...</p>
+                                <div class="blog-full" style="display:none;">
+                                    <p>The global investment landscape is evolving rapidly. Artificial intelligence and machine learning are transforming how portfolios are managed, while ESG (Environmental, Social, and Governance) investing continues to gain mainstream adoption. Interest rates have stabilized, creating new opportunities in both bond and equity markets.</p>
+                                    <p>Key trends to watch include the continued growth of renewable energy investments, the expansion of digital assets into traditional portfolios, and emerging market opportunities in Southeast Asia and Africa. Diversification remains the cornerstone of any sound investment strategy — speak with a Heritage Bank advisor to review your portfolio today.</p>
+                                </div>
+                                <div class="blog-meta">
+                                    <span><i class="far fa-calendar"></i> Dec 20, 2024</span>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Blog Post 1 -->
+                        <div class="blog-card">
+                            <div class="blog-image"><i class="fas fa-piggy-bank"></i></div>
+                            <div class="blog-content">
+                                <span class="blog-category">Savings Tips</span>
+                                <h3><a href="#">10 Simple Ways to Build Your Emergency Fund</a></h3>
+                                <p class="blog-excerpt">Financial experts recommend having 3-6 months of expenses saved. Here are practical strategies to build your safety net faster...</p>
+                                <div class="blog-full" style="display:none;">
+                                    <p>Building an emergency fund is one of the most important steps toward financial security. Start by setting a realistic monthly savings goal — even $50 per paycheck adds up. Automate your savings through Heritage Bank's automatic transfer feature so the money moves before you can spend it.</p>
+                                    <p>Other proven strategies include reducing discretionary spending, selling unused items, picking up a side income, and directing any windfalls (tax refunds, bonuses) straight into your fund. Heritage Bank's High-Yield Savings Account offers competitive rates to help your emergency fund grow faster.</p>
+                                </div>
+                                <div class="blog-meta">
+                                    <span><i class="far fa-calendar"></i> Dec 18, 2024</span>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Blog Post 2 -->
+                        <div class="blog-card">
+                            <div class="blog-image"><i class="fas fa-home"></i></div>
+                            <div class="blog-content">
+                                <span class="blog-category">Home Buying</span>
+                                <h3><a href="#">First-Time Homebuyer's Guide: Navigating the Mortgage Process</a></h3>
+                                <p class="blog-excerpt">Buying your first home is exciting but can be overwhelming. Our comprehensive guide breaks down every step of the mortgage process...</p>
+                                <div class="blog-full" style="display:none;">
+                                    <p>The mortgage process begins long before you start house hunting. First, check your credit score and address any issues. Next, get pre-approved — this tells sellers you're a serious buyer and sets your budget. Heritage Bank offers competitive fixed and adjustable-rate mortgages with personalized guidance every step of the way.</p>
+                                    <p>When comparing loans, look beyond the interest rate. Consider closing costs, PMI requirements, and whether points make sense for your situation. A Heritage Bank mortgage specialist can walk you through all your options and help you find the best fit for your financial goals.</p>
+                                </div>
+                                <div class="blog-meta">
+                                    <span><i class="far fa-calendar"></i> Dec 15, 2024</span>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Blog Post 3 -->
+                        <div class="blog-card">
+                            <div class="blog-image"><i class="fas fa-shield-alt"></i></div>
+                            <div class="blog-content">
+                                <span class="blog-category">Security</span>
+                                <h3><a href="#">Protecting Yourself from Financial Fraud in the Digital Age</a></h3>
+                                <p class="blog-excerpt">Cybercriminals are becoming more sophisticated. Learn how to recognize and protect yourself from common financial scams...</p>
+                                <div class="blog-full" style="display:none;">
+                                    <p>Phishing emails, fake banking apps, and social engineering calls are on the rise. Never share your password, PIN, or one-time codes with anyone — Heritage Bank will never ask for these via email or phone. Always verify the sender before clicking links, and use unique, strong passwords for every account.</p>
+                                    <p>Enable two-factor authentication on your Heritage Bank account, monitor your statements regularly, and set up transaction alerts so you're notified of any activity immediately. If you suspect fraud, contact Heritage Bank's 24/7 fraud hotline right away — early reporting drastically reduces losses.</p>
+                                </div>
+                                <div class="blog-meta">
+                                    <span><i class="far fa-calendar"></i> Dec 12, 2024</span>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Blog Post 4 -->
+                        <div class="blog-card">
+                            <div class="blog-image"><i class="fas fa-graduation-cap"></i></div>
+                            <div class="blog-content">
+                                <span class="blog-category">Education</span>
+                                <h3><a href="#">Understanding Credit Scores: A Complete Guide</a></h3>
+                                <p class="blog-excerpt">Your credit score affects everything from loan rates to job applications. Learn what factors impact your score and how to improve it...</p>
+                                <div class="blog-full" style="display:none;">
+                                    <p>Your credit score is calculated from five main factors: payment history (35%), amounts owed (30%), length of credit history (15%), new credit (10%), and credit mix (10%). The single most impactful thing you can do is pay every bill on time — even one missed payment can drop your score significantly.</p>
+                                    <p>Keep credit card balances below 30% of your limit, avoid opening too many new accounts at once, and don't close old cards (they help your average age of credit). Heritage Bank customers can check their credit score for free through their online banking dashboard.</p>
+                                </div>
+                                <div class="blog-meta">
+                                    <span><i class="far fa-calendar"></i> Dec 10, 2024</span>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Blog Post 5 -->
+                        <div class="blog-card">
+                            <div class="blog-image"><i class="fas fa-briefcase"></i></div>
+                            <div class="blog-content">
+                                <span class="blog-category">Business</span>
+                                <h3><a href="#">Small Business Banking: Essential Tools for Growth</a></h3>
+                                <p class="blog-excerpt">Running a small business requires the right financial foundation. Discover the banking tools that can help your business thrive...</p>
+                                <div class="blog-full" style="display:none;">
+                                    <p>A dedicated business checking account separates personal and business finances — essential for tax purposes and liability protection. Heritage Bank's Business Checking offers low fees, free online bill pay, and integration with popular accounting software like QuickBooks and Xero.</p>
+                                    <p>Beyond checking, consider a business line of credit for managing cash flow gaps, merchant services for accepting payments, and payroll solutions to simplify employee management. Heritage Bank's business advisors can create a customized banking package tailored to your industry and growth stage.</p>
+                                </div>
+                                <div class="blog-meta">
+                                    <span><i class="far fa-calendar"></i> Dec 8, 2024</span>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Blog Post 6 -->
+                        <div class="blog-card">
+                            <div class="blog-image"><i class="fas fa-coins"></i></div>
+                            <div class="blog-content">
+                                <span class="blog-category">Retirement</span>
+                                <h3><a href="#">Retirement Planning at Every Age: Your Decade-by-Decade Guide</a></h3>
+                                <p class="blog-excerpt">It's never too early or too late to plan for retirement. Here's what you should be doing in your 20s, 30s, 40s, and beyond...</p>
+                                <div class="blog-full" style="display:none;">
+                                    <p>In your 20s, start contributing to a 401(k) or IRA — even small amounts benefit enormously from compound interest. In your 30s, aim to save at least 15% of income and begin diversifying investments. By your 40s, maximize retirement contributions and pay down high-interest debt.</p>
+                                    <p>In your 50s, take advantage of catch-up contributions and start modeling your retirement income needs. Heritage Bank's retirement planning tools and advisors can help you at every stage — whether you're just starting out or fine-tuning your strategy for the final stretch.</p>
+                                </div>
+                                <div class="blog-meta">
+                                    <span><i class="far fa-calendar"></i> Dec 5, 2024</span>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div>
+                    <div class="categories-sidebar">
+                        <h3><i class="fas fa-folder"></i> Categories</h3>
+                        <ul class="category-list">
+                            <li><a href="#">Savings Tips <span>12</span></a></li>
+                            <li><a href="#">Investment <span>8</span></a></li>
+                            <li><a href="#">Home Buying <span>6</span></a></li>
+                            <li><a href="#">Security <span>5</span></a></li>
+                            <li><a href="#">Business Banking <span>7</span></a></li>
+                            <li><a href="#">Retirement <span>4</span></a></li>
+                            <li><a href="#">News & Updates <span>15</span></a></li>
+                        </ul>
+                    </div>
+
+                    <div class="newsletter-box">
+                        <h3><i class="fas fa-envelope"></i> Newsletter</h3>
+                        <p>Get the latest financial tips delivered to your inbox</p>
+                        <input type="email" placeholder="Your email address">
+                        <button>Subscribe</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <img src="./assets/logo.png" alt="Heritage Bank" class="footer-logo">
+                    <p>Building financial legacies since 1999.</p>
+                    <div class="social-links">
+                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                        <li><a href="faq.html">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="terms.html">Terms of Service</a></li>
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                        <li><a href="cookie-policy.html">Cookie Policy</a></li>
+                        <li><a href="accessibility.html">Accessibility</a></li>
+                        <li><a href="disclosures.html">Disclosures</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-phone"></i> 1-800-HERITAGE</li>
+                        <li><i class="fas fa-envelope"></i> support@heritagebank.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Heritage Bank. All rights reserved. Member FDIC.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="cookie-consent.js"></script>
+    <script>
+        function togglePost(link, e) {
+            e.preventDefault();
+            const card = link.closest('.blog-content');
+            const full = card.querySelector('.blog-full');
+            if (full.style.display === 'none') {
+                full.style.display = 'block';
+                link.innerHTML = 'Show Less <i class="fas fa-arrow-up"></i>';
+            } else {
+                full.style.display = 'none';
+                link.innerHTML = 'Read More <i class="fas fa-arrow-right"></i>';
+            }
+        }
+    </script>
+</body>
+</html>

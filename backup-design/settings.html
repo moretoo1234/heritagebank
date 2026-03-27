@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Manage your Heritage Bank account settings, profile information, and security preferences.">
+    <title>Settings - Heritage Bank</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; transition: background 0.3s, color 0.3s; }
+        
+        /* Dark Mode Styles */
+        body.dark-mode { background: #1a1a2e; color: #eee; }
+        body.dark-mode .sidebar { background: #0d2818; }
+        body.dark-mode .main-content { background: #16213e; }
+        body.dark-mode .settings-card { background: #1f2b47; }
+        body.dark-mode .settings-card h2 { color: #d4af37; border-color: #333; }
+        body.dark-mode .form-group label { color: #ddd; }
+        body.dark-mode .form-group input, body.dark-mode .form-group select, body.dark-mode .form-group textarea {
+            background: #2a3a5c; border-color: #444; color: #eee;
+        }
+        body.dark-mode .security-item { border-color: #333; }
+        body.dark-mode .security-info div strong { color: #eee; }
+        body.dark-mode .security-info div p { color: #aaa !important; }
+        body.dark-mode .header h1 { color: #d4af37; }
+        body.dark-mode #loginHistory, body.dark-mode #activeSessions { background: #16213e; border-color: #333; }
+        body.dark-mode #twoFASetup, body.dark-mode #addBeneficiaryForm { background: #16213e; }
+        
+        /* PIN Modal */
+        .pin-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .pin-modal.active { display: flex; }
+        .pin-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 400px;
+            max-width: 90%;
+        }
+        body.dark-mode .pin-modal-content { background: #1f2b47; }
+        .pin-modal-content h3 { color: #1a472a; margin-bottom: 20px; }
+        body.dark-mode .pin-modal-content h3 { color: #d4af37; }
+        .pin-input {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .pin-input input {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            font-size: 1.5rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        body.dark-mode .pin-input input { background: #2a3a5c; border-color: #444; color: #eee; }
+        .pin-input input:focus { border-color: #1a472a; outline: none; }
+        body.dark-mode .pin-input input:focus { border-color: #d4af37; }
+        
+        .dashboard { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
+        
+        .sidebar { background: #1a472a; color: white; padding: 30px 0; }
+        .sidebar-logo { padding: 0 20px 30px; font-size: 1.3rem; font-weight: bold; }
+        .sidebar-menu { list-style: none; }
+        .sidebar-menu li { padding: 15px 20px; cursor: pointer; transition: background 0.3s; }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background: rgba(212,175,55,0.2); }
+        .sidebar-menu li i { margin-right: 10px; width: 20px; }
+        
+        .main-content { padding: 30px; max-width: 900px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { color: #1a472a; }
+        
+        .back-link { color: #d4af37; text-decoration: none; cursor: pointer; font-size: 14px; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .settings-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .settings-card h2 {
+            color: #1a472a;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #1a472a;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #1a472a;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2d5f3f;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .toggle-switch:last-child {
+            border-bottom: none;
+        }
+        
+        .toggle-switch label {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .toggle-switch label span {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+        
+        .switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 26px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #1a472a;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+        
+        .security-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .security-item:last-child {
+            border-bottom: none;
+        }
+        
+        .security-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .security-info i {
+            font-size: 1.5rem;
+            color: #1a472a;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f7f2;
+            border-radius: 8px;
+        }
+        
+        .logout-btn {
+            background: #d4af37;
+            color: #1a472a;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        /* Activity Section */
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        body.dark-mode .activity-item { border-color: #333; }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #d4af37;
+            margin-right: 15px;
+            margin-top: 5px;
+        }
+        .activity-content { flex: 1; }
+        .activity-content p { color: #333; margin-bottom: 3px; }
+        body.dark-mode .activity-content p { color: #eee; }
+        .activity-content span { color: #666; font-size: 0.85rem; }
+        body.dark-mode .activity-content span { color: #aaa; }
+        
+        @media (max-width: 768px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .form-row { grid-template-columns: 1fr; }
+            .main-content { padding: 20px; }
+            .header h1 { font-size: 1.3rem; }
+            .settings-card { padding: 20px; }
+        }
+
+        @media (max-width: 480px) {
+            .main-content { padding: 15px; }
+            .header h1 { font-size: 1.15rem; }
+            .settings-card { padding: 15px; }
+            .form-group input, .form-group select { padding: 10px; font-size: 0.9rem; }
+            .form-group label { font-size: 0.85rem; }
+            .pin-modal-content { width: 95%; padding: 20px; }
+            .pin-input input { width: 42px; height: 48px; font-size: 1.2rem; }
+        }
+        .app-footer { background: #1a2332; padding: 20px 0; margin-top: 40px; text-align: center; }
+        .app-footer-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .app-footer-links { margin-bottom: 10px; }
+        .app-footer-links a { color: #8899aa; text-decoration: none; margin: 0 10px; font-size: 0.8rem; }
+        .app-footer-links a:hover { color: #aabbcc; }
+        .app-footer-copy { color: #556677; font-size: 0.75rem; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="sidebar">
+            <div class="sidebar-logo"><i class="fas fa-landmark"></i> Heritage Bank</div>
+            <ul class="sidebar-menu">
+                <li onclick="location.href='dashboard.html'"><i class="fas fa-home"></i> Dashboard</li>
+                <li onclick="location.href='transfer.html'"><i class="fas fa-exchange-alt"></i> Transfer</li>
+                <li onclick="location.href='pay-bills.html'"><i class="fas fa-file-invoice-dollar"></i> Pay Bills</li>
+                <li onclick="location.href='cards.html'"><i class="fas fa-credit-card"></i> Cards</li>
+                <li onclick="location.href='investment.html'"><i class="fas fa-chart-line"></i> Investments</li>
+                <li onclick="location.href='request-loan.html'"><i class="fas fa-hand-holding-usd"></i> Loans</li>
+                <li class="active"><i class="fas fa-cog"></i> Settings</li>
+            </ul>
+        </nav>
+        
+        <main class="main-content">
+            <div class="header">
+                <div>
+                    <a href="dashboard.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+                    <h1>Settings</h1>
+                </div>
+                <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+            
+            <div id="alertBox" class="alert"></div>
+            
+            <!-- Account Information (Read-Only) -->
+            <div class="settings-card">
+                <h2><i class="fas fa-landmark"></i> Account Information</h2>
+                <div class="settings-info-grid">
+                    <div>
+                        <strong>Account Number</strong>
+                        <p id="accountNumber" class="settings-value-mono"></p>
+                    </div>
+                    <div>
+                        <strong>Routing Number</strong>
+                        <p id="routingNumber" class="settings-value-mono"></p>
+                    </div>
+                    <div>
+                        <strong>Account Type</strong>
+                        <p id="accountType" class="settings-value-capitalize"></p>
+                    </div>
+                    <div>
+                        <strong>Account Status</strong>
+                        <p id="accountStatus" class="settings-value"><span id="statusBadge" class="badge"></span></p>
+                    </div>
+                    <div>
+                        <strong>Member Since</strong>
+                        <p id="memberSince" class="settings-value"></p>
+                    </div>
+                    <div>
+                        <strong>Current Balance</strong>
+                        <p id="currentBalance" class="settings-value-bold"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Settings -->
+            <div class="settings-card">
+                <h2><i class="fas fa-user"></i> Personal Information</h2>
+                <form id="profileForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name <span class="required-mark">*</span></label>
+                            <input type="text" id="firstName" required title="First Name">
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name <span class="required-mark">*</span></label>
+                            <input type="text" id="lastName" required title="Last Name">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Date of Birth <span class="required-mark">*</span></label>
+                            <input type="date" id="dateOfBirth" required title="Date of Birth">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address <span class="readonly-hint">(Read-only)</span></label>
+                        <input type="email" id="email" readonly class="input-readonly" title="Email Address">
+                        <span id="emailVerificationBadge" class="verification-badge"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number <span class="required-mark">*</span></label>
+                        <input type="tel" id="phone" required title="Phone Number">
+                        <span id="phoneVerificationBadge" class="verification-badge"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Street Address <span class="required-mark">*</span></label>
+                        <input type="text" id="address" required title="Street Address">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>City <span class="required-mark">*</span></label>
+                            <input type="text" id="city" required title="City">
+                        </div>
+                        <div class="form-group">
+                            <label>State <span class="required-mark">*</span></label>
+                            <input type="text" id="state" required title="State">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>ZIP Code <span class="required-mark">*</span></label>
+                            <input type="text" id="zipCode" maxlength="5" required title="ZIP Code">
+                        </div>
+                        <div class="form-group">
+                            <label>Country</label>
+                            <input type="text" id="country" readonly class="input-readonly" title="Country">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+                </form>
+            </div>
+
+            <!-- Transaction Limits -->
+            <div class="settings-card">
+                <h2><i class="fas fa-chart-bar"></i> Transaction Limits</h2>
+                <div class="settings-limits-grid">
+                    <div>
+                        <strong>Daily Transfer Limit</strong>
+                        <p id="dailyLimit" class="settings-value"></p>
+                    </div>
+                    <div>
+                        <strong>Daily Spent</strong>
+                        <p id="dailySpent" class="settings-value"></p>
+                    </div>
+                    <div>
+                        <strong>Weekly Transfer Limit</strong>
+                        <p id="weeklyLimit" class="settings-value"></p>
+                    </div>
+                    <div>
+                        <strong>Weekly Spent</strong>
+                        <p id="weeklySpent" class="settings-value"></p>
+                    </div>
+                    <div>
+                        <strong>Monthly Transfer Limit</strong>
+                        <p id="monthlyLimit" class="settings-value"></p>
+                    </div>
+                    <div>
+                        <strong>Monthly Spent</strong>
+                        <p id="monthlySpent" class="settings-value"></p>
+                    </div>
+                    <div>
+                        <strong>Single Transaction Limit</strong>
+                        <p id="singleTransactionLimit" class="settings-value"></p>
+                    </div>
+                </div>
+                <div class="limit-increase-section">
+                    <button class="btn btn-secondary" onclick="requestLimitIncrease()">Request Limit Increase</button>
+                    <div id="limitIncreaseMsg" class="limit-increase-msg"></div>
+                </div>
+            </div>
+            
+            <!-- Security Settings -->
+            <div class="settings-card">
+                <h2><i class="fas fa-shield-alt"></i> Security & Authentication</h2>
+                
+                <!-- Login History -->
+                <div class="login-history-section">
+                    <h3 class="login-history-heading"><i class="fas fa-history"></i> Recent Login Activity</h3>
+                    <div id="loginHistoryContainer" class="login-history-container">
+                        <p class="login-history-loading">Loading login history...</p>
+                    </div>
+                </div>
+
+                <!-- Active Sessions -->
+                <div class="active-sessions-section">
+                    <h3 class="active-sessions-heading"><i class="fas fa-laptop"></i> Active Sessions</h3>
+                    <div id="activeSessionsContainer" class="active-sessions-container">
+                        <p class="active-sessions-loading">Loading active sessions...</p>
+                    </div>
+                </div>
+                
+                <div class="security-item">
+                    <div class="security-info">
+                        <i class="fas fa-lock"></i>
+                        <div>
+                            <strong>Change Password</strong>
+                            <p class="settings-desc">Update your account password</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="togglePasswordForm()">Change</button>
+                </div>
+                
+                <div id="passwordForm" class="password-form-section">
+                    <form onsubmit="changePassword(event)">
+                        <div class="form-group">
+                            <label>Current Password</label>
+                            <input type="password" id="currentPassword" required title="Current Password">
+                        </div>
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" id="newPassword" required minlength="8" title="New Password">
+                            <div id="passwordStrengthBar" class="password-strength-bar">
+                                <div id="passwordStrengthMeter" class="password-strength-meter"></div>
+                            </div>
+                            <small id="passwordStrengthText" class="password-strength-text"></small>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" id="confirmPassword" required title="Confirm Password">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Password</button>
+                        <button type="button" class="btn btn-secondary" onclick="togglePasswordForm()">Cancel</button>
+                    </form>
+                </div>
+                
+                <div class="security-item security-item-separator">
+                    <div class="security-info">
+                        <i class="fas fa-mobile-alt"></i>
+                        <div>
+                            <strong>Two-Factor Authentication</strong>
+                            <p class="settings-desc">Add extra security to your account</p>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="twoFactorToggle" onchange="toggle2FACheckbox()" title="Toggle Two-Factor Authentication">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div id="twoFASetup" class="twofa-setup">
+                    <h4>2FA Setup</h4>
+                    <div class="form-group">
+                        <label>2FA Method</label>
+                        <select id="twoFAMethod" onchange="handleUpdate2FAMethod()" title="2FA Method">
+                            <option value="sms">SMS (Text Message)</option>
+                            <option value="email">Email</option>
+                            <option value="authenticator">Authenticator App</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="generateBackupCodes()"><i class="fas fa-key"></i> Generate Backup Codes</button>
+                </div>
+            </div>
+            
+            <!-- Account Verification -->
+            <div class="settings-card">
+                <h2><i class="fas fa-shield-alt"></i> Account Verification</h2>
+                
+                <div id="verificationStatus" class="verification-status">
+                    <div id="verificationLoading" class="verification-loading">Loading verification status...</div>
+                </div>
+
+                <div id="documentRequestSection" class="initially-hidden">
+                    <div class="doc-request-alert">
+                        <p class="doc-request-title"><strong><i class="fas fa-exclamation-triangle"></i> Document Requested</strong></p>
+                        <p id="documentRequestMessage" class="doc-request-msg"></p>
+                    </div>
+                    <div class="doc-upload-zone">
+                        <input type="file" id="documentFile" accept=".pdf,.jpg,.jpeg,.png" title="Upload Document" class="initially-hidden">
+                        <button class="btn btn-primary" onclick="document.getElementById('documentFile').click()">
+                            <i class="fas fa-upload"></i> Upload Requested Document
+                        </button>
+                        <p class="doc-upload-hint">Supported: PDF, JPG, PNG (Max 10MB)</p>
+                    </div>
+                </div>
+
+                <div id="uploadedDocsList" class="uploaded-docs-list">
+                    <!-- Uploaded documents will show here -->
+                </div>
+            </div>
+
+            <!-- Beneficiaries -->
+            <div class="settings-card">
+                <h2><i class="fas fa-users"></i> Beneficiaries</h2>
+                
+                <div id="beneficiariesList" class="beneficiaries-list">
+                    <p class="beneficiaries-loading">Loading beneficiaries...</p>
+                </div>
+
+                <button class="btn btn-primary" onclick="showAddBeneficiaryForm()">
+                    <i class="fas fa-plus"></i> Add Beneficiary
+                </button>
+
+                <div id="addBeneficiaryForm" class="add-beneficiary-form">
+                    <h4>Add New Beneficiary</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="beneficiaryName" required title="Full Name">
+                        </div>
+                        <div class="form-group">
+                            <label>Nickname (Optional)</label>
+                            <input type="text" id="beneficiaryNickname" title="Nickname">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Account Number</label>
+                            <input type="text" id="beneficiaryAccount" required title="Account Number">
+                        </div>
+                        <div class="form-group">
+                            <label>Routing Number</label>
+                            <input type="text" id="beneficiaryRouting" required title="Routing Number">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Bank Name</label>
+                        <input type="text" id="beneficiaryBank" title="Bank Name">
+                    </div>
+                    <button class="btn btn-primary" onclick="addBeneficiary()">Add Beneficiary</button>
+                    <button class="btn btn-secondary btn-cancel-ml" onclick="hideAddBeneficiaryForm()">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Account Controls -->
+            <div class="settings-card">
+                <h2><i class="fas fa-lock-open"></i> Account Controls</h2>
+                
+                <div class="security-item">
+                    <div class="security-info">
+                        <i class="fas fa-ban icon-freeze"></i>
+                        <div>
+                            <strong>Freeze Account</strong>
+                            <p class="settings-desc">Block all outgoing transactions temporarily</p>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="freezeAccountToggle" onchange="toggleAccountFreeze()" title="Toggle Freeze Account">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="security-item">
+                    <div class="security-info">
+                        <i class="fas fa-globe icon-intl"></i>
+                        <div>
+                            <strong>International Transactions</strong>
+                            <p class="settings-desc">Allow transfers outside the United States</p>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="internationalToggle" onchange="toggleInternational()" checked title="Toggle International Transactions">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Preferences -->
+            <div class="settings-card">
+                <h2><i class="fas fa-sliders-h"></i> Preferences</h2>
+                
+                <div class="security-item">
+                    <div class="security-info">
+                        <i class="fas fa-moon icon-dark"></i>
+                        <div>
+                            <strong>Dark Mode</strong>
+                            <p class="settings-desc">Switch to dark theme</p>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()" title="Toggle Dark Mode">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="security-item">
+                    <div class="security-info">
+                        <i class="fas fa-key icon-pin"></i>
+                        <div>
+                            <strong>Transaction PIN</strong>
+                            <p class="settings-desc">Require PIN for transfers (Status: <span id="pinStatus">Not Set</span>)</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="showPinSetup()">Setup PIN</button>
+                </div>
+            </div>
+            
+            <!-- Account Actions -->
+            <div class="settings-card">
+                <h2><i class="fas fa-user-cog"></i> Account Actions</h2>
+                
+                <div class="security-item">
+                    <div class="security-info">
+                        <i class="fas fa-download"></i>
+                        <div>
+                            <strong>Download Statement</strong>
+                            <p class="settings-desc">Get your account statement as PDF</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="downloadStatement()">Download</button>
+                </div>
+                
+                <div class="security-item">
+                    <div class="security-info">
+                        <i class="fas fa-history"></i>
+                        <div>
+                            <strong>Activity Log</strong>
+                            <p class="settings-desc">View recent account activity</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="location.href='dashboard.html#activity'">View</button>
+                </div>
+                
+                <div class="security-item close-account-section">
+                    <div class="security-info">
+                        <i class="fas fa-trash-alt icon-close-account"></i>
+                        <div>
+                            <strong class="close-account-label">Close Account</strong>
+                            <p class="settings-desc">Permanently close your account</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger" onclick="confirmCloseAccount()">Close Account</button>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="settings-card">
+                <h2><i class="fas fa-clock"></i> Recent Activity</h2>
+                <div id="activityList">
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div class="activity-content">
+                            <p>Loading activity...</p>
+                            <span>Please wait</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Transaction PIN Modal -->
+    <div class="pin-modal" id="pinModal">
+        <div class="pin-modal-content">
+            <h3><i class="fas fa-key"></i> Setup Transaction PIN</h3>
+            <p class="pin-modal-desc">
+                Create a 4-digit PIN for secure transactions
+            </p>
+            <form onsubmit="saveTransactionPin(event)">
+                <div class="form-group initially-hidden" id="currentPinGroup">
+                    <label>Current PIN</label>
+                    <input type="password" id="currentPin" maxlength="4" pattern="[0-9]{4}" placeholder="Enter current PIN">
+                </div>
+                <div class="form-group">
+                    <label>New PIN</label>
+                    <input type="password" id="newPin" maxlength="4" pattern="[0-9]{4}" placeholder="Enter 4 digits" required>
+                </div>
+                <div class="form-group">
+                    <label>Confirm PIN</label>
+                    <input type="password" id="confirmPin" maxlength="4" pattern="[0-9]{4}" placeholder="Confirm PIN" required>
+                </div>
+                <div class="pin-modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hidePinModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save PIN</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Auth guard – redirect immediately if not logged in
+        if (!localStorage.getItem('token')) { window.location.href = 'signin.html'; }
+        // Check dark mode on page load
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+    <script src="settings-enhanced.js"></script>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
+            </div>
+            <p class="app-footer-copy">&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+        </div>
+    </footer>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>

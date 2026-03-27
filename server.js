@@ -494,9 +494,9 @@ Heritage Bank
     sendEmail(email, subject, body);
 }
 
-// Favicon route (prevents 404 errors)
+// Favicon route
 app.get('/favicon.ico', (req, res) => {
-    res.status(204).end(); // No content
+    res.sendFile(path.join(__dirname, 'assets', 'favicon.svg'));
 });
 
 // Health check
@@ -4265,6 +4265,11 @@ app.get('/api/statements/:userId/:month', async (req, res) => {
         console.error('Statement error:', error);
         res.status(500).json({ success: false, message: 'Error generating statement' });
     }
+});
+
+// 404 catch-all (must be last route)
+app.use((req, res) => {
+    res.status(404).sendFile(path.join(__dirname, '404.html'));
 });
 
 // ============================================

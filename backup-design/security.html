@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Learn how Heritage Bank protects your accounts with advanced security measures and fraud prevention.">
+    <title>Security - Heritage Bank</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>
+        .terms-hero { background: linear-gradient(135deg, #1a5f7a 0%, #2c3e50 100%); padding: 100px 0 60px; color: white; text-align: center; }
+        .terms-hero h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .terms-content { padding: 60px 0; background: #f8f9fa; }
+        .terms-container { max-width: 900px; margin: 0 auto; background: white; padding: 50px; border-radius: 20px; box-shadow: 0 5px 30px rgba(0,0,0,0.1); }
+        .terms-container h2 { color: #1a5f7a; margin: 30px 0 15px; font-size: 1.4rem; padding-bottom: 10px; border-bottom: 2px solid #e8f4f8; }
+        .terms-container h2:first-of-type { margin-top: 0; }
+        .terms-container h3 { color: #2c3e50; margin: 20px 0 10px; font-size: 1.15rem; }
+        .terms-container p { color: #555; line-height: 1.8; margin-bottom: 15px; }
+        .terms-container ul { margin: 15px 0; padding-left: 25px; }
+        .terms-container li { color: #555; margin-bottom: 10px; line-height: 1.7; }
+        .last-updated { background: #e8f4f8; padding: 15px 20px; border-radius: 10px; margin-bottom: 30px; color: #1a5f7a; font-weight: 500; }
+        .highlight-box { background: #fff9e6; border-left: 4px solid #f0ad4e; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
+        .info-box { background: #e8f4f8; border-left: 4px solid #1a5f7a; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
+        .danger-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
+        .security-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin: 25px 0; }
+        .security-card { background: #f8f9fa; padding: 25px; border-radius: 15px; text-align: center; }
+        .security-card i { font-size: 2.5rem; color: #1a5f7a; margin-bottom: 15px; }
+        .security-card h3 { color: #2c3e50; margin-bottom: 10px; border: none; }
+        .security-card p { font-size: 0.9rem; margin-bottom: 0; }
+        .tips-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 25px 0; }
+        .tip-item { display: flex; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
+        .tip-item .tip-icon { flex-shrink: 0; width: 40px; height: 40px; background: #e8f4f8; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #1a5f7a; }
+        .tip-item .tip-text h4 { color: #2c3e50; font-size: 0.95rem; margin-bottom: 5px; }
+        .tip-item .tip-text p { font-size: 0.85rem; margin-bottom: 0; }
+        @media (max-width: 768px) {
+            .terms-hero { padding: 70px 0 40px; }
+            .terms-hero h1 { font-size: 1.6rem; }
+            .terms-container { padding: 30px 20px; margin: 0 15px; }
+        }
+        @media (max-width: 480px) {
+            .terms-hero h1 { font-size: 1.3rem; }
+            .terms-container { padding: 25px 15px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-wrapper">
+                <div class="logo-section">
+                    <a href="index.html"><img src="./assets/logo.png" alt="Heritage Bank" class="logo"></a>
+                </div>
+                <button class="hamburger" id="hamburger" title="Toggle Navigation"><span></span><span></span><span></span></button>
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="index.html#services">Services</a></li>
+                    <li><a href="faq.html">FAQ</a></li>
+                    <li><a href="blog.html">Blog</a></li>
+                    <li><a href="branches.html">Branches</a></li>
+                    <li><a href="signin.html" class="signin-link"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
+                    <li class="cta-button"><a href="open-account.html">Open Account</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="terms-hero">
+        <div class="container">
+            <h1><i class="fas fa-shield-alt"></i> Security Center</h1>
+            <p>How we protect your accounts and how you can stay safe</p>
+        </div>
+    </section>
+
+    <section class="terms-content">
+        <div class="container">
+            <div class="terms-container">
+                <div class="last-updated">
+                    <i class="fas fa-calendar-alt"></i> Last Updated: January 15, 2025
+                </div>
+
+                <h2>How Heritage Bank Protects You</h2>
+                <div class="security-features">
+                    <div class="security-card">
+                        <i class="fas fa-lock"></i>
+                        <h3>256-Bit SSL Encryption</h3>
+                        <p>All data transmitted between your device and our servers is protected with bank-grade encryption.</p>
+                    </div>
+                    <div class="security-card">
+                        <i class="fas fa-user-shield"></i>
+                        <h3>Two-Factor Authentication</h3>
+                        <p>An extra layer of security requiring a verification code in addition to your password.</p>
+                    </div>
+                    <div class="security-card">
+                        <i class="fas fa-desktop"></i>
+                        <h3>Session Monitoring</h3>
+                        <p>Automatic timeout after inactivity and alerts for logins from new devices or locations.</p>
+                    </div>
+                    <div class="security-card">
+                        <i class="fas fa-bell"></i>
+                        <h3>Real-Time Alerts</h3>
+                        <p>Instant notifications for transactions, login attempts, and account changes.</p>
+                    </div>
+                    <div class="security-card">
+                        <i class="fas fa-database"></i>
+                        <h3>Data Encryption at Rest</h3>
+                        <p>Your personal and financial data is encrypted when stored in our secure data centers.</p>
+                    </div>
+                    <div class="security-card">
+                        <i class="fas fa-search"></i>
+                        <h3>Fraud Monitoring</h3>
+                        <p>24/7 automated systems monitor transactions for suspicious activity patterns.</p>
+                    </div>
+                </div>
+
+                <h2>Protect Yourself Online</h2>
+                <h3>Password Best Practices</h3>
+                <ul>
+                    <li>Use a unique, strong password with at least 12 characters, including uppercase, lowercase, numbers, and symbols.</li>
+                    <li>Never reuse your banking password on other websites.</li>
+                    <li>Change your password every 90 days.</li>
+                    <li>Never share your password with anyone — Heritage Bank will never ask for it.</li>
+                    <li>Consider using a reputable password manager.</li>
+                </ul>
+
+                <h3>Safe Browsing Tips</h3>
+                <ul>
+                    <li>Always verify the web address shows <strong>https://</strong> and a lock icon before entering login credentials.</li>
+                    <li>Bookmark our official website and use that bookmark to access your account.</li>
+                    <li>Avoid accessing your bank account on public Wi-Fi networks. Use a VPN if necessary.</li>
+                    <li>Keep your browser and operating system up to date with the latest security patches.</li>
+                    <li>Install reputable antivirus software and keep it updated.</li>
+                </ul>
+
+                <h2>Recognizing Scams & Fraud</h2>
+                <h3>Phishing Emails & Texts</h3>
+                <p>Phishing attempts try to trick you into revealing personal information. Watch for these red flags:</p>
+                <div class="tips-grid">
+                    <div class="tip-item">
+                        <div class="tip-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div class="tip-text">
+                            <h4>Urgency Tactics</h4>
+                            <p>Messages claiming your account will be closed or suspended unless you act immediately.</p>
+                        </div>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon"><i class="fas fa-link"></i></div>
+                        <div class="tip-text">
+                            <h4>Suspicious Links</h4>
+                            <p>Links that look similar to legitimate URLs but have slight misspellings or extra characters.</p>
+                        </div>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon"><i class="fas fa-envelope-open-text"></i></div>
+                        <div class="tip-text">
+                            <h4>Personal Info Requests</h4>
+                            <p>Emails asking for your SSN, password, PIN, or full account number.</p>
+                        </div>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon"><i class="fas fa-paperclip"></i></div>
+                        <div class="tip-text">
+                            <h4>Unexpected Attachments</h4>
+                            <p>Files or downloads you didn't request, which may contain malware.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="danger-box">
+                    <strong><i class="fas fa-exclamation-circle"></i> Heritage Bank Will Never:</strong>
+                    <ul class="no-bottom-margin">
+                        <li>Call, email, or text you asking for your password, PIN, or full Social Security number.</li>
+                        <li>Send you a link asking you to verify your account by entering login credentials.</li>
+                        <li>Ask you to transfer money to a "safe" or "secure" account.</li>
+                        <li>Pressure you to act immediately or threaten account closure.</li>
+                    </ul>
+                </div>
+
+                <h2>What to Do If You Suspect Fraud</h2>
+                <p>If you notice unauthorized transactions or suspect your account has been compromised, take these steps immediately:</p>
+                <ul>
+                    <li><strong>Step 1:</strong> Call our 24/7 Fraud Hotline at <strong>1-800-HERITAGE</strong> (option 3) to report suspicious activity and freeze your account if needed.</li>
+                    <li><strong>Step 2:</strong> Change your online banking password immediately from a secure device.</li>
+                    <li><strong>Step 3:</strong> Review your recent transactions and note any unauthorized activity.</li>
+                    <li><strong>Step 4:</strong> File a police report if you believe you are a victim of identity theft.</li>
+                    <li><strong>Step 5:</strong> Place a fraud alert on your credit reports by contacting one of the three major credit bureaus (Equifax, Experian, or TransUnion).</li>
+                </ul>
+
+                <div class="highlight-box">
+                    <strong><i class="fas fa-clock"></i> Zero Liability Protection:</strong> Heritage Bank offers zero liability protection for unauthorized transactions reported within 60 days. You will not be held responsible for fraudulent transactions made on your account, provided you notify us promptly.
+                </div>
+
+                <h2>Mobile Banking Security</h2>
+                <ul>
+                    <li>Only download the Heritage Bank app from the official App Store or Google Play Store.</li>
+                    <li>Enable biometric login (fingerprint or face recognition) for added security.</li>
+                    <li>Keep your mobile operating system and the Heritage Bank app up to date.</li>
+                    <li>Enable remote wipe capabilities on your device in case it is lost or stolen.</li>
+                    <li>Set a strong passcode or PIN on your mobile device.</li>
+                    <li>Do not jailbreak or root your device, as this compromises security features.</li>
+                </ul>
+
+                <h2>FDIC Insurance Protection</h2>
+                <div class="info-box">
+                    <strong><i class="fas fa-shield-alt"></i> Your Money Is Protected:</strong>
+                    <p class="fdic-note">All deposits at Heritage Bank are insured by the Federal Deposit Insurance Corporation (FDIC) up to $250,000 per depositor, per insured bank, for each account ownership category. This means even if the unexpected happens, your deposits are safe.</p>
+                </div>
+
+                <h2>Report a Security Concern</h2>
+                <p>If you have a security concern or want to report a vulnerability, please contact us:</p>
+                <ul>
+                    <li><strong>Fraud Hotline:</strong> 1-800-HERITAGE (option 3) — available 24/7</li>
+                    <li><strong>Email:</strong> security@heritagebank.com</li>
+                    <li><strong>In Person:</strong> Visit any Heritage Bank branch with valid ID</li>
+                    <li><strong>Mail:</strong> Heritage Bank Security Department, 350 Fifth Avenue, New York, NY 10118</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <img src="./assets/logo.png" alt="Heritage Bank" class="footer-logo">
+                    <p>Building financial legacies since 1999.</p>
+                    <div class="social-links">
+                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                        <li><a href="faq.html">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="terms.html">Terms of Service</a></li>
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                        <li><a href="cookie-policy.html">Cookie Policy</a></li>
+                        <li><a href="accessibility.html">Accessibility</a></li>
+                        <li><a href="disclosures.html">Disclosures</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-phone"></i> 1-800-HERITAGE</li>
+                        <li><i class="fas fa-envelope"></i> support@heritagebank.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Heritage Bank accessibility statement outlining our commitment to an inclusive digital experience.">
+    <title>Accessibility Statement - Heritage Bank</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>
+        .terms-hero { background: linear-gradient(135deg, #1a5f7a 0%, #2c3e50 100%); padding: 100px 0 60px; color: white; text-align: center; }
+        .terms-hero h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .terms-content { padding: 60px 0; background: #f8f9fa; }
+        .terms-container { max-width: 900px; margin: 0 auto; background: white; padding: 50px; border-radius: 20px; box-shadow: 0 5px 30px rgba(0,0,0,0.1); }
+        .terms-container h2 { color: #1a5f7a; margin: 30px 0 15px; font-size: 1.4rem; padding-bottom: 10px; border-bottom: 2px solid #e8f4f8; }
+        .terms-container h2:first-of-type { margin-top: 0; }
+        .terms-container p { color: #555; line-height: 1.8; margin-bottom: 15px; }
+        .terms-container ul { margin: 15px 0; padding-left: 25px; }
+        .terms-container li { color: #555; margin-bottom: 10px; line-height: 1.7; }
+        .last-updated { background: #e8f4f8; padding: 15px 20px; border-radius: 10px; margin-bottom: 30px; color: #1a5f7a; font-weight: 500; }
+        .highlight-box { background: #fff9e6; border-left: 4px solid #f0ad4e; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
+        .info-box { background: #e8f4f8; border-left: 4px solid #1a5f7a; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0; }
+        .feature-item { background: #f8f9fa; padding: 18px; border-radius: 10px; display: flex; align-items: flex-start; gap: 12px; }
+        .feature-item i { color: #27ae60; font-size: 1.2rem; margin-top: 2px; }
+        .feature-item span { color: #555; font-size: 0.95rem; line-height: 1.6; }
+        @media (max-width: 768px) {
+            .terms-hero { padding: 70px 0 40px; }
+            .terms-hero h1 { font-size: 1.6rem; }
+            .terms-container { padding: 30px 20px; margin: 0 15px; }
+        }
+        @media (max-width: 480px) {
+            .terms-hero h1 { font-size: 1.3rem; }
+            .terms-container { padding: 25px 15px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-wrapper">
+                <div class="logo-section">
+                    <a href="index.html"><img src="./assets/logo.png" alt="Heritage Bank" class="logo"></a>
+                </div>
+                <button class="hamburger" id="hamburger" title="Toggle Navigation"><span></span><span></span><span></span></button>
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="index.html#services">Services</a></li>
+                    <li><a href="faq.html">FAQ</a></li>
+                    <li><a href="blog.html">Blog</a></li>
+                    <li><a href="branches.html">Branches</a></li>
+                    <li><a href="signin.html" class="signin-link"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
+                    <li class="cta-button"><a href="open-account.html">Open Account</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="terms-hero">
+        <div class="container">
+            <h1><i class="fas fa-universal-access"></i> Accessibility Statement</h1>
+            <p>Our commitment to an inclusive banking experience for everyone</p>
+        </div>
+    </section>
+
+    <section class="terms-content">
+        <div class="container">
+            <div class="terms-container">
+                <div class="last-updated">
+                    <i class="fas fa-calendar-alt"></i> Last Updated: January 15, 2025
+                </div>
+
+                <h2>Our Commitment</h2>
+                <p>Heritage Bank is committed to ensuring that our website and digital banking services are accessible to all individuals, including those with disabilities. We strive to conform to the Web Content Accessibility Guidelines (WCAG) 2.1 Level AA standards and continually work to improve the digital experience for all users.</p>
+                <p>We believe that banking should be accessible to everyone, regardless of ability. Our accessibility efforts are guided by the Americans with Disabilities Act (ADA), Section 508 of the Rehabilitation Act, and international accessibility best practices.</p>
+
+                <h2>Accessibility Features</h2>
+                <p>Our website and online banking platform include the following accessibility features:</p>
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Keyboard Navigation:</strong> Full site navigation available via keyboard for users who cannot use a mouse.</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Screen Reader Support:</strong> Semantic HTML, ARIA labels, and alt text for images to support screen readers.</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Color Contrast:</strong> Text and interactive elements meet WCAG AA contrast ratio requirements.</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Resizable Text:</strong> Content can be resized up to 200% without loss of functionality or readability.</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Form Labels:</strong> All form fields include descriptive labels and error messages for assisted input.</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Responsive Design:</strong> The site adapts to all screen sizes and orientations, including mobile devices.</span>
+                    </div>
+                </div>
+
+                <h2>Conformance Status</h2>
+                <p>Heritage Bank's website aims to conform to WCAG 2.1 Level AA. We regularly audit our site and correct identified issues. While we strive for full conformance, some areas may be undergoing remediation as we continuously improve our accessibility.</p>
+
+                <h2>Alternative Banking Channels</h2>
+                <p>If you experience any difficulty accessing our website or digital services, we offer alternative ways to bank with us:</p>
+                <ul>
+                    <li><strong>Phone Banking:</strong> Call us at 1-800-HERITAGE (1-800-437-4824). Our representatives are available 24/7 and TTY/TDD services are available for hearing-impaired customers.</li>
+                    <li><strong>Branch Banking:</strong> Visit any Heritage Bank branch. Our facilities are ADA-compliant with wheelchair accessibility, service counters at accessible heights, and staff trained to assist customers with disabilities.</li>
+                    <li><strong>Mail:</strong> Write to Heritage Bank, 350 Fifth Avenue, New York, NY 10118.</li>
+                </ul>
+
+                <div class="info-box">
+                    <strong><i class="fas fa-phone"></i> TTY/TDD Service:</strong> Hearing-impaired customers can reach us via TTY at <strong>1-800-437-4825</strong> or through your preferred relay service.
+                </div>
+
+                <h2>Assistive Technology Compatibility</h2>
+                <p>Our website is designed to be compatible with the following assistive technologies:</p>
+                <ul>
+                    <li>JAWS (Job Access With Speech) for Windows</li>
+                    <li>NVDA (NonVisual Desktop Access) for Windows</li>
+                    <li>VoiceOver for macOS and iOS</li>
+                    <li>TalkBack for Android</li>
+                    <li>Dragon NaturallySpeaking voice recognition software</li>
+                    <li>Standard screen magnification tools</li>
+                </ul>
+
+                <h2>Ongoing Efforts</h2>
+                <p>Heritage Bank is dedicated to maintaining and improving accessibility. Our ongoing efforts include:</p>
+                <ul>
+                    <li>Regular accessibility audits of our website and mobile applications</li>
+                    <li>Staff training on accessibility awareness and inclusive customer service</li>
+                    <li>Incorporating accessibility requirements into our development process</li>
+                    <li>Testing with assistive technologies as part of our quality assurance</li>
+                    <li>Engaging with disability advocacy organizations for feedback</li>
+                </ul>
+
+                <h2>Feedback & Assistance</h2>
+                <p>We welcome your feedback on the accessibility of Heritage Bank's digital services. If you encounter any accessibility barriers or have suggestions for improvement, please contact us:</p>
+                <ul>
+                    <li><strong>Email:</strong> accessibility@heritagebank.com</li>
+                    <li><strong>Phone:</strong> 1-800-HERITAGE (1-800-437-4824)</li>
+                    <li><strong>TTY:</strong> 1-800-437-4825</li>
+                    <li><strong>Mail:</strong> Heritage Bank, Accessibility Team, 350 Fifth Avenue, New York, NY 10118</li>
+                </ul>
+                <p>We will make reasonable efforts to respond to feedback within 5 business days and to address accessibility concerns promptly.</p>
+
+                <div class="highlight-box">
+                    <strong><i class="fas fa-gavel"></i> Regulatory Compliance:</strong> Heritage Bank complies with the Americans with Disabilities Act (ADA), Section 508 of the Rehabilitation Act, and applicable state accessibility laws. We are committed to providing equal access to all of our banking services.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <img src="./assets/logo.png" alt="Heritage Bank" class="footer-logo">
+                    <p>Building financial legacies since 1999.</p>
+                    <div class="social-links">
+                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                        <li><a href="faq.html">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="terms.html">Terms of Service</a></li>
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                        <li><a href="cookie-policy.html">Cookie Policy</a></li>
+                        <li><a href="accessibility.html">Accessibility</a></li>
+                        <li><a href="disclosures.html">Disclosures</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-phone"></i> 1-800-HERITAGE</li>
+                        <li><i class="fas fa-envelope"></i> support@heritagebank.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>

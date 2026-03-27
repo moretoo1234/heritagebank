@@ -3,40 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="manifest" href="manifest.json">
     <meta name="description" content="Apply for personal, auto, or home loans with competitive rates at Heritage Bank.">
     <title>Apply for a Loan - Heritage Bank</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
-        .loan-hero { background: linear-gradient(135deg, #1a5f7a 0%, #2c3e50 100%); padding: 100px 0 60px; color: white; text-align: center; }
+        .loan-hero { background: linear-gradient(135deg, #1a5f7a 0%, #2c3e50 100%); padding: 110px 0 60px; color: white; text-align: center; }
         .loan-hero h1 { font-size: 2.5rem; margin-bottom: 1rem; }
-        .loan-types { padding: 60px 0; background: #f8f9fa; }
+        .loan-types { padding: 60px 0; background: #f0f2f5; }
         .loan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
-        .loan-card { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); transition: all 0.3s; cursor: pointer; border: 3px solid transparent; }
+        .loan-card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; transition: all 0.3s; cursor: pointer; border: 3px solid transparent; }
         .loan-card:hover, .loan-card.selected { transform: translateY(-5px); border-color: #1a5f7a; }
-        .loan-card .icon { width: 70px; height: 70px; background: linear-gradient(135deg, #1a5f7a, #2c3e50); border-radius: 15px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+        .loan-card .icon { width: 70px; height: 70px; background: linear-gradient(135deg, #1a5f7a, #2c3e50); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
         .loan-card .icon i { font-size: 1.8rem; color: white; }
-        .loan-card h3 { margin-bottom: 10px; color: #333; }
-        .loan-card p { color: #666; margin-bottom: 15px; }
+        .loan-card h3 { margin-bottom: 10px; color: #1e293b; }
+        .loan-card p { color: #64748b; margin-bottom: 15px; }
         .loan-card .rate { font-size: 1.5rem; color: #1a5f7a; font-weight: bold; }
-        .loan-card .rate span { font-size: 0.9rem; color: #999; font-weight: normal; }
+        .loan-card .rate span { font-size: 0.9rem; color: #94a3b8; font-weight: normal; }
         .application-section { padding: 60px 0; background: white; }
-        .form-container { max-width: 800px; margin: 0 auto; background: #f8f9fa; padding: 40px; border-radius: 20px; }
+        .form-container { max-width: 800px; margin: 0 auto; background: #f0f2f5; padding: 40px; border-radius: 20px; }
         .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 14px 16px; border: 2px solid #ddd; border-radius: 10px; font-size: 1rem; transition: border-color 0.3s; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #1e293b; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 1rem; transition: border-color 0.3s; }
         .form-group input:focus, .form-group select:focus { border-color: #1a5f7a; outline: none; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
         .submit-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #1a5f7a, #2c3e50); color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
         .submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(26,95,122,0.3); }
         .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .requirements { background: #e8f4f8; padding: 30px; border-radius: 15px; margin-top: 40px; }
+        .requirements { background: #e8f5e9; padding: 30px; border-radius: 16px; margin-top: 40px; }
         .requirements h3 { color: #1a5f7a; margin-bottom: 20px; }
         .requirements ul { list-style: none; }
         .requirements li { padding: 10px 0; display: flex; align-items: center; gap: 10px; }
         .requirements li i { color: #1a5f7a; }
-        .calculator { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); margin-bottom: 40px; }
+        .calculator { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; margin-bottom: 40px; }
         .calculator h3 { color: #1a5f7a; margin-bottom: 20px; text-align: center; }
         .calc-result { background: linear-gradient(135deg, #1a5f7a, #2c3e50); color: white; padding: 20px; border-radius: 10px; text-align: center; margin-top: 20px; }
         .calc-result h4 { font-size: 2rem; margin-bottom: 5px; }
@@ -54,13 +59,13 @@
         .success-content { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 450px; animation: slideIn 0.3s ease; }
         .success-icon { width: 80px; height: 80px; background: linear-gradient(135deg, #27ae60, #2ecc71); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
         .success-icon i { font-size: 2.5rem; color: white; }
-        .success-content h2 { color: #333; margin-bottom: 10px; }
-        .success-content p { color: #666; margin-bottom: 20px; }
+        .success-content h2 { color: #1e293b; margin-bottom: 10px; }
+        .success-content p { color: #64748b; margin-bottom: 20px; }
         .success-content .app-id { background: #f0f4f8; padding: 15px; border-radius: 10px; margin: 20px 0; font-family: monospace; font-size: 1.1rem; color: #1a5f7a; }
         @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .my-applications { background: white; padding: 30px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); }
+        .my-applications { background: white; padding: 30px; border-radius: 16px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
         .my-applications h3 { color: #1a5f7a; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        .application-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8f9fa; border-radius: 10px; margin-bottom: 10px; }
+        .application-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f0f2f5; border-radius: 10px; margin-bottom: 10px; }
         .app-status { padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
         .app-status.pending { background: #fff3cd; color: #856404; }
         .app-status.approved { background: #d4edda; color: #155724; }
@@ -397,7 +402,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2025 Heritage Bank. All rights reserved. Member FDIC.</p>
+                <p>&copy; 2026 Heritage Bank. All rights reserved. Member FDIC.</p>
             </div>
         </div>
     </footer>
@@ -488,13 +493,13 @@
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                             <div>
                                 <strong>${loanType.charAt(0).toUpperCase() + loanType.slice(1)} Loan</strong>
-                                <p style="color: #666; font-size: 0.9rem; margin: 5px 0 0;">
+                                <p style="color: #64748b; font-size: 0.9rem; margin: 5px 0 0;">
                                     $${parseFloat(amount).toLocaleString()} • ${term} months ${monthlyPmt ? '• ' + monthlyPmt : ''} • Applied: ${createdAt}
                                 </p>
                             </div>
                             <span class="app-status ${statusClass}">${statusLabels[status] || status}</span>
                         </div>
-                        ${adminNotes ? `<p style="margin:8px 0 0; padding:8px 12px; background:#e8f4f8; border-radius:6px; font-size:0.85rem; color:#333;"><i class="fas fa-comment-dots" style="color:#1a5f7a;"></i> <strong>Bank Note:</strong> ${adminNotes}</p>` : ''}
+                        ${adminNotes ? `<p style="margin:8px 0 0; padding:8px 12px; background:#e8f5e9; border-radius:6px; font-size:0.85rem; color: #1e293b;"><i class="fas fa-comment-dots" style="color:#1a5f7a;"></i> <strong>Bank Note:</strong> ${adminNotes}</p>` : ''}
                     </div>
                 `;\n            });
 

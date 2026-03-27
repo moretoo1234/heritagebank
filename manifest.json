@@ -1,0 +1,20 @@
+{
+  "name": "Heritage Bank",
+  "short_name": "Heritage",
+  "description": "Your Trusted Financial Partner - Secure online banking",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#1a472a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance"],
+  "lang": "en"
+}

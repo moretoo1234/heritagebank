@@ -3,10 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="manifest" href="manifest.json">
     <meta name="description" content="Manage your Heritage Bank debit and credit cards, view details, and request new cards.">
     <title>Cards - Heritage Bank</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="app-layout.css">
+    <link rel="stylesheet" href="loading.css">
     <style>
         .container {
             max-width: 900px;
@@ -77,7 +84,7 @@
             margin: 0 0 5px 0;
         }
         .card-name p {
-            color: #999;
+            color: #94a3b8;
             margin: 0;
             font-size: 12px;
         }
@@ -130,7 +137,7 @@
         }
         .form-group input, .form-group select {
             padding: 12px;
-            border: 1px solid #ddd;
+            border: 1px solid #e2e8f0;
             border-radius: 6px;
             font-size: 14px;
         }
@@ -161,7 +168,7 @@
         }
         .modal-header {
             padding: 20px 25px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -177,7 +184,7 @@
             background: none;
             border: none;
             font-size: 28px;
-            color: #999;
+            color: #94a3b8;
             cursor: pointer;
         }
         .close-modal:hover {
@@ -256,7 +263,7 @@
             align-items: center;
             justify-content: center;
             font-size: 12px;
-            color: #999;
+            color: #94a3b8;
             margin-bottom: 6px;
             transition: all 0.3s;
         }
@@ -276,7 +283,7 @@
         }
         .delivery-step-label {
             font-size: 10px;
-            color: #999;
+            color: #94a3b8;
             text-align: center;
             line-height: 1.2;
         }
@@ -288,7 +295,7 @@
         .delivery-eta {
             margin-top: 10px;
             font-size: 12px;
-            color: #666;
+            color: #64748b;
             text-align: center;
         }
         .delivery-eta i { color: #d4af37; margin-right: 4px; }
@@ -318,6 +325,7 @@
     </style>
 </head>
 <body>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="container">
         <a class="back-link" onclick="window.location.href = 'dashboard.html'">← Back to Dashboard</a>
         
@@ -505,7 +513,7 @@
                         <div class="card-name">
                             <h3><i class="fas fa-credit-card"></i> ${kindLabel} Card</h3>
                             <p>${masked.replace(/-/g, '  ')}</p>
-                            <p style="font-size: 11px; color: #666;">Expires: ${expiry}</p>
+                            <p style="font-size: 11px; color: #64748b;">Expires: ${expiry}</p>
                         </div>
                         <div class="card-status ${statusClass}">
                             <i class="fas ${statusIcon}"></i> ${status ? status.toUpperCase() : 'UNKNOWN'}
@@ -546,7 +554,7 @@
                                     </button>
                                 ` : ''}
                                 ${(status === 'paused') ? `
-                                    <div style="padding:12px;border:1px solid #eee;border-radius:8px;color:#666;">
+                                    <div style="padding:12px;border:1px solid #eee;border-radius:8px;color: #64748b;">
                                         <i class="fas fa-pause-circle"></i>
                                         This card is paused by an administrator. Please contact support to reactivate.
                                     </div>
@@ -673,7 +681,7 @@
                                     </div>
                                 </div>
                                 
-                                <div style="margin-top:20px; padding:20px; background:#f8f9fa; border-radius:10px;">
+                                <div style="margin-top:20px; padding:20px; background: #f0f2f5; border-radius:10px;">
                                     <h4 style="margin-bottom:15px; color:#1a472a;"><i class="fas fa-info-circle"></i> Card Information</h4>
                                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:14px;">
                                         <div><strong>Card Type:</strong> ${kindLabel}</div>
@@ -685,7 +693,7 @@
                                     </div>
                                 </div>
                                 
-                                <p style="margin-top:15px; color:#666; font-size:13px; text-align:center;">
+                                <p style="margin-top:15px; color: #64748b; font-size:13px; text-align:center;">
                                     <i class="fas fa-shield-alt"></i> For security, full card numbers are not displayed.
                                 </p>
                                 
@@ -931,7 +939,7 @@ Click 'Manage' in the mobile app or call us at 1-800-HERITAGE
                                 <button class="close-modal" onclick="closeModal('virtualCardModal')">&times;</button>
                             </div>
                             <div class="modal-body">
-                                <p style="color:#666; font-size: 14px; margin-top:0;">
+                                <p style="color: #64748b; font-size: 14px; margin-top:0;">
                                     Save these details securely. They will not be shown again.
                                 </p>
                                 <div class="card-display">
@@ -1040,9 +1048,11 @@ Click 'Manage' in the mobile app or call us at 1-800-HERITAGE
                 <a href="disclosures.html">Disclosures</a>
                 <a href="security.html">Security</a>
             </div>
-            <p class="app-footer-copy">&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2026 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
     <script src="cookie-consent.js"></script>
+<script src="app-sidebar.js"></script>
+<script>window.addEventListener('load',function(){var l=document.getElementById('pageLoader');if(l)l.classList.add('hidden');setTimeout(function(){if(l)l.remove()},500)});</script>
 </body>
 </html>

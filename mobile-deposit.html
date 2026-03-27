@@ -3,12 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <meta name="description" content="Deposit checks from your phone with Heritage Bank mobile deposit.">
     <title>Mobile Deposit - Heritage Bank</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="app-layout.css">
+    <link rel="stylesheet" href="loading.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+        body { background: #f0f2f5; font-family: 'Inter', 'Segoe UI', sans-serif; min-height: 100vh; }
 
         .container { max-width: 700px; margin: 30px auto; padding: 20px; }
 
@@ -73,7 +83,7 @@
         .check-capture-area:hover { border-color: #1a472a; background: #f0f7f2; }
         .check-capture-area.has-image { border-color: #27ae60; border-style: solid; background: white; padding: 10px; }
         .check-capture-area i { font-size: 2.5rem; color: #aaa; margin-bottom: 10px; }
-        .check-capture-area p { color: #888; font-size: 0.95rem; }
+        .check-capture-area p { color: #94a3b8; font-size: 0.95rem; }
         .check-capture-area small { color: #aaa; font-size: 0.82rem; }
         .check-capture-area img {
             max-width: 100%; max-height: 220px; border-radius: 8px;
@@ -99,9 +109,9 @@
             padding: 16px; margin: 18px 0; font-size: 0.88rem;
         }
         .endorsement-guide h4 { color: #8a6d00; margin-bottom: 8px; }
-        .endorsement-guide ol { padding-left: 22px; color: #555; line-height: 1.7; }
+        .endorsement-guide ol { padding-left: 22px; color: #64748b; line-height: 1.7; }
         .endorsement-guide .check-back-example {
-            background: white; border: 1px solid #ddd; border-radius: 8px;
+            background: white; border: 1px solid #e2e8f0; border-radius: 8px;
             padding: 15px; margin-top: 12px; text-align: center; font-style: italic; color: #333;
         }
         .endorsement-guide .check-back-example .sig-line {
@@ -111,9 +121,9 @@
         /* Amount form */
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
-        .form-group small { color: #888; margin-top: 4px; display: block; }
+        .form-group small { color: #94a3b8; margin-top: 4px; display: block; }
         .amount-input {
-            display: flex; align-items: center; border: 2px solid #e0e0e0;
+            display: flex; align-items: center; border: 1px solid #e2e8f0;
             border-radius: 8px; overflow: hidden;
         }
         .amount-input span {
@@ -125,7 +135,7 @@
         }
 
         .form-group select, .form-group input[type="text"] {
-            width: 100%; padding: 12px; border: 2px solid #e0e0e0;
+            width: 100%; padding: 12px; border: 1px solid #e2e8f0;
             border-radius: 8px; font-size: 1rem; outline: none;
         }
         .form-group select:focus, .form-group input:focus {
@@ -156,26 +166,26 @@
 
         /* Review summary */
         .review-summary {
-            background: #f8f9fa; border-radius: 12px; padding: 20px;
+            background: #f0f2f5; border-radius: 12px; padding: 20px;
         }
         .review-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0; border-bottom: 1px solid #eee;
+            padding: 10px 0; border-bottom: 1px solid #e2e8f0;
         }
         .review-row:last-child { border-bottom: none; }
-        .review-row .label { color: #888; font-size: 0.9rem; }
+        .review-row .label { color: #94a3b8; font-size: 0.9rem; }
         .review-row .value { font-weight: 600; color: #333; font-size: 0.95rem; }
         .review-images {
             display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
             margin-top: 15px;
         }
         .review-images .image-box {
-            border: 1px solid #ddd; border-radius: 8px; overflow: hidden;
+            border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;
             text-align: center; background: white;
         }
         .review-images .image-box img { width: 100%; max-height: 140px; object-fit: contain; }
         .review-images .image-box p {
-            font-size: 0.8rem; color: #888; padding: 6px 0; background: #f8f8f8;
+            font-size: 0.8rem; color: #94a3b8; padding: 6px 0; background: #f8f8f8;
         }
 
         /* Success state */
@@ -189,9 +199,9 @@
         }
         .success-icon i { font-size: 2.5rem; color: #27ae60; }
         .success-card h3 { color: #1a472a; font-size: 1.4rem; margin-bottom: 10px; }
-        .success-card p { color: #666; line-height: 1.7; }
+        .success-card p { color: #64748b; line-height: 1.7; }
         .success-details {
-            background: #f8f9fa; border-radius: 10px; padding: 18px;
+            background: #f0f2f5; border-radius: 10px; padding: 18px;
             margin: 20px 0; text-align: left;
         }
 
@@ -211,7 +221,7 @@
         .dep-icon.rejected { background: #f8d7da; color: #721c24; }
         .deposit-item .dep-details { flex: 1; }
         .deposit-item .dep-details h4 { font-size: 0.95rem; color: #333; }
-        .deposit-item .dep-details span { font-size: 0.82rem; color: #888; }
+        .deposit-item .dep-details span { font-size: 0.82rem; color: #94a3b8; }
         .deposit-item .dep-amount { font-weight: 700; }
         .dep-amount.pending { color: #856404; }
         .dep-amount.approved { color: #27ae60; }
@@ -249,6 +259,7 @@
     </style>
 </head>
 <body>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="container">
         <div class="header">
             <button class="back-btn" onclick="location.href='dashboard.html'" title="Back to Dashboard">
@@ -678,11 +689,11 @@
                         `;
                     }).join('');
                 } else {
-                    container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">No deposits yet</p>';
+                    container.innerHTML = '<p style="text-align:center; color: #94a3b8; padding:20px;">No deposits yet</p>';
                 }
             } catch (e) {
                 document.getElementById('depositHistory').innerHTML =
-                    '<p style="text-align:center; color:#888; padding:20px;">No deposits yet</p>';
+                    '<p style="text-align:center; color: #94a3b8; padding:20px;">No deposits yet</p>';
             }
         }
 
@@ -705,9 +716,11 @@
                 <a href="disclosures.html">Disclosures</a>
                 <a href="security.html">Security</a>
             </div>
-            <p class="app-footer-copy">&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2026 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
     <script src="cookie-consent.js"></script>
+<script src="app-sidebar.js"></script>
+<script>window.addEventListener('load',function(){var l=document.getElementById('pageLoader');if(l)l.classList.add('hidden');setTimeout(function(){if(l)l.remove()},500)});</script>
 </body>
 </html>

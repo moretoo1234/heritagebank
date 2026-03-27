@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Explore Heritage Bank investment products including savings bonds, index funds, and fixed deposits.">
+    <title>Investments - Heritage Bank</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 30px;
+        }
+        h1 {
+            color: #1a472a;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .back-link {
+            color: #d4af37;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .investment-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 20px;
+            align-items: center;
+            padding: 20px;
+            background: #f5f7fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .investment-info h3 {
+            color: #1a472a;
+            margin: 0 0 5px 0;
+        }
+        .investment-info p {
+            color: #999;
+            margin: 0;
+            font-size: 12px;
+        }
+        .investment-return {
+            font-size: 20px;
+            font-weight: bold;
+            color: #d4af37;
+        }
+        .invest-btn {
+            padding: 10px 20px;
+            background: #d4af37;
+            color: #1a472a;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .invest-btn:hover {
+            background: #b8941f;
+            transform: translateY(-2px);
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            margin-bottom: 8px;
+            color: #1a472a;
+            font-weight: 600;
+        }
+        .form-group input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 20px; }
+            .investment-item { grid-template-columns: 1fr 1fr; gap: 10px; }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 15px; }
+            .investment-item { grid-template-columns: 1fr; gap: 8px; }
+            h2 { font-size: 1.3rem !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="back-link" onclick="window.location.href = 'dashboard.html'">← Back to Dashboard</a>
+        
+        <h1><i class="fas fa-chart-line"></i> Investments</h1>
+
+        <div class="card">
+            <h2 class="invest-section-heading">Available Investment Products</h2>
+            
+            <div class="investment-item">
+                <div class="investment-info">
+                    <h3>Savings Bond</h3>
+                    <p>Low risk, guaranteed returns</p>
+                </div>
+                <div>
+                    <p class="invest-min-amount">Min: $500</p>
+                    <p class="invest-term-info">1-5 year terms</p>
+                </div>
+                <div class="investment-return">3.5% APY</div>
+                <button class="invest-btn" onclick="investNow('Savings Bond', 3.5)">Invest</button>
+            </div>
+
+            <div class="investment-item">
+                <div class="investment-info">
+                    <h3>Index Fund</h3>
+                    <p>Moderate risk, diversified portfolio</p>
+                </div>
+                <div>
+                    <p class="invest-min-amount">Min: $1,000</p>
+                    <p class="invest-term-info">5+ year horizon</p>
+                </div>
+                <div class="investment-return">7.2% APY*</div>
+                <button class="invest-btn" onclick="investNow('Index Fund', 7.2)">Invest</button>
+            </div>
+
+            <div class="investment-item">
+                <div class="investment-info">
+                    <h3>Fixed Deposit</h3>
+                    <p>Flexible terms, competitive rates</p>
+                </div>
+                <div>
+                    <p class="invest-min-amount">Min: $1,000</p>
+                    <p class="invest-term-info">3-12 month terms</p>
+                </div>
+                <div class="investment-return">4.8% APY</div>
+                <button class="invest-btn" onclick="investNow('Fixed Deposit', 4.8)">Invest</button>
+            </div>
+
+            <div class="investment-item">
+                <div class="investment-info">
+                    <h3>Growth Fund</h3>
+                    <p>Higher risk, long-term growth potential</p>
+                </div>
+                <div>
+                    <p class="invest-min-amount">Min: $2,000</p>
+                    <p class="invest-term-info">10+ year horizon</p>
+                </div>
+                <div class="investment-return">9.5% APY*</div>
+                <button class="invest-btn" onclick="investNow('Growth Fund', 9.5)">Invest</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="invest-section-heading">Make an Investment</h2>
+            
+            <form onsubmit="handleInvestment(event)">
+                <div class="form-group">
+                    <label>Investment Product</label>
+                    <select id="product" class="invest-select" title="Investment Product" required>
+                        <option value="">Select a product...</option>
+                        <option value="Savings Bond">Savings Bond (3.5% APY)</option>
+                        <option value="Index Fund">Index Fund (7.2% APY)</option>
+                        <option value="Fixed Deposit">Fixed Deposit (4.8% APY)</option>
+                        <option value="Growth Fund">Growth Fund (9.5% APY)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Investment Amount (USD)</label>
+                    <input type="number" id="investAmount" placeholder="1000" min="500" step="100" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Investment Period (Years)</label>
+                    <input type="number" id="period" placeholder="5" min="1" max="30" step="1" required>
+                </div>
+
+                <button type="submit" class="invest-submit-btn">
+                    <i class="fas fa-check"></i> Invest Now
+                </button>
+            </form>
+        </div>
+        
+        <!-- My Investments Section -->
+        <div class="card initially-hidden" id="myInvestments">
+            <h2 class="invest-section-heading"><i class="fas fa-chart-pie"></i> My Investments</h2>
+            <!-- Will be populated dynamically -->
+        </div>
+
+        <p class="invest-disclaimer">
+            * Past performance does not guarantee future results. Please read all investment documents carefully.
+        </p>
+    </div>
+    
+    <!-- Notification toast -->
+    <div id="notification" class="invest-notification"></div>
+
+    <script src="script.js"></script>
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3001' 
+            : window.location.origin;
+        let userId = null;
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            window.location.href = 'signin.html';
+        }
+
+        // Get user info on load
+        async function checkAuth() {
+            try {
+                const res = await fetch(`${API_URL}/api/auth/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    userId = data.user.id;
+                } else {
+                    window.location.href = 'signin.html';
+                }
+            } catch (err) {
+                console.error('Auth check failed:', err);
+                window.location.href = 'signin.html';
+            }
+        }
+
+        async function investNow(product, rate) {
+            const amount = prompt(`Invest in ${product} (${rate}% APY)\n\nMinimum amount: $500\nEnter investment amount:`, '1000');
+            
+            if (amount && parseFloat(amount) >= 500) {
+                const amountNum = parseFloat(amount);
+                const periodYears = prompt('Investment period in years (1-30):', '5');
+                const period = parseInt(periodYears) || 5;
+                
+                const payload = {
+                    product: `${product} (${rate}% APY)`,
+                    amount: amountNum,
+                    period: period
+                };
+
+                try {
+                    const res = await fetch(`${API_URL}/api/investments/invest`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        showNotification(`✓ Investment of $${amountNum.toFixed(2)} in ${product} confirmed! Est. Return: $${data.investment.estimatedReturn}`, 'success');
+                        loadMyInvestments();
+                    } else {
+                        showNotification('Error: ' + data.message, 'error');
+                    }
+                } catch (err) {
+                    showNotification('Error: ' + err.message, 'error');
+                }
+            } else if (amount) {
+                showNotification('Minimum investment amount is $500', 'error');
+            }
+        }
+
+        async function handleInvestment(e) {
+            e.preventDefault();
+
+            const product = document.getElementById('product').value;
+            const amount = parseFloat(document.getElementById('investAmount').value);
+            const period = parseInt(document.getElementById('period').value);
+
+            if (!product || !amount || !period) {
+                showNotification('Please fill all fields', 'error');
+                return;
+            }
+
+            if (amount < 500) {
+                showNotification('Minimum investment amount is $500', 'error');
+                return;
+            }
+
+            const payload = {
+                product: product,
+                amount: amount,
+                period: period
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/api/investments/invest`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    const { estimatedReturn, maturityDate } = data.investment;
+                    const confirmMsg = `
+Investment Confirmation
+========================
+Product: ${product}
+Amount: $${amount.toFixed(2)}
+Period: ${period} years
+Est. Returns: $${estimatedReturn.toFixed(2)}
+Maturity Date: ${new Date(maturityDate).toLocaleDateString()}
+
+Your investment has been confirmed!
+Funds have been invested immediately.
+`;
+                    alert(confirmMsg);
+                    showNotification('✓ Investment confirmed!', 'success');
+                    loadMyInvestments();
+                    document.getElementById('product').value = '';
+                    document.getElementById('investAmount').value = '';
+                    document.getElementById('period').value = '';
+                } else {
+                    showNotification('Error: ' + data.message, 'error');
+                }
+            } catch (err) {
+                showNotification('Error: ' + err.message, 'error');
+            }
+        }
+        
+        // Load user's existing investments
+        async function loadMyInvestments() {
+            try {
+                const res = await fetch(`${API_URL}/api/investments/my-investments`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await res.json();
+                if (data.success && data.investments.length > 0) {
+                    displayInvestments(data);
+                }
+            } catch (e) {
+                console.error('Error loading investments:', e);
+            }
+        }
+        
+        function displayInvestments(data) {
+            const container = document.getElementById('myInvestments');
+            if (!container) return;
+            
+            let html = `
+                <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #1a472a, #2d5a3d); color: white; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <p style="margin: 0; font-size: 12px; opacity: 0.8;">Total Invested</p>
+                            <p style="margin: 5px 0; font-size: 24px; font-weight: bold;">$${data.totalInvested.toLocaleString()}</p>
+                        </div>
+                        <div>
+                            <p style="margin: 0; font-size: 12px; opacity: 0.8;">Estimated Returns</p>
+                            <p style="margin: 5px 0; font-size: 24px; font-weight: bold; color: #d4af37;">+$${data.totalEstimatedReturn.toLocaleString()}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            data.investments.forEach(inv => {
+                const isMatured = new Date(inv.maturityDate) <= new Date();
+                const statusMap = {
+                    active: `<span style="background: #d4edda; color: #155724; padding: 3px 8px; border-radius: 4px; font-size: 11px;">${isMatured ? 'Matured' : 'Active'}</span>`,
+                    matured: '<span style="background: #cce5ff; color: #004085; padding: 3px 8px; border-radius: 4px; font-size: 11px;">Matured - Collected</span>',
+                    withdrawn: '<span style="background: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 4px; font-size: 11px;">Withdrawn Early</span>',
+                    cancelled: '<span style="background: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-size: 11px;">Cancelled</span>'
+                };
+                const status = statusMap[inv.status] || statusMap.active;
+                const withdrawBtn = inv.status === 'active' ? `
+                    <button onclick="withdrawInvestment(${inv.id}, ${isMatured})" class="invest-btn" style="font-size:12px; padding:6px 14px; margin-top:6px;${isMatured ? 'background:#28a745;color:#fff;' : ''}">
+                        <i class="fas fa-${isMatured ? 'check-circle' : 'undo'}"></i> ${isMatured ? 'Collect Returns' : 'Withdraw'}
+                    </button>` : '';
+                    
+                html += `
+                    <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <strong>${inv.product}</strong> ${status}
+                                <p style="margin: 5px 0 0; color: #666; font-size: 13px;">
+                                    $${parseFloat(inv.amount).toLocaleString()} • ${inv.apy}% APY • ${inv.period} years
+                                </p>
+                            </div>
+                            <div style="text-align: right;">
+                                <p style="margin: 0; color: #d4af37; font-weight: bold;">+$${parseFloat(inv.estimatedReturn).toLocaleString()}</p>
+                                <p style="margin: 3px 0 0; color: #999; font-size: 12px;">Matures: ${new Date(inv.maturityDate).toLocaleDateString()}</p>
+                                ${withdrawBtn}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            container.style.display = 'block';
+        }
+        
+        async function withdrawInvestment(investmentId, isMatured) {
+            const msg = isMatured 
+                ? 'Your investment has matured! You will receive your principal + estimated returns.'
+                : 'WARNING: Early withdrawal incurs a 10% penalty on your principal. Continue?';
+            
+            if (!confirm(msg)) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/investments/${investmentId}/withdraw`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    let detail = `Payout: $${data.payout.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+                    if (data.penalty > 0) detail += `\nEarly withdrawal penalty: -$${data.penalty.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+                    detail += `\nNew balance: $${data.newBalance.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+                    alert(detail);
+                    showNotification('Investment withdrawn successfully!', 'success');
+                    loadMyInvestments();
+                } else {
+                    showNotification('Error: ' + data.message, 'error');
+                }
+            } catch (err) {
+                showNotification('Error: ' + err.message, 'error');
+            }
+        }
+        
+        // Show notification toast
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            
+            if (type === 'success') {
+                notification.style.background = '#d4edda';
+                notification.style.color = '#155724';
+            } else if (type === 'error') {
+                notification.style.background = '#f8d7da';
+                notification.style.color = '#721c24';
+            } else {
+                notification.style.background = '#cce5ff';
+                notification.style.color = '#004085';
+            }
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 4000);
+        }
+
+        // Initialize
+        checkAuth();
+        loadMyInvestments();
+    </script>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
+            </div>
+            <p class="app-footer-copy">&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+        </div>
+    </footer>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>

@@ -3,12 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <meta name="description" content="Get help with your Heritage Bank account through our support center and ticket system.">
     <title>Support - Heritage Bank</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="app-layout.css">
+    <link rel="stylesheet" href="loading.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f0f2f5; font-family: 'Inter', 'Segoe UI', sans-serif; }
         body.dark-mode { background: #1a1a2e; color: #eee; }
         
         .dashboard { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
@@ -35,7 +45,7 @@
             display: flex;
             gap: 10px;
             margin-bottom: 30px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #e2e8f0;
             padding-bottom: 10px;
         }
         body.dark-mode .tabs { border-color: #333; }
@@ -46,7 +56,7 @@
             background: transparent;
             cursor: pointer;
             font-size: 15px;
-            color: #666;
+            color: #64748b;
             border-radius: 8px 8px 0 0;
             transition: all 0.3s;
         }
@@ -80,7 +90,7 @@
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 12px 15px;
-            border: 1px solid #ddd;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
             font-size: 14px;
             font-family: inherit;
@@ -147,7 +157,7 @@
             display: flex;
             gap: 20px;
             font-size: 13px;
-            color: #666;
+            color: #64748b;
         }
         body.dark-mode .ticket-meta { color: #aaa; }
         
@@ -173,7 +183,7 @@
         }
         body.dark-mode .ticket-message.admin { background: #1f3a5c; }
         .ticket-message p { margin: 0; line-height: 1.6; }
-        .ticket-message small { color: #999; display: block; margin-top: 8px; }
+        .ticket-message small { color: #94a3b8; display: block; margin-top: 8px; }
         
         .faq-list {
             display: flex;
@@ -204,7 +214,7 @@
         .faq-answer {
             display: none;
             padding: 0 20px 20px;
-            color: #666;
+            color: #64748b;
             line-height: 1.8;
         }
         body.dark-mode .faq-answer { color: #aaa; }
@@ -227,7 +237,7 @@
         body.dark-mode .contact-card i { color: #d4af37; }
         .contact-card h4 { margin-bottom: 10px; color: #333; }
         body.dark-mode .contact-card h4 { color: #eee; }
-        .contact-card p { color: #666; font-size: 0.9rem; }
+        .contact-card p { color: #64748b; font-size: 0.9rem; }
         body.dark-mode .contact-card p { color: #aaa; }
         .contact-card a { color: #1a472a; text-decoration: none; font-weight: 500; }
         body.dark-mode .contact-card a { color: #d4af37; }
@@ -245,7 +255,7 @@
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #999;
+            color: #94a3b8;
         }
         .empty-state i { font-size: 4rem; margin-bottom: 20px; opacity: 0.3; }
         
@@ -279,6 +289,7 @@
     </style>
 </head>
 <body>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="dashboard">
         <nav class="sidebar">
             <div class="sidebar-logo"><i class="fas fa-landmark"></i> Heritage Bank</div>
@@ -558,7 +569,7 @@
                                 <small>Responded on ${formatDate(ticket.updatedAt)}</small>
                             </div>
                         ` : `
-                            <p style="color: #999; font-style: italic; text-align: center;">
+                            <p style="color: #94a3b8; font-style: italic; text-align: center;">
                                 <i class="fas fa-hourglass-half"></i> Awaiting response from support team...
                             </p>
                         `}
@@ -953,7 +964,7 @@
         .chat-input-area input {
             flex: 1;
             padding: 12px 16px;
-            border: 1px solid #ddd;
+            border: 1px solid #e2e8f0;
             border-radius: 24px;
             font-size: 14px;
             outline: none;
@@ -1003,9 +1014,11 @@
                 <a href="disclosures.html">Disclosures</a>
                 <a href="security.html">Security</a>
             </div>
-            <p class="app-footer-copy">&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2026 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
     <script src="cookie-consent.js"></script>
+<script src="app-sidebar.js"></script>
+<script>window.addEventListener('load',function(){var l=document.getElementById('pageLoader');if(l)l.classList.add('hidden');setTimeout(function(){if(l)l.remove()},500)});</script>
 </body>
 </html>

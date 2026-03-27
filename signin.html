@@ -3,43 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="manifest" href="manifest.json">
     <meta name="description" content="Sign in to your Heritage Bank account to manage your finances securely.">
     <title>Sign In - Heritage Bank</title>
+    <meta property="og:title" content="Sign In - Heritage Bank">
+    <meta property="og:description" content="Sign in to your Heritage Bank account securely.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="assets/og-image.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
-        .auth-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%); padding: 20px; }
-        .auth-card { background: white; border-radius: 16px; padding: 40px; max-width: 450px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
-        .auth-header { text-align: center; margin-bottom: 30px; }
-        .auth-header h1 { color: #1a472a; font-size: 28px; margin-bottom: 10px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; color: #1a472a; font-weight: 600; }
-        .form-group input { width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
-        .form-group input:focus { outline: none; border-color: #d4af37; }
+        .auth-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f0f2f5; padding: 20px; }
+        .auth-card { background: white; border-radius: 20px; padding: 44px 40px; max-width: 440px; width: 100%; border: 1px solid #e2e8f0; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+        .auth-header { text-align: center; margin-bottom: 32px; }
+        .auth-header h1 { color: #1a472a; font-size: 1.6rem; margin-bottom: 8px; font-weight: 700; letter-spacing: -0.02em; }
+        .auth-header p { color: #64748b; font-size: 0.95rem; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 6px; color: #1e293b; font-weight: 600; font-size: 0.88rem; }
+        .form-group input { width: 100%; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.92rem; font-family: inherit; transition: all 0.2s; background: #f8fafc; }
+        .form-group input:focus { outline: none; border-color: #1a472a; box-shadow: 0 0 0 3px rgba(26,71,42,0.08); background: white; }
         .password-wrapper { position: relative; }
-        .password-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #666; }
-        .form-options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 0.9rem; }
-        .remember-me { display: flex; align-items: center; gap: 8px; }
-        .forgot-link { color: #1a472a; text-decoration: none; }
+        .password-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #94a3b8; }
+        .form-options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; font-size: 0.85rem; }
+        .remember-me { display: flex; align-items: center; gap: 6px; color: #64748b; }
+        .forgot-link { color: #1a472a; text-decoration: none; font-weight: 500; }
         .forgot-link:hover { text-decoration: underline; }
-        .btn-primary { width: 100%; padding: 16px; background: #1a472a; color: white; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; }
-        .btn-primary:hover { background: #2d5f3f; }
-        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
-        .auth-links { text-align: center; margin-top: 20px; }
-        .auth-links a { color: #1a472a; text-decoration: none; }
-        .alert { padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        .alert-danger { background: #f8d7da; color: #721c24; }
-        .alert-warning { background: #fff3cd; color: #856404; }
-        .login-attempts { text-align: center; color: #dc3545; font-size: 0.9rem; margin-top: 10px; }
-        .security-notice { background: #e7f3ff; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem; color: #004085; }
+        .btn-primary { width: 100%; padding: 13px; background: #1a472a; color: white; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary:hover { background: #0f2b1a; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,71,42,0.2); }
+        .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
+        .auth-links { text-align: center; margin-top: 24px; font-size: 0.9rem; color: #64748b; }
+        .auth-links a { color: #1a472a; text-decoration: none; font-weight: 600; }
+        .auth-links a:hover { text-decoration: underline; }
+        .alert { padding: 12px 14px; border-radius: 10px; margin-bottom: 18px; font-size: 0.88rem; }
+        .alert-danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+        .login-attempts { text-align: center; color: #dc3545; font-size: 0.85rem; margin-top: 10px; }
+        .security-notice { background: #f0fdf4; padding: 10px 14px; border-radius: 10px; margin-bottom: 20px; font-size: 0.82rem; color: #166534; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 8px; }
 
         @media (max-width: 480px) {
-            .auth-container { padding: 15px; }
-            .auth-card { padding: 25px 20px; }
-            .auth-header h1 { font-size: 22px; }
-            .form-group input { padding: 12px; font-size: 0.95rem; }
-            .btn-primary { padding: 14px; font-size: 1rem; }
-            .form-options { font-size: 0.82rem; }
+            .auth-container { padding: 12px; }
+            .auth-card { padding: 28px 22px; }
+            .auth-header h1 { font-size: 1.35rem; }
+            .form-group input { padding: 11px 12px; }
+            .btn-primary { padding: 12px; font-size: 0.9rem; }
+            .form-options { font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -87,7 +98,7 @@
             </form>
             
             <div class="auth-links">
-                <p>Don't have an account? <a href="open-account.html">Open Account</a></p>
+                <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
                 <p class="signin-back-link"><a href="index.html">← Back to Home</a></p>
             </div>
             <p class="signin-legal">By signing in, you agree to our <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a>.</p>

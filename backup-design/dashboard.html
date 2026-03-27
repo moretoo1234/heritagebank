@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View your Heritage Bank account dashboard with balances, recent transactions, and quick actions.">
+    <title>Dashboard - Heritage Bank</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; transition: background 0.3s, color 0.3s; }
+        
+        /* Dark Mode Styles */
+        body.dark-mode { background: #1a1a2e; color: #eee; }
+        body.dark-mode .sidebar { background: #0d2818; }
+        body.dark-mode .main-content { background: #16213e; }
+        body.dark-mode .balance-card { background: #1f2b47; }
+        body.dark-mode .balance-card.primary { background: linear-gradient(135deg, #0d2818, #1a472a); }
+        body.dark-mode .account-info, body.dark-mode .transactions-card, body.dark-mode .activity-card { background: #1f2b47; }
+        body.dark-mode .action-card { background: #1f2b47; }
+        body.dark-mode .action-card:hover { background: #2a3a5c; }
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4 { color: #eee; }
+        body.dark-mode .transaction-details h4 { color: #eee; }
+        body.dark-mode .transaction-item { border-color: #333; }
+        body.dark-mode .info-item label { color: #aaa; }
+        body.dark-mode .info-item strong { color: #eee; }
+        body.dark-mode .section-title { color: #d4af37; }
+        
+        /* Session Timeout Warning */
+        .session-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        .session-warning.active { display: flex; }
+        .session-warning-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 400px;
+        }
+        body.dark-mode .session-warning-content { background: #1f2b47; }
+        .session-warning-content i { font-size: 3rem; color: #ffc107; margin-bottom: 15px; }
+        .session-warning-content h3 { color: #1a472a; margin-bottom: 10px; }
+        body.dark-mode .session-warning-content h3 { color: #d4af37; }
+        .session-warning-content p { color: #666; margin-bottom: 20px; }
+        body.dark-mode .session-warning-content p { color: #aaa; }
+        .session-timer { font-size: 2rem; font-weight: bold; color: #dc3545; margin-bottom: 20px; }
+        
+        .dashboard { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
+        
+        .sidebar { background: #1a472a; color: white; padding: 30px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+        .sidebar-logo { padding: 0 20px 30px; font-size: 1.3rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .sidebar-logo img { width: 40px; height: 40px; border-radius: 8px; }
+        .sidebar-menu { list-style: none; }
+        .sidebar-menu li { padding: 15px 20px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background: rgba(212,175,55,0.2); border-left: 3px solid #d4af37; }
+        .sidebar-menu li i { margin-right: 12px; width: 20px; text-align: center; }
+        .sidebar-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 15px 20px; }
+        .sidebar-section { color: rgba(255,255,255,0.5); font-size: 0.75rem; text-transform: uppercase; padding: 10px 20px; letter-spacing: 1px; }
+        
+        .main-content { padding: 30px; overflow-y: auto; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+        .header h1 { color: #1a472a; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        
+        .notification-btn {
+            background: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .notification-btn i { color: #1a472a; }
+        .notification-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #dc3545;
+            color: white;
+            font-size: 0.7rem;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logout-btn { background: #d4af37; color: #1a472a; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .logout-btn:hover { background: #c4a030; }
+        
+        /* Balance Cards */
+        .balance-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        
+        .balance-card {
+            background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .balance-card.primary { grid-column: span 2; padding: 35px; }
+        .balance-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: rgba(255,255,255,0.05);
+            transform: rotate(30deg);
+        }
+        .balance-card p { opacity: 0.9; font-size: 0.9rem; }
+        .balance-card h2 { font-size: 2.5rem; margin: 15px 0; }
+        .balance-card.primary h2 { font-size: 3rem; }
+        .balance-card .card-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 2rem;
+            opacity: 0.3;
+        }
+        
+        .balance-card.secondary {
+            background: linear-gradient(135deg, #d4af37 0%, #f0d060 100%);
+            color: #1a472a;
+        }
+        
+        /* Account Info */
+        .account-info {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .account-info h3 { color: #1a472a; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .info-item { padding: 15px; background: #f8f9fa; border-radius: 8px; }
+        .info-item label { display: block; color: #666; font-size: 0.85rem; margin-bottom: 5px; }
+        .info-item strong { color: #1a472a; font-size: 1.1rem; }
+        .copy-btn {
+            background: none;
+            border: none;
+            color: #d4af37;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .copy-btn:hover { color: #1a472a; }
+        
+        /* Quick Actions */
+        .section-title { color: #1a472a; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        
+        .quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .action-card {
+            background: white;
+            padding: 25px 15px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .action-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .action-card i { font-size: 2rem; color: #d4af37; margin-bottom: 12px; }
+        .action-card h4 { color: #1a472a; font-size: 0.95rem; }
+        
+        /* Transactions */
+        .transactions-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .transactions-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .transactions-header h3 { color: #1a472a; display: flex; align-items: center; gap: 10px; }
+        .view-all { color: #d4af37; text-decoration: none; font-size: 0.9rem; }
+        .view-all:hover { text-decoration: underline; }
+        
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            position: relative;
+        }
+        .transaction-item:last-child { border-bottom: none; }
+        .transaction-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+        .transaction-icon.credit { background: #d4edda; color: #28a745; }
+        .transaction-icon.debit { background: #f8d7da; color: #dc3545; }
+        .transaction-details { flex: 1; }
+        .transaction-details h4 { color: #333; font-size: 0.95rem; margin-bottom: 3px; }
+        .transaction-details span { color: #666; font-size: 0.85rem; }
+        .transaction-amount { font-weight: 600; margin-right: 10px; }
+        .btn-receipt {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #666;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-receipt:hover {
+            background: #e9ecef;
+            color: #333;
+        }
+        .transaction-amount.credit { color: #28a745; }
+        .transaction-amount.debit { color: #dc3545; }
+        
+        .no-transactions {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .no-transactions i { font-size: 3rem; color: #ddd; margin-bottom: 15px; display: block; }
+
+        .transaction-item { cursor: pointer; transition: background 0.2s; }
+        .transaction-item:hover { background: #f8f9fa; }
+
+        /* Transaction Detail Modal */
+        .txn-modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center; }
+        .txn-modal-overlay.active { display:flex; }
+        .txn-modal { background:white; border-radius:16px; width:90%; max-width:500px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation: txnSlideUp 0.3s ease; }
+        @keyframes txnSlideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+        .txn-modal-header { display:flex; justify-content:space-between; align-items:center; padding:20px 25px; border-bottom:1px solid #eee; }
+        .txn-modal-header h3 { color:#1a472a; font-size:1.1rem; display:flex; align-items:center; gap:10px; }
+        .txn-modal-close { background:none; border:none; font-size:1.5rem; cursor:pointer; color:#999; padding:5px; }
+        .txn-modal-close:hover { color:#333; }
+        .txn-modal-body { padding:25px; }
+        .txn-modal-amount { text-align:center; padding:20px 0; border-bottom:1px solid #f0f0f0; margin-bottom:20px; }
+        .txn-modal-amount .amount-value { font-size:2rem; font-weight:700; }
+        .txn-modal-amount .amount-value.credit { color:#28a745; }
+        .txn-modal-amount .amount-value.debit { color:#dc3545; }
+        .txn-modal-amount .amount-label { color:#888; font-size:0.85rem; margin-top:5px; }
+        .txn-detail-row { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f5f5f5; }
+        .txn-detail-row:last-child { border-bottom:none; }
+        .txn-detail-label { color:#888; font-size:0.85rem; }
+        .txn-detail-value { color:#333; font-weight:500; font-size:0.9rem; text-align:right; max-width:60%; word-break:break-word; }
+        .txn-status-badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:600; }
+        .txn-status-badge.completed { background:#d4edda; color:#155724; }
+        .txn-status-badge.pending { background:#fff3cd; color:#856404; }
+        .txn-status-badge.rejected, .txn-status-badge.failed { background:#f8d7da; color:#721c24; }
+        .txn-modal-footer { padding:15px 25px 20px; display:flex; gap:10px; }
+        .txn-modal-footer button { flex:1; padding:12px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:0.9rem; }
+        .txn-btn-receipt { background:#1a472a; color:white; }
+        .txn-btn-receipt:hover { background:#2d5f3f; }
+        .txn-btn-close-modal { background:#f0f0f0; color:#555; }
+        .txn-btn-close-modal:hover { background:#e0e0e0; }
+        
+        /* Activity Section */
+        .activity-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #d4af37;
+            margin-right: 15px;
+            margin-top: 5px;
+        }
+        .activity-content { flex: 1; }
+        .activity-content p { color: #333; margin-bottom: 3px; }
+        .activity-content span { color: #666; font-size: 0.85rem; }
+        
+        /* Mobile sidebar toggle */
+        .mobile-toggle {
+            display: none;
+            background: #1a472a;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        /* Global word-wrap */
+        h1, h2, h3, h4, p, span, strong { overflow-wrap: break-word; word-wrap: break-word; }
+
+        @media (max-width: 900px) {
+            .balance-card.primary { grid-column: span 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .sidebar {
+                position: fixed;
+                left: -250px;
+                top: 0;
+                z-index: 1000;
+                transition: left 0.3s;
+            }
+            .sidebar.open { left: 0; }
+            .mobile-toggle { display: block; }
+            .main-content { padding: 20px; }
+            .header h1 { font-size: 1.3rem; }
+            .balance-card h2 { font-size: 1.6rem; }
+            .balance-card.primary h2 { font-size: 1.8rem; }
+            .balance-card.primary { padding: 25px; }
+            .balance-cards { grid-template-columns: 1fr; gap: 15px; }
+            .quick-actions { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+            .action-card { padding: 18px 10px; }
+            .action-card i { font-size: 1.5rem; margin-bottom: 8px; }
+            .action-card h4 { font-size: 0.82rem; }
+            .section-title { font-size: 1rem; }
+            .transactions-card, .account-info, .activity-card { padding: 18px; }
+            .info-grid { grid-template-columns: 1fr; gap: 12px; }
+            .info-item strong { font-size: 0.95rem; }
+            .transaction-details h4 { font-size: 0.85rem; }
+            .transaction-details span { font-size: 0.78rem; }
+            .transaction-amount { font-size: 0.9rem; }
+            .transaction-icon { width: 38px; height: 38px; margin-right: 10px; }
+            .btn-receipt { padding: 6px 8px; font-size: 12px; }
+            .logout-btn { padding: 8px 14px; font-size: 0.85rem; }
+            .session-timer { font-size: 1.5rem; }
+        }
+
+        @media (max-width: 480px) {
+            .main-content { padding: 15px; }
+            .header { margin-bottom: 20px; gap: 10px; }
+            .header h1 { font-size: 1.15rem; }
+            .header-right { gap: 8px; }
+            .balance-card { padding: 18px; }
+            .balance-card h2 { font-size: 1.4rem; }
+            .balance-card.primary h2 { font-size: 1.5rem; }
+            .balance-card p { font-size: 0.8rem; }
+            .quick-actions { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .action-card { padding: 14px 6px; }
+            .action-card i { font-size: 1.3rem; margin-bottom: 6px; }
+            .action-card h4 { font-size: 0.75rem; }
+            .transaction-item { padding: 10px 0; }
+            .transaction-icon { width: 32px; height: 32px; margin-right: 8px; font-size: 0.8rem; }
+            .transaction-details h4 { font-size: 0.8rem; }
+            .transaction-details span { font-size: 0.72rem; }
+            .transaction-amount { font-size: 0.82rem; margin-right: 5px; }
+            .btn-receipt { padding: 5px 6px; font-size: 11px; }
+            .activity-item { padding: 10px 0; }
+            .activity-content p { font-size: 0.85rem; }
+            .activity-content span { font-size: 0.75rem; }
+            .notification-btn { width: 34px; height: 34px; }
+            .logout-btn { padding: 7px 12px; font-size: 0.8rem; }
+            .sidebar-menu li { padding: 12px 15px; font-size: 0.9rem; }
+        }
+        .app-footer { background: #1a2332; padding: 20px 0; margin-top: 40px; text-align: center; }
+        .app-footer-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .app-footer-links { margin-bottom: 10px; }
+        .app-footer-links a { color: #8899aa; text-decoration: none; margin: 0 10px; font-size: 0.8rem; }
+        .app-footer-links a:hover { color: #aabbcc; }
+        .app-footer-copy { color: #556677; font-size: 0.75rem; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <img src="assets/logo.png" alt="Heritage Bank" onerror="this.style.display='none'">
+                <span>Heritage Bank</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li class="active"><i class="fas fa-home"></i> Dashboard</li>
+                <li onclick="location.href='transfer.html'"><i class="fas fa-paper-plane"></i> Transfer</li>
+                <li onclick="location.href='pay-bills.html'"><i class="fas fa-file-invoice-dollar"></i> Pay Bills</li>
+                <li onclick="location.href='mobile-deposit.html'"><i class="fas fa-camera"></i> Mobile Deposit</li>
+            </ul>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">Products</div>
+            <ul class="sidebar-menu">
+                <li onclick="location.href='cards.html'"><i class="fas fa-credit-card"></i> Cards</li>
+                <li onclick="location.href='investment.html'"><i class="fas fa-chart-line"></i> Investments</li>
+                <li onclick="location.href='request-loan.html'"><i class="fas fa-hand-holding-usd"></i> Loans</li>
+                <li onclick="location.href='savings-goals.html'"><i class="fas fa-piggy-bank"></i> Savings Goals</li>
+            </ul>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">Tools</div>
+            <ul class="sidebar-menu">
+                <li onclick="location.href='analytics.html'"><i class="fas fa-chart-pie"></i> Analytics</li>
+                <li onclick="location.href='messages.html'"><i class="fas fa-envelope"></i> Messages</li>
+                <li onclick="location.href='support.html'"><i class="fas fa-headset"></i> Support</li>
+            </ul>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">Account</div>
+            <ul class="sidebar-menu">
+                <li onclick="location.href='settings.html'"><i class="fas fa-cog"></i> Settings</li>
+                <li onclick="location.href='faq.html'"><i class="fas fa-question-circle"></i> Help & FAQ</li>
+            </ul>
+        </nav>
+        
+        <main class="main-content">
+            <div class="header">
+                <div class="header-welcome-group">
+                    <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <div>
+                        <p class="header-welcome-text">Welcome back,</p>
+                        <h1 id="userName">User</h1>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="notification-btn" onclick="toggleNotifications()" id="notifBtn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notifBadge">0</span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown">
+                        <div class="notif-dropdown-header">
+                            <span><i class="fas fa-bell"></i> Notifications</span>
+                            <button onclick="markAllRead()" class="notif-mark-read-btn">Mark all read</button>
+                        </div>
+                        <div id="notifList" class="notif-list">
+                            <p class="notif-empty">No notifications</p>
+                        </div>
+                    </div>
+                    <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </div>
+            
+            <!-- Balance Cards -->
+            <div class="balance-cards">
+                <div class="balance-card primary">
+                    <i class="fas fa-wallet card-icon"></i>
+                    <p>Available Balance</p>
+                    <h2 id="balance">$0.00</h2>
+                    <p id="accountType">Savings Account</p>
+                </div>
+                <div class="balance-card secondary">
+                    <i class="fas fa-piggy-bank card-icon"></i>
+                    <p>Savings Goal</p>
+                    <h2 id="savingsGoal">Loading...</h2>
+                    <p><span id="savingsProgress">0%</span> achieved</p>
+                </div>
+            </div>
+            
+            <!-- Account Info -->
+            <div class="account-info">
+                <h3><i class="fas fa-university"></i> Account Details</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Account Number</label>
+                        <strong id="accountNumber">-</strong>
+                        <button class="copy-btn" onclick="copyToClipboard('accountNumber')" title="Copy account number"><i class="fas fa-copy"></i></button>
+                        <button class="copy-btn" id="toggleAcctBtn" onclick="toggleAccountNumber()" title="Show/hide account number"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <div class="info-item">
+                        <label>Routing Number</label>
+                        <strong>091238946</strong>
+                        <button class="copy-btn" onclick="copyText('091238946')" title="Copy routing number"><i class="fas fa-copy"></i></button>
+                    </div>
+                    <div class="info-item">
+                        <label>Account Type</label>
+                        <strong id="accType">Savings</strong>
+                    </div>
+                    <div class="info-item">
+                        <label>Account Status</label>
+                        <strong class="status-active"><i class="fas fa-check-circle"></i> Active</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <h3 class="section-title"><i class="fas fa-bolt"></i> Quick Actions</h3>
+            <div class="quick-actions">
+                <div class="action-card" onclick="location.href='transfer.html'">
+                    <i class="fas fa-paper-plane"></i>
+                    <h4>Send Money</h4>
+                </div>
+                <div class="action-card" onclick="location.href='mobile-deposit.html'">
+                    <i class="fas fa-camera"></i>
+                    <h4>Deposit Check</h4>
+                </div>
+                <div class="action-card" onclick="location.href='pay-bills.html'">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <h4>Pay Bills</h4>
+                </div>
+                <div class="action-card" onclick="location.href='savings-goals.html'">
+                    <i class="fas fa-piggy-bank"></i>
+                    <h4>Savings Goals</h4>
+                </div>
+                <div class="action-card" onclick="location.href='analytics.html'">
+                    <i class="fas fa-chart-pie"></i>
+                    <h4>Analytics</h4>
+                </div>
+                <div class="action-card" onclick="location.href='messages.html'">
+                    <i class="fas fa-envelope"></i>
+                    <h4>Messages</h4>
+                </div>
+                <div class="action-card" onclick="location.href='support.html'">
+                    <i class="fas fa-headset"></i>
+                    <h4>Support</h4>
+                </div>
+                <div class="action-card" onclick="location.href='statements.html'">
+                    <i class="fas fa-file-invoice"></i>
+                    <h4>Statements</h4>
+                </div>
+                <div class="action-card" onclick="location.href='settings.html'">
+                    <i class="fas fa-cog"></i>
+                    <h4>Settings</h4>
+                </div>
+            </div>
+            
+            <!-- Recent Transactions -->
+            <div class="transactions-card">
+                <div class="transactions-header">
+                    <h3><i class="fas fa-history"></i> Recent Transactions</h3>
+                    <a href="transactions.html" class="view-all">View All</a>
+                </div>
+                <div id="transactionsList">
+                    <div class="no-transactions">
+                        <i class="fas fa-receipt"></i>
+                        <p>No recent transactions</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Session Timeout Warning Modal -->
+    <div class="session-warning" id="sessionWarning">
+        <div class="session-warning-content">
+            <i class="fas fa-clock"></i>
+            <h3>Session Expiring Soon</h3>
+            <p>Your session will expire due to inactivity.</p>
+            <div class="session-timer" id="sessionTimer">2:00</div>
+            <button class="btn btn-primary session-extend-btn" onclick="extendSession()">
+                <i class="fas fa-redo"></i> Stay Logged In
+            </button>
+            <button class="btn btn-secondary session-logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3001' 
+            : window.location.origin;
+        let userId = null;
+        
+        // Session timeout variables (15 minutes idle = warning, 2 more minutes = logout)
+        const IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+        const WARNING_DURATION = 2 * 60 * 1000; // 2 minutes warning
+        let idleTimer = null;
+        let warningTimer = null;
+        let countdownInterval = null;
+        
+        // Initialize dark mode
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+        
+        // Session management
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            clearTimeout(warningTimer);
+            clearInterval(countdownInterval);
+            document.getElementById('sessionWarning').classList.remove('active');
+            
+            idleTimer = setTimeout(showSessionWarning, IDLE_TIMEOUT);
+        }
+        
+        function showSessionWarning() {
+            const warning = document.getElementById('sessionWarning');
+            warning.classList.add('active');
+            
+            let timeLeft = WARNING_DURATION / 1000;
+            updateTimerDisplay(timeLeft);
+            
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay(timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    logout();
+                }
+            }, 1000);
+            
+            warningTimer = setTimeout(logout, WARNING_DURATION);
+        }
+        
+        function updateTimerDisplay(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            document.getElementById('sessionTimer').textContent = 
+                `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function extendSession() {
+            resetIdleTimer();
+            // Optionally refresh token here
+        }
+        
+        // Track user activity
+        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
+            document.addEventListener(event, resetIdleTimer, { passive: true });
+        });
+        
+        // Start idle timer on page load
+        resetIdleTimer();
+        
+        async function loadDashboard() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'signin.html';
+                return;
+            }
+            
+            try {
+                // Load user profile
+                const res = await fetch(`${API_URL}/api/auth/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success && data.user) {
+                    userId = data.user.id;
+                    document.getElementById('userName').textContent = data.user.firstName || 'User';
+                    document.getElementById('balance').textContent = '$' + (data.user.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('accountNumber').textContent = data.user.accountNumber ? ('****' + data.user.accountNumber.slice(-4)) : '-';
+                    document.getElementById('accountNumber').dataset.full = data.user.accountNumber || '';
+                    document.getElementById('accountNumber').dataset.masked = 'true';
+                    document.getElementById('accountType').textContent = (data.user.accountType || 'Savings') + ' Account';
+                    document.getElementById('accType').textContent = data.user.accountType || 'Savings';
+                    
+                    // Load savings goals from API to calculate progress
+                    const balance = data.user.balance || 0;
+                    loadSavingsGoalProgress(balance, token);
+                    
+                    // Load transactions and activity
+                    loadTransactions();
+                    // Activity section moved to settings page
+                    loadNotifications();
+                } else {
+                    window.location.href = 'signin.html';
+                }
+            } catch (e) {
+                console.error('Dashboard load error:', e);
+            }
+        }
+
+        async function loadNotifications() {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/notifications?limit=10`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('notifBadge').textContent = data.unreadCount || 0;
+                    const list = document.getElementById('notifList');
+                    if (data.notifications && data.notifications.length > 0) {
+                        list.innerHTML = data.notifications.map(n => `
+                            <div style="padding:12px 15px; border-bottom:1px solid #f0f0f0; ${n.read ? '' : 'background:#f0f8ff;'}">
+                                <div style="font-size:0.9rem; color:#333;">${escapeHtmlDash(n.message || n.title || 'Notification')}</div>
+                                <div style="font-size:0.75rem; color:#999; margin-top:4px;">${new Date(n.createdAt).toLocaleDateString()}</div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (e) {
+                console.error('Notifications load error:', e);
+            }
+        }
+
+        function escapeHtmlDash(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        function toggleNotifications() {
+            const dd = document.getElementById('notifDropdown');
+            dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function markAllRead() {
+            const token = localStorage.getItem('token');
+            try {
+                await fetch(`${API_URL}/api/notifications/read-all`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                document.getElementById('notifBadge').textContent = '0';
+                document.getElementById('notifBadge').style.display = 'none';
+                document.querySelectorAll('#notifList > div').forEach(d => d.style.background = '');
+            } catch (e) { console.error(e); }
+        }
+
+        // Close notification dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('notifDropdown');
+            const btn = document.getElementById('notifBtn');
+            if (dd && dd.style.display !== 'none' && !dd.contains(e.target) && !btn.contains(e.target)) {
+                dd.style.display = 'none';
+            }
+        });
+
+        async function loadSavingsGoalProgress(balance, token) {
+            try {
+                const res = await fetch(`${API_URL}/api/savings-goals`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                let totalGoal = 0;
+                let totalSaved = 0;
+                if (data.success && data.goals && data.goals.length > 0) {
+                    data.goals.forEach(g => {
+                        totalGoal += parseFloat(g.targetAmount || 0);
+                        totalSaved += parseFloat(g.currentAmount || 0);
+                    });
+                    document.getElementById('savingsGoal').textContent = '$' + totalGoal.toLocaleString(undefined, {minimumFractionDigits: 0});
+                    const progress = totalGoal > 0 ? Math.min(100, Math.round((totalSaved / totalGoal) * 100)) : 0;
+                    document.getElementById('savingsProgress').textContent = progress + '%';
+                } else {
+                    // No goals set — show balance-based default
+                    document.getElementById('savingsGoal').textContent = 'No Goal Set';
+                    document.getElementById('savingsProgress').textContent = '-';
+                }
+            } catch (e) {
+                console.error('Savings goal load error:', e);
+                document.getElementById('savingsGoal').textContent = '$0';
+                document.getElementById('savingsProgress').textContent = '-';
+            }
+        }
+        
+        async function loadTransactions() {
+            const token = localStorage.getItem('token');
+            if (!userId) return;
+            
+            try {
+                // Avoid cached 304 responses hiding new transactions.
+                const res = await fetch(`${API_URL}/api/user/${userId}/transactions?ts=${Date.now()}`, {
+                    cache: 'no-store',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (!res.ok || !data?.success) {
+                    const msg = data?.message || `Failed to load transactions (HTTP ${res.status})`;
+                    displayTransactionsError(msg);
+                    return;
+                }
+
+                if (Array.isArray(data.transactions)) {
+                    displayTransactions(data.transactions.slice(0, 5));
+                } else {
+                    displayTransactionsError('Transactions response was not in the expected format.');
+                }
+            } catch (e) {
+                console.error('Transactions load error:', e);
+                displayTransactionsError('Could not load transactions. Please refresh and try again.');
+            }
+        }
+
+        function displayTransactionsError(message) {
+            const container = document.getElementById('transactionsList');
+            container.innerHTML = `
+                <div class="no-transactions">
+                    <i class="fas fa-exclamation-triangle" style="color:#d9534f;"></i>
+                    <p style="color:#d9534f;">${escapeHtml(message)}</p>
+                </div>
+            `;
+        }
+
+        function escapeHtml(value) {
+            const s = String(value ?? '');
+            return s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatNameAcct(firstName, lastName, accountNumber) {
+            const f = firstName ? firstName.charAt(0) + '.' : '';
+            const l = lastName || '';
+            const name = [f, l].filter(Boolean).join(' ') || '-';
+            if (accountNumber) return `${name} (...${String(accountNumber).slice(-5)})`;
+            return name;
+        }
+
+        const COUNTRY_MAP = {
+            US: { flag: '\ud83c\uddfa\ud83c\uddf8', name: 'United States' },
+            GB: { flag: '\ud83c\uddec\ud83c\udde7', name: 'United Kingdom' },
+            CA: { flag: '\ud83c\udde8\ud83c\udde6', name: 'Canada' },
+            MX: { flag: '\ud83c\uddf2\ud83c\uddfd', name: 'Mexico' },
+            DE: { flag: '\ud83c\udde9\ud83c\uddea', name: 'Germany' },
+            FR: { flag: '\ud83c\uddeb\ud83c\uddf7', name: 'France' },
+            ES: { flag: '\ud83c\uddea\ud83c\uddf8', name: 'Spain' },
+            IT: { flag: '\ud83c\uddee\ud83c\uddf9', name: 'Italy' },
+            CH: { flag: '\ud83c\udde8\ud83c\udded', name: 'Switzerland' },
+            NG: { flag: '\ud83c\uddf3\ud83c\uddec', name: 'Nigeria' },
+            GH: { flag: '\ud83c\uddec\ud83c\udded', name: 'Ghana' },
+            IN: { flag: '\ud83c\uddee\ud83c\uddf3', name: 'India' },
+            CN: { flag: '\ud83c\udde8\ud83c\uddf3', name: 'China' },
+            JP: { flag: '\ud83c\uddef\ud83c\uddf5', name: 'Japan' },
+            AU: { flag: '\ud83c\udde6\ud83c\uddfa', name: 'Australia' },
+            BR: { flag: '\ud83c\udde7\ud83c\uddf7', name: 'Brazil' },
+            AE: { flag: '\ud83c\udde6\ud83c\uddea', name: 'United Arab Emirates' },
+            PH: { flag: '\ud83c\uddf5\ud83c\udded', name: 'Philippines' },
+            JM: { flag: '\ud83c\uddef\ud83c\uddf2', name: 'Jamaica' },
+            KR: { flag: '\ud83c\uddf0\ud83c\uddf7', name: 'South Korea' }
+        };
+
+        function getCountryFlag(tx) {
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return COUNTRY_MAP[code].flag;
+            const d = String((tx && tx.description) || '').toLowerCase();
+            if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return COUNTRY_MAP.GB.flag;
+            return COUNTRY_MAP.US.flag;
+        }
+
+        function getCountryCode(tx) {
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return code;
+            const d = String((tx && tx.description) || '').toLowerCase();
+            if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return 'GB';
+            return 'US';
+        }
+
+        function flagImg(code) {
+            const c = (code || 'US').toUpperCase();
+            const entry = COUNTRY_MAP[c] || COUNTRY_MAP.US;
+            return `<img src="https://flagcdn.com/w40/${c.toLowerCase()}.png" alt="${entry.name}" style="width:20px;height:14px;vertical-align:middle;margin-right:4px;border-radius:2px;">`;
+        }
+
+        function getCountryName(tx) {
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return COUNTRY_MAP[code].name;
+            return null;
+        }
+
+        function txnTimestamp(tx) {
+            return tx?.date || tx?.createdAt || tx?.created_at || tx?.created || tx?.timestamp || null;
+        }
+
+        function txnDirectionLabel(tx) {
+            const fromId = Number(tx?.fromUserId);
+            const toId = Number(tx?.toUserId);
+            const me = Number(userId);
+
+            const fromName = [tx?.fromFirstName, tx?.fromLastName].filter(Boolean).join(' ').trim();
+            const toName = [tx?.toFirstName, tx?.toLastName].filter(Boolean).join(' ').trim();
+
+            const t = String(tx?.type || '').toLowerCase();
+            const incomingTypeLabel = {
+                direct_deposit: 'Direct deposit',
+                ach: 'ACH credit',
+                wire: 'Wire transfer',
+                income: 'Income',
+                salary: 'Salary payment',
+                admin_transfer: 'Incoming transfer'
+            };
+
+            if (Number.isFinite(fromId) && Number.isFinite(toId) && Number.isFinite(me)) {
+                if (toId === me && fromId !== me) {
+                    // Prefer realistic banking labels over "Received from Admin Account".
+                    if (incomingTypeLabel[t]) return incomingTypeLabel[t];
+                    return fromName ? `Received from ${fromName}` : 'Incoming transfer';
+                }
+                if (fromId === me && toId !== me) {
+                    const destCode = getCountryCode(tx);
+                    const destName = getCountryName(tx);
+                    if (destCode !== 'US' && destName) return `Sent to ${toName || destName} — ${destName}`;
+                    return `Sent to ${toName || 'another account'}`;
+                }
+            }
+
+            if (t === 'bill_payment') {
+                const biller = tx.recipientName || (tx.description || '').replace(/Bill payment to\s*/i, '').replace(/AT&T Phone Payment.*/i, 'AT&T').split('(')[0].trim() || 'Biller';
+                return `Paid to ${biller}`;
+            }
+            if (t === 'credit' || t === 'deposit') return 'Credit';
+            if (t === 'debit' || t === 'withdrawal') return 'Debit';
+            if (t) return t.charAt(0).toUpperCase() + t.slice(1);
+            return 'Transaction';
+        }
+        
+        function displayTransactions(transactions) {
+            const container = document.getElementById('transactionsList');
+            
+            if (!transactions || transactions.length === 0) {
+                container.innerHTML = `
+                    <div class="no-transactions">
+                        <i class="fas fa-receipt"></i>
+                        <p>No recent transactions</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = transactions.map(tx => {
+                const me = Number(userId);
+                const fromId = Number(tx?.fromUserId);
+                const toId = Number(tx?.toUserId);
+
+                // Prefer direction-based credit/debit for transfers.
+                let isCredit = false;
+                if (Number.isFinite(me) && Number.isFinite(toId) && toId === me) {
+                    isCredit = true;
+                } else if (Number.isFinite(me) && Number.isFinite(fromId) && fromId === me) {
+                    isCredit = false;
+                } else {
+                    const t = String(tx?.type || '').toLowerCase();
+                    isCredit = (t === 'credit' || t === 'deposit' || t === 'received' || t === 'transfer_in');
+                }
+                const icon = isCredit ? 'fa-arrow-down' : 'fa-arrow-up';
+                const amountClass = isCredit ? 'credit' : 'debit';
+                const amountPrefix = isCredit ? '+' : '-';
+
+                const ts = txnTimestamp(tx);
+                const d = ts ? new Date(ts) : null;
+                const date = d && !isNaN(d.getTime())
+                    ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : '-';
+
+                const subtitle = txnDirectionLabel(tx);
+                // Clean up description - remove "Admin" references for cleaner display
+                let title = tx.description ? String(tx.description) : subtitle;
+                title = title.replace(/Admin\s*/gi, '').trim() || subtitle;
+                const statusBadge = tx.status === 'pending' ? '<span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px;">Pending</span>' : (tx.status === 'rejected' ? '<span style="background:#f8d7da;color:#721c24;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px;">Denied</span>' : '');
+                
+                const isBillRow = (tx.type || '').toLowerCase() === 'bill_payment';
+                const rowIcon = isBillRow ? 'fa-credit-card' : icon;
+
+                return `
+                    <div class="transaction-item" onclick="showTransactionDetail(${tx.id})">
+                        <div class="transaction-icon ${amountClass}">
+                            <i class="fas ${rowIcon}"></i>
+                        </div>
+                        <div class="transaction-details">
+                            <h4>${escapeHtml(title)}${statusBadge}</h4>
+                            <span>${escapeHtml(subtitle)} • ${escapeHtml(date)}</span>
+                        </div>
+                        <div class="transaction-amount ${amountClass}">
+                            ${amountPrefix}$${Math.abs(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        </div>
+                        <button class="btn-receipt" onclick="event.stopPropagation(); downloadReceipt(${tx.id})" title="Download Receipt">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function downloadReceipt(transactionId) {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_URL}/api/transactions/${transactionId}/receipt`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `receipt_${transactionId}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Error downloading receipt');
+                }
+            } catch (err) {
+                console.error('Receipt download error:', err);
+                alert('Error downloading receipt');
+            }
+        }
+        
+        async function loadActivity() {
+            const token = localStorage.getItem('token');
+            if (!userId) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/user/${userId}/activity?ts=${Date.now()}`, {
+                    cache: 'no-store',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success && Array.isArray(data.activities)) {
+                    displayActivity(data.activities.slice(0, 5));
+                    return;
+                }
+                displayActivity([]);
+            } catch (e) {
+                console.error('Activity load error:', e);
+                displayActivity([]);
+            }
+        }
+        
+        function displayActivity(activities) {
+            const container = document.getElementById('activityList');
+
+            if (!activities || activities.length === 0) {
+                container.innerHTML = `
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div class="activity-content">
+                            <p>No recent activity yet</p>
+                            <span>New logins and transactions will appear here</span>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = activities.map(activity => {
+                const date = new Date(activity.timestamp || activity.createdAt);
+                const timeAgo = (!isNaN(date.getTime())) ? getTimeAgo(date) : '-';
+
+                const actionText = activity.action || activity.title || activity.description || 'Activity';
+                const descText = (activity.action && activity.description)
+                    ? String(activity.description)
+                    : '';
+
+                const meta = [descText, timeAgo].filter(Boolean).join(' • ');
+                
+                return `
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div class="activity-content">
+                            <p>${escapeHtml(actionText)}</p>
+                            <span>${escapeHtml(meta || timeAgo)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+            
+            if (diff < 60) return 'Just now';
+            if (diff < 3600) return Math.floor(diff / 60) + ' minutes ago';
+            if (diff < 86400) return Math.floor(diff / 3600) + ' hours ago';
+            if (diff < 604800) return Math.floor(diff / 86400) + ' days ago';
+            
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        
+        function copyToClipboard(elementId) {
+            const el = document.getElementById(elementId);
+            const text = el.dataset.full || el.textContent;
+            copyText(text);
+        }
+        
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied to clipboard!');
+            });
+        }
+
+        function toggleAccountNumber() {
+            const el = document.getElementById('accountNumber');
+            const btn = document.getElementById('toggleAcctBtn');
+            if (el.dataset.masked === 'true') {
+                el.textContent = el.dataset.full;
+                el.dataset.masked = 'false';
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            } else {
+                el.textContent = '****' + el.dataset.full.slice(-4);
+                el.dataset.masked = 'true';
+                btn.innerHTML = '<i class="fas fa-eye"></i>';
+            }
+        }
+        
+        function showAllTransactions() {
+            location.href = 'transactions.html';
+        }
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+        
+        function logout() {
+            const consent = localStorage.getItem('cookieConsent');
+            localStorage.clear();
+            if (consent) localStorage.setItem('cookieConsent', consent);
+            window.location.href = 'signin.html';
+        }
+        
+        // Initialize
+        loadDashboard();
+    </script>
+
+    <!-- Transaction Detail Modal -->
+    <div class="txn-modal-overlay" id="txnModal" onclick="if(event.target===this)closeTxnModal()">
+        <div class="txn-modal">
+            <div class="txn-modal-header">
+                <h3><i class="fas fa-receipt"></i> Transaction Details</h3>
+                <button class="txn-modal-close" onclick="closeTxnModal()">&times;</button>
+            </div>
+            <div class="txn-modal-body" id="txnModalBody"></div>
+            <div class="txn-modal-footer">
+                <button class="txn-btn-receipt" id="txnModalReceiptBtn" onclick=""><i class="fas fa-download"></i> Download Receipt</button>
+                <button class="txn-btn-close-modal" onclick="closeTxnModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let _cachedTransactions = [];
+
+        // Override displayTransactions to cache data
+        const _origDisplayTransactions = displayTransactions;
+        displayTransactions = function(txns) {
+            _cachedTransactions = txns;
+            _origDisplayTransactions(txns);
+        };
+
+        function showTransactionDetail(txId) {
+            const tx = _cachedTransactions.find(t => t.id == txId);
+            if (!tx) return;
+
+            const me = Number(userId);
+            const fromId = Number(tx?.fromUserId);
+            const toId = Number(tx?.toUserId);
+            let isCredit = false;
+            if (Number.isFinite(me) && Number.isFinite(toId) && toId === me) isCredit = true;
+            else if (Number.isFinite(me) && Number.isFinite(fromId) && fromId === me) isCredit = false;
+            else {
+                const t = String(tx?.type || '').toLowerCase();
+                isCredit = (t === 'credit' || t === 'deposit' || t === 'received' || t === 'transfer_in');
+            }
+
+            const amountClass = isCredit ? 'credit' : 'debit';
+            const sign = isCredit ? '+' : '-';
+            const fee = parseFloat(tx.fee) || 0;
+            const totalAmount = Math.abs(parseFloat(tx.amount)) + (isCredit ? 0 : fee);
+
+            const ts = tx.createdAt || tx.date || tx.created_at;
+            const d = ts ? new Date(ts) : null;
+            const dateStr = d && !isNaN(d.getTime()) ? d.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+
+            let desc = tx.description ? String(tx.description) : (tx.type || 'Transaction');
+            desc = desc.replace(/Admin\s*/gi, '').trim() || tx.type || 'Transaction';
+
+            const statusClass = (tx.status || 'completed').toLowerCase();
+            const statusLabel = statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
+
+            const TYPE_MAP = { 'direct_deposit': 'Direct Deposit', 'admin_transfer': 'Transfer', 'admin_debit': 'Debit', 'admin_credit': 'Credit', 'wire_transfer': 'Wire Transfer', 'bank_transfer': 'Bank Transfer', 'bill_payment': 'Bill Payment', 'credit': 'Credit', 'debit': 'Debit', 'deposit': 'Deposit', 'transfer': 'Transfer', 'withdrawal': 'Withdrawal' };
+            const typeLabel = TYPE_MAP[(tx.type || '').toLowerCase()] || (tx.type || 'Transfer').replace(/_/g, ' ').replace(/\badmin\b\s*/gi, '').replace(/\b\w/g, c => c.toUpperCase()).trim() || 'Transfer';
+
+            const fromDisplay = formatNameAcct(tx.fromFirstName, tx.fromLastName, tx.fromAccountNumber);
+            let toDisplay = formatNameAcct(tx.toFirstName, tx.toLastName, tx.toAccountNumber);
+            if (toDisplay === '-' && tx.recipientName) toDisplay = tx.recipientName;
+            const rawDesc = String(tx.description || '');
+            const toCode = getCountryCode(tx);
+            const toCountryName = getCountryName(tx);
+            const ukDetailMatch = rawDesc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
+            if (ukDetailMatch) toDisplay = ukDetailMatch[2].trim() + ' via ' + ukDetailMatch[1].trim();
+
+            const isBill = (tx.type || '').toLowerCase() === 'bill_payment';
+            const lastFour = tx.fromAccountNumber ? String(tx.fromAccountNumber).slice(-4) : '7890';
+            const billerName = tx.recipientName || desc.replace(/Bill payment to\s*/i, '').replace(/AT&T Phone Payment.*/i, 'AT&T').split('(')[0].trim() || 'Biller';
+
+            let html = `
+                <div class="txn-modal-amount">
+                    <div class="amount-value ${amountClass}">${sign}$${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</div>
+                    <div class="amount-label">${escapeHtml(typeLabel)}</div>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Description</span>
+                    <span class="txn-detail-value">${escapeHtml(desc)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Date & Time</span>
+                    <span class="txn-detail-value">${escapeHtml(dateStr)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Status</span>
+                    <span class="txn-detail-value"><span class="txn-status-badge ${statusClass}">${escapeHtml(statusLabel)}</span></span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Type</span>
+                    <span class="txn-detail-value">${escapeHtml(typeLabel)}</span>
+                </div>`;
+
+            if (isBill) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Paid To</span>
+                    <span class="txn-detail-value">${escapeHtml(billerName)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Payment Method</span>
+                    <span class="txn-detail-value"><i class="fas fa-credit-card" style="color:#1a472a;margin-right:4px;"></i> Virtual Debit Card ****${lastFour}</span>
+                </div>`;
+            } else {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">From</span>
+                    <span class="txn-detail-value">${flagImg('US')} ${escapeHtml(fromDisplay)} &mdash; Heritage Bank, USA</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">To</span>
+                    <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toDisplay)}${toCode !== 'US' ? ' &mdash; ' + escapeHtml(toCountryName || 'International') : ' &mdash; Heritage Bank, USA'}</span>
+                </div>`;
+            }
+
+            html += `
+                ${!isBill && toCode !== 'US' ? `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Destination Country</span>
+                    <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toCountryName || 'International')}</span>
+                </div>` : ''}`;
+
+            // Recipient address (skip for bill payments)
+            if (tx.recipientAddress && !isBill) {
+                html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Recipient Address</span>
+                    <span class="txn-detail-value" style="white-space:pre-line;">${escapeHtml(tx.recipientAddress)}</span>
+                </div>`;
+            }
+
+            // Recipient bank information
+            if (tx.bankName || tx.swiftCode || tx.iban) {
+                html += `<div class="txn-detail-row" style="margin-top:8px;border-top:1px solid var(--border-color,#eee);padding-top:8px;">
+                    <span class="txn-detail-label" style="font-weight:700;">Recipient Bank</span>
+                    <span class="txn-detail-value"></span>
+                </div>`;
+                if (tx.bankName) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Bank Name</span>
+                    <span class="txn-detail-value">${escapeHtml(tx.bankName)}</span>
+                </div>`;
+                if (tx.swiftCode) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Bank ID (SWIFT)</span>
+                    <span class="txn-detail-value" style="font-family:monospace;">${escapeHtml(tx.swiftCode)}</span>
+                </div>`;
+                if (tx.iban) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Account / IBAN</span>
+                    <span class="txn-detail-value" style="font-family:monospace;font-size:0.85rem;">${escapeHtml(tx.iban)}</span>
+                </div>`;
+            }
+
+            // Exchange rate & recipient amount
+            if (tx.exchangeRate || tx.recipientAmount) {
+                html += `<div class="txn-detail-row" style="margin-top:8px;border-top:1px solid var(--border-color,#eee);padding-top:8px;">
+                    <span class="txn-detail-label" style="font-weight:700;">Exchange</span>
+                    <span class="txn-detail-value"></span>
+                </div>`;
+                if (tx.exchangeRate) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Exchange Rate</span>
+                    <span class="txn-detail-value">${escapeHtml(tx.exchangeRate)}</span>
+                </div>`;
+                if (tx.recipientAmount) {
+                    const cur = tx.recipientCurrency || '';
+                    const sym = {'GBP':'£','EUR':'€','JPY':'¥','CNY':'¥','INR':'₹','BRL':'R$','KRW':'₩','AED':'AED','NGN':'₦','GHS':'₵','CAD':'C$','MXN':'MX$','AUD':'A$','CHF':'CHF','PHP':'₱','JMD':'J$'}[cur] || cur;
+                    html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Recipient Receives</span>
+                    <span class="txn-detail-value" style="font-weight:700;">${sym ? sym : ''}${parseFloat(tx.recipientAmount).toLocaleString(undefined, {minimumFractionDigits:2})} ${cur}</span>
+                </div>`;
+                }
+            }
+
+            if (tx.reference) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Reference</span>
+                    <span class="txn-detail-value" style="font-family:monospace; font-size:0.8rem;">${escapeHtml(tx.reference)}</span>
+                </div>`;
+            }
+
+            html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Amount</span>
+                    <span class="txn-detail-value">${sign}$${Math.abs(parseFloat(tx.amount)).toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>`;
+
+            if (fee > 0) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Fee</span>
+                    <span class="txn-detail-value">$${fee.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Total</span>
+                    <span class="txn-detail-value" style="font-weight:700;">${sign}$${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>`;
+            }
+
+            if (tx.category) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Category</span>
+                    <span class="txn-detail-value">${escapeHtml(tx.category)}</span>
+                </div>`;
+            }
+
+            document.getElementById('txnModalBody').innerHTML = html;
+            document.getElementById('txnModalReceiptBtn').onclick = function() { downloadReceipt(tx.id); };
+            document.getElementById('txnModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeTxnModal() {
+            document.getElementById('txnModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeTxnModal();
+        });
+    </script>
+
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
+            </div>
+            <p class="app-footer-copy">&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+        </div>
+    </footer>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>

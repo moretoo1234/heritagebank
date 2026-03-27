@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Deposit checks from your phone with Heritage Bank mobile deposit.">
+    <title>Mobile Deposit - Heritage Bank</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+
+        .container { max-width: 700px; margin: 30px auto; padding: 20px; }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .back-btn {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: white; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .back-btn i { color: #1a472a; }
+        .header h1 { color: #1a472a; font-size: 1.4rem; }
+
+        .balance-card {
+            background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%);
+            color: white; padding: 25px; border-radius: 12px; margin-bottom: 25px;
+        }
+        .balance-card p { opacity: 0.9; font-size: 0.9rem; }
+        .balance-card h2 { font-size: 2rem; margin-top: 10px; }
+
+        .card {
+            background: white; border-radius: 16px; padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 25px;
+        }
+        .card h2 {
+            color: #1a472a; margin-bottom: 20px; font-size: 1.3rem;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .info-banner {
+            background: #e8f5e9; border-left: 4px solid #1a472a;
+            padding: 14px 18px; border-radius: 0 10px 10px 0;
+            margin-bottom: 25px; font-size: 0.92rem; color: #1a472a;
+        }
+        .info-banner i { margin-right: 8px; }
+
+        .steps-indicator {
+            display: flex; gap: 8px; margin-bottom: 25px;
+        }
+        .step-dot {
+            flex: 1; height: 6px; border-radius: 3px; background: #e0e0e0;
+            transition: background 0.3s;
+        }
+        .step-dot.active { background: #1a472a; }
+        .step-dot.done { background: #27ae60; }
+
+        .deposit-step { display: none; }
+        .deposit-step.active { display: block; }
+
+        /* Check capture area */
+        .check-capture-area {
+            border: 2px dashed #ccc; border-radius: 12px;
+            padding: 30px; text-align: center; cursor: pointer;
+            transition: all 0.3s; margin-bottom: 18px;
+            background: #fafafa; position: relative;
+        }
+        .check-capture-area:hover { border-color: #1a472a; background: #f0f7f2; }
+        .check-capture-area.has-image { border-color: #27ae60; border-style: solid; background: white; padding: 10px; }
+        .check-capture-area i { font-size: 2.5rem; color: #aaa; margin-bottom: 10px; }
+        .check-capture-area p { color: #888; font-size: 0.95rem; }
+        .check-capture-area small { color: #aaa; font-size: 0.82rem; }
+        .check-capture-area img {
+            max-width: 100%; max-height: 220px; border-radius: 8px;
+            display: none; object-fit: contain;
+        }
+        .check-capture-area.has-image img { display: block; margin: 0 auto; }
+        .check-capture-area.has-image i,
+        .check-capture-area.has-image p,
+        .check-capture-area.has-image small { display: none; }
+        .check-capture-area input[type="file"] {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; cursor: pointer;
+        }
+
+        .capture-label {
+            font-weight: 600; color: #333; margin-bottom: 8px; font-size: 0.95rem;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .capture-label .required { color: #dc3545; }
+
+        .endorsement-guide {
+            background: #fff9e6; border: 1px solid #f0d060; border-radius: 10px;
+            padding: 16px; margin: 18px 0; font-size: 0.88rem;
+        }
+        .endorsement-guide h4 { color: #8a6d00; margin-bottom: 8px; }
+        .endorsement-guide ol { padding-left: 22px; color: #555; line-height: 1.7; }
+        .endorsement-guide .check-back-example {
+            background: white; border: 1px solid #ddd; border-radius: 8px;
+            padding: 15px; margin-top: 12px; text-align: center; font-style: italic; color: #333;
+        }
+        .endorsement-guide .check-back-example .sig-line {
+            border-top: 1px solid #333; display: inline-block; width: 180px; margin-top: 10px;
+        }
+
+        /* Amount form */
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
+        .form-group small { color: #888; margin-top: 4px; display: block; }
+        .amount-input {
+            display: flex; align-items: center; border: 2px solid #e0e0e0;
+            border-radius: 8px; overflow: hidden;
+        }
+        .amount-input span {
+            padding: 12px 15px; background: #f8f8f8; color: #1a472a;
+            font-weight: 700; font-size: 1.2rem;
+        }
+        .amount-input input {
+            flex: 1; border: none; padding: 12px; font-size: 1.1rem; outline: none;
+        }
+
+        .form-group select, .form-group input[type="text"] {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0;
+            border-radius: 8px; font-size: 1rem; outline: none;
+        }
+        .form-group select:focus, .form-group input:focus {
+            border-color: #1a472a;
+        }
+
+        .btn {
+            width: 100%; padding: 16px; border: none; border-radius: 10px;
+            font-size: 1.05rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; display: flex; align-items: center;
+            justify-content: center; gap: 8px;
+        }
+        .btn-primary { background: #1a472a; color: white; }
+        .btn-primary:hover { background: #2d5f3f; }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-secondary { background: #e0e0e0; color: #333; margin-top: 10px; }
+        .btn-secondary:hover { background: #d0d0d0; }
+
+        .alert {
+            padding: 14px 18px; border-radius: 10px; margin-bottom: 20px;
+            font-size: 0.92rem; display: none;
+        }
+        .alert.show { display: block; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-danger { background: #f8d7da; color: #721c24; }
+        .alert-warning { background: #fff3cd; color: #856404; }
+        .alert-info { background: #d1ecf1; color: #0c5460; }
+
+        /* Review summary */
+        .review-summary {
+            background: #f8f9fa; border-radius: 12px; padding: 20px;
+        }
+        .review-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid #eee;
+        }
+        .review-row:last-child { border-bottom: none; }
+        .review-row .label { color: #888; font-size: 0.9rem; }
+        .review-row .value { font-weight: 600; color: #333; font-size: 0.95rem; }
+        .review-images {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            margin-top: 15px;
+        }
+        .review-images .image-box {
+            border: 1px solid #ddd; border-radius: 8px; overflow: hidden;
+            text-align: center; background: white;
+        }
+        .review-images .image-box img { width: 100%; max-height: 140px; object-fit: contain; }
+        .review-images .image-box p {
+            font-size: 0.8rem; color: #888; padding: 6px 0; background: #f8f8f8;
+        }
+
+        /* Success state */
+        .success-card {
+            text-align: center; padding: 40px 20px;
+        }
+        .success-icon {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: #d4edda; display: flex; align-items: center;
+            justify-content: center; margin: 0 auto 20px;
+        }
+        .success-icon i { font-size: 2.5rem; color: #27ae60; }
+        .success-card h3 { color: #1a472a; font-size: 1.4rem; margin-bottom: 10px; }
+        .success-card p { color: #666; line-height: 1.7; }
+        .success-details {
+            background: #f8f9fa; border-radius: 10px; padding: 18px;
+            margin: 20px 0; text-align: left;
+        }
+
+        /* Deposit history */
+        .deposit-item {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 0; border-bottom: 1px solid #f0f0f0;
+        }
+        .deposit-item:last-child { border-bottom: none; }
+        .deposit-item .dep-icon {
+            width: 42px; height: 42px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+        }
+        .dep-icon.pending { background: #fff3cd; color: #856404; }
+        .dep-icon.approved { background: #d4edda; color: #155724; }
+        .dep-icon.rejected { background: #f8d7da; color: #721c24; }
+        .deposit-item .dep-details { flex: 1; }
+        .deposit-item .dep-details h4 { font-size: 0.95rem; color: #333; }
+        .deposit-item .dep-details span { font-size: 0.82rem; color: #888; }
+        .deposit-item .dep-amount { font-weight: 700; }
+        .dep-amount.pending { color: #856404; }
+        .dep-amount.approved { color: #27ae60; }
+        .dep-amount.rejected { color: #dc3545; text-decoration: line-through; }
+        .status-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+        }
+        .status-badge.pending { background: #fff3cd; color: #856404; }
+        .status-badge.approved { background: #d4edda; color: #155724; }
+        .status-badge.rejected { background: #f8d7da; color: #721c24; }
+
+        @media (max-width: 768px) {
+            .container { margin: 15px auto; padding: 15px; }
+            .card { padding: 22px; }
+            .header h1 { font-size: 1.2rem; }
+            .balance-card h2 { font-size: 1.6rem; }
+            .review-images { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+            .container { margin: 10px auto; padding: 10px; }
+            .card { padding: 18px; }
+            .header h1 { font-size: 1.1rem; }
+            .balance-card h2 { font-size: 1.4rem; }
+            .check-capture-area { padding: 20px; }
+            .check-capture-area i { font-size: 2rem; }
+            .btn { padding: 14px; font-size: 0.95rem; }
+        }
+        .app-footer { background: #1a2332; padding: 20px 0; margin-top: 40px; text-align: center; }
+        .app-footer-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .app-footer-links { margin-bottom: 10px; }
+        .app-footer-links a { color: #8899aa; text-decoration: none; margin: 0 10px; font-size: 0.8rem; }
+        .app-footer-links a:hover { color: #aabbcc; }
+        .app-footer-copy { color: #556677; font-size: 0.75rem; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="location.href='dashboard.html'" title="Back to Dashboard">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h1><i class="fas fa-camera"></i> Mobile Check Deposit</h1>
+        </div>
+
+        <div class="balance-card">
+            <p>Available Balance</p>
+            <h2 id="currentBalance">$0.00</h2>
+        </div>
+
+        <div id="alertBox" class="alert"></div>
+
+        <div class="info-banner">
+            <i class="fas fa-info-circle"></i>
+            Deposit checks by taking photos of the front and back. Endorsement on the back is required. Deposits are reviewed and typically credited within 1-2 business days.
+        </div>
+
+        <!-- Step Progress -->
+        <div class="steps-indicator">
+            <div class="step-dot active" id="stepDot1"></div>
+            <div class="step-dot" id="stepDot2"></div>
+            <div class="step-dot" id="stepDot3"></div>
+        </div>
+
+        <!-- STEP 1: Capture Check Images -->
+        <div class="deposit-step active" id="step1">
+            <div class="card">
+                <h2><i class="fas fa-camera-retro"></i> Capture Check</h2>
+
+                <div class="capture-label">
+                    <i class="fas fa-image"></i> Front of Check <span class="required">*</span>
+                </div>
+                <div class="check-capture-area" id="frontArea">
+                    <i class="fas fa-camera"></i>
+                    <p>Tap to take photo or upload image</p>
+                    <small>Make sure the entire check is visible and well-lit</small>
+                    <img id="frontPreview" alt="Front of check">
+                    <input type="file" accept="image/*" capture="environment" id="frontInput" onchange="handleImageCapture('front', this)" title="Front of Check">
+                </div>
+
+                <div class="capture-label capture-label-spaced">
+                    <i class="fas fa-image"></i> Back of Check (with Endorsement) <span class="required">*</span>
+                </div>
+                <div class="check-capture-area" id="backArea">
+                    <i class="fas fa-camera"></i>
+                    <p>Tap to take photo or upload image</p>
+                    <small>Sign the back and write "For Mobile Deposit Only — Heritage Bank"</small>
+                    <img id="backPreview" alt="Back of check">
+                    <input type="file" accept="image/*" capture="environment" id="backInput" onchange="handleImageCapture('back', this)" title="Back of Check">
+                </div>
+
+                <div class="endorsement-guide">
+                    <h4><i class="fas fa-pen-nib"></i> Endorsement Instructions</h4>
+                    <ol>
+                        <li>Sign the back of the check in the endorsement area</li>
+                        <li>Below your signature, write: <strong>"For Mobile Deposit Only"</strong></li>
+                        <li>Write: <strong>"Heritage Bank"</strong></li>
+                        <li>Include your <strong>account number</strong></li>
+                    </ol>
+                    <div class="check-back-example">
+                        <em>Your Signature</em><br>
+                        For Mobile Deposit Only<br>
+                        Heritage Bank<br>
+                        Acct# XXXXXXXXXX<br>
+                        <div class="sig-line"></div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" id="step1Next" onclick="goToStep(2)" disabled>
+                    <i class="fas fa-arrow-right"></i> Continue to Details
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 2: Enter Amount & Details -->
+        <div class="deposit-step" id="step2">
+            <div class="card">
+                <h2><i class="fas fa-edit"></i> Deposit Details</h2>
+
+                <div class="form-group">
+                    <label>Check Amount <span class="required-mark">*</span></label>
+                    <div class="amount-input">
+                        <span>$</span>
+                        <input type="number" id="checkAmount" min="0.01" step="0.01" placeholder="0.00" required>
+                    </div>
+                    <small>Enter the exact amount printed on the check</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Deposit To</label>
+                    <select id="depositAccount">
+                        <option value="checking">Checking Account</option>
+                        <option value="savings">Savings Account</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Check Number (Optional)</label>
+                    <input type="text" id="checkNumber" placeholder="e.g., 1234" maxlength="10">
+                </div>
+
+                <div class="form-group">
+                    <label>Payer / From</label>
+                    <input type="text" id="checkPayer" placeholder="Name of person or company on check">
+                </div>
+
+                <div class="form-group">
+                    <label>Memo / Note (Optional)</label>
+                    <input type="text" id="checkMemo" placeholder="e.g., Rent payment, Refund">
+                </div>
+
+                <button class="btn btn-primary" onclick="goToStep(3)">
+                    <i class="fas fa-search"></i> Review Deposit
+                </button>
+                <button class="btn btn-secondary" onclick="goToStep(1)">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 3: Review & Submit -->
+        <div class="deposit-step" id="step3">
+            <div class="card">
+                <h2><i class="fas fa-clipboard-check"></i> Review & Submit</h2>
+
+                <div class="review-summary" id="reviewSummary">
+                    <div class="review-row">
+                        <span class="label">Deposit Amount</span>
+                        <span class="value" id="reviewAmount">$0.00</span>
+                    </div>
+                    <div class="review-row">
+                        <span class="label">Deposit To</span>
+                        <span class="value" id="reviewAccount">Checking Account</span>
+                    </div>
+                    <div class="review-row">
+                        <span class="label">Check Number</span>
+                        <span class="value" id="reviewCheckNumber">—</span>
+                    </div>
+                    <div class="review-row">
+                        <span class="label">From / Payer</span>
+                        <span class="value" id="reviewPayer">—</span>
+                    </div>
+                    <div class="review-row">
+                        <span class="label">Memo</span>
+                        <span class="value" id="reviewMemo">—</span>
+                    </div>
+                    <div class="review-images">
+                        <div class="image-box">
+                            <img id="reviewFront" alt="Front of check">
+                            <p>Front of Check</p>
+                        </div>
+                        <div class="image-box">
+                            <img id="reviewBack" alt="Back of check">
+                            <p>Back of Check (Endorsed)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-20">
+                    <button class="btn btn-primary" id="submitDepositBtn" onclick="submitDeposit()">
+                        <i class="fas fa-paper-plane"></i> Submit Deposit
+                    </button>
+                    <button class="btn btn-secondary" onclick="goToStep(2)">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUCCESS STATE -->
+        <div class="deposit-step" id="stepSuccess">
+            <div class="card">
+                <div class="success-card">
+                    <div class="success-icon">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <h3>Deposit Submitted!</h3>
+                    <p>Your check deposit is being reviewed. Funds will be credited to your account once approved by our team.</p>
+                    <div class="success-details">
+                        <div class="review-row">
+                            <span class="label">Amount</span>
+                            <span class="value" id="successAmount">$0.00</span>
+                        </div>
+                        <div class="review-row">
+                            <span class="label">Reference</span>
+                            <span class="value" id="successRef">—</span>
+                        </div>
+                        <div class="review-row">
+                            <span class="label">Status</span>
+                            <span class="value"><span class="status-badge pending">Pending Review</span></span>
+                        </div>
+                        <div class="review-row">
+                            <span class="label">Expected Credit</span>
+                            <span class="value">1-2 Business Days</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-mt-15" onclick="resetDeposit()">
+                        <i class="fas fa-plus"></i> Make Another Deposit
+                    </button>
+                    <button class="btn btn-secondary" onclick="location.href='dashboard.html'">
+                        <i class="fas fa-home"></i> Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deposit History -->
+        <div class="card">
+            <h2><i class="fas fa-history"></i> Recent Deposits</h2>
+            <div id="depositHistory">
+                <p class="loading-text">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3001' : window.location.origin;
+
+        let userId = null;
+        let currentBalance = 0;
+        let frontImageData = null;
+        let backImageData = null;
+        let currentStep = 1;
+
+        // Auth & init
+        async function init() {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = 'signin.html'; return; }
+            try {
+                const res = await fetch(`${API_URL}/api/auth/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success && data.user) {
+                    userId = data.user.id;
+                    currentBalance = data.user.balance || 0;
+                    document.getElementById('currentBalance').textContent =
+                        '$' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    loadDepositHistory();
+                } else {
+                    window.location.href = 'signin.html';
+                }
+            } catch (e) {
+                console.error('Auth error:', e);
+            }
+        }
+
+        function handleImageCapture(side, input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Validate file type and size
+            if (!file.type.startsWith('image/')) {
+                showAlert('Please select a valid image file', 'danger');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                showAlert('Image must be under 10 MB', 'danger');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                if (side === 'front') {
+                    frontImageData = dataUrl;
+                    document.getElementById('frontPreview').src = dataUrl;
+                    document.getElementById('frontArea').classList.add('has-image');
+                } else {
+                    backImageData = dataUrl;
+                    document.getElementById('backPreview').src = dataUrl;
+                    document.getElementById('backArea').classList.add('has-image');
+                }
+                // Enable next button if both images captured
+                document.getElementById('step1Next').disabled = !(frontImageData && backImageData);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function goToStep(step) {
+            // Validate before advancing
+            if (step === 2 && (!frontImageData || !backImageData)) {
+                showAlert('Please capture both front and back of the check', 'danger');
+                return;
+            }
+            if (step === 3) {
+                const amount = parseFloat(document.getElementById('checkAmount').value);
+                if (!amount || amount <= 0) {
+                    showAlert('Please enter a valid check amount', 'danger');
+                    return;
+                }
+                if (amount > 50000) {
+                    showAlert('Maximum single check deposit is $50,000', 'danger');
+                    return;
+                }
+                // Populate review
+                document.getElementById('reviewAmount').textContent =
+                    '$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('reviewAccount').textContent =
+                    document.getElementById('depositAccount').options[document.getElementById('depositAccount').selectedIndex].text;
+                document.getElementById('reviewCheckNumber').textContent =
+                    document.getElementById('checkNumber').value || '—';
+                document.getElementById('reviewPayer').textContent =
+                    document.getElementById('checkPayer').value || '—';
+                document.getElementById('reviewMemo').textContent =
+                    document.getElementById('checkMemo').value || '—';
+                document.getElementById('reviewFront').src = frontImageData;
+                document.getElementById('reviewBack').src = backImageData;
+            }
+
+            currentStep = step;
+            document.querySelectorAll('.deposit-step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step' + step).classList.add('active');
+            updateStepDots();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateStepDots() {
+            for (let i = 1; i <= 3; i++) {
+                const dot = document.getElementById('stepDot' + i);
+                dot.classList.remove('active', 'done');
+                if (i === currentStep) dot.classList.add('active');
+                else if (i < currentStep) dot.classList.add('done');
+            }
+        }
+
+        async function submitDeposit() {
+            const token = localStorage.getItem('token');
+            if (!token || !userId) { window.location.href = 'signin.html'; return; }
+
+            const btn = document.getElementById('submitDepositBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+            try {
+                const body = {
+                    amount: parseFloat(document.getElementById('checkAmount').value),
+                    accountType: document.getElementById('depositAccount').value,
+                    checkNumber: document.getElementById('checkNumber').value || null,
+                    payer: document.getElementById('checkPayer').value || null,
+                    memo: document.getElementById('checkMemo').value || null,
+                    frontImage: frontImageData,
+                    backImage: backImageData
+                };
+
+                const res = await fetch(`${API_URL}/api/check-deposit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('successAmount').textContent =
+                        '$' + body.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('successRef').textContent = data.reference || '—';
+
+                    // Show success step
+                    document.querySelectorAll('.deposit-step').forEach(s => s.classList.remove('active'));
+                    document.getElementById('stepSuccess').classList.add('active');
+                    loadDepositHistory();
+                } else {
+                    showAlert(data.message || 'Deposit submission failed', 'danger');
+                }
+            } catch (err) {
+                showAlert('Error submitting deposit: ' + err.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Deposit';
+            }
+        }
+
+        function resetDeposit() {
+            frontImageData = null;
+            backImageData = null;
+            currentStep = 1;
+            document.getElementById('frontArea').classList.remove('has-image');
+            document.getElementById('backArea').classList.remove('has-image');
+            document.getElementById('frontPreview').src = '';
+            document.getElementById('backPreview').src = '';
+            document.getElementById('frontInput').value = '';
+            document.getElementById('backInput').value = '';
+            document.getElementById('step1Next').disabled = true;
+            document.getElementById('checkAmount').value = '';
+            document.getElementById('checkNumber').value = '';
+            document.getElementById('checkPayer').value = '';
+            document.getElementById('checkMemo').value = '';
+            document.querySelectorAll('.deposit-step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step1').classList.add('active');
+            updateStepDots();
+        }
+
+        async function loadDepositHistory() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            try {
+                const res = await fetch(`${API_URL}/api/check-deposits`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const container = document.getElementById('depositHistory');
+                if (data.success && data.deposits && data.deposits.length > 0) {
+                    container.innerHTML = data.deposits.map(d => {
+                        const status = d.status || 'pending';
+                        const icon = status === 'approved' ? 'fa-check-circle' :
+                                     status === 'rejected' ? 'fa-times-circle' : 'fa-clock';
+                        return `
+                            <div class="deposit-item">
+                                <div class="dep-icon ${status}">
+                                    <i class="fas ${icon}"></i>
+                                </div>
+                                <div class="dep-details">
+                                    <h4>Check Deposit ${d.checkNumber ? '#' + d.checkNumber : ''}</h4>
+                                    <span>${new Date(d.createdAt).toLocaleDateString()} · <span class="status-badge ${status}">${status}</span></span>
+                                </div>
+                                <div class="dep-amount ${status}">
+                                    $${parseFloat(d.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">No deposits yet</p>';
+                }
+            } catch (e) {
+                document.getElementById('depositHistory').innerHTML =
+                    '<p style="text-align:center; color:#888; padding:20px;">No deposits yet</p>';
+            }
+        }
+
+        function showAlert(msg, type) {
+            const el = document.getElementById('alertBox');
+            el.className = 'alert show alert-' + type;
+            el.innerHTML = msg;
+            setTimeout(() => { el.classList.remove('show'); }, 5000);
+        }
+
+        init();
+    </script>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
+            </div>
+            <p class="app-footer-copy">&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+        </div>
+    </footer>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>

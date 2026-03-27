@@ -3,12 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <meta name="description" content="Transfer funds securely between accounts or send domestic and international wire transfers with Heritage Bank.">
     <title>Transfer - Heritage Bank</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="app-layout.css">
+    <link rel="stylesheet" href="loading.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+        body { background: #f0f2f5; font-family: 'Inter', 'Segoe UI', sans-serif; min-height: 100vh; }
         
         .container { max-width: 700px; margin: 30px auto; padding: 20px; }
         
@@ -67,7 +74,7 @@
         .tab-btn {
             flex: 1;
             padding: 12px;
-            border: 2px solid #e0e0e0;
+            border: 1px solid #e2e8f0;
             background: white;
             border-radius: 8px;
             cursor: pointer;
@@ -94,7 +101,7 @@
         }
         .bank-option {
             padding: 10px 8px;
-            border: 2px solid #e0e0e0;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
             text-align: center;
             cursor: pointer;
@@ -136,7 +143,7 @@
         }
         .sort-code-display i { color: #d4af37; }
 
-        /* ── Receipt Modal ── */
+        /* -- Receipt Modal -- */
         .receipt-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.65);
@@ -205,7 +212,7 @@
         .receipt-amount-display {
             text-align: center; margin-bottom: 20px;
         }
-        .receipt-amount-display .label { color: #999; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        .receipt-amount-display .label { color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
         .receipt-amount-display .amount { font-size: 2.2rem; font-weight: 700; color: #1a472a; }
         .receipt-divider {
             border: none; border-top: 2px dashed #e0e0e0;
@@ -215,7 +222,7 @@
             display: flex; justify-content: space-between;
             padding: 8px 0; font-size: 0.9rem;
         }
-        .receipt-row .rlabel { color: #888; }
+        .receipt-row .rlabel { color: #94a3b8; }
         .receipt-row .rvalue { color: #333; font-weight: 500; text-align: right; max-width: 55%; }
         .receipt-footer {
             text-align: center; padding: 16px 28px 24px;
@@ -241,12 +248,12 @@
             margin-bottom: 12px;
         }
 
-        /* ── Bank Logo in Receipt ── */
+        /* -- Bank Logo in Receipt -- */
         .receipt-bank-logo-row {
             display: flex; align-items: center; justify-content: center;
             gap: 12px; margin-bottom: 16px;
             padding: 12px 16px;
-            background: #f8f9fa;
+            background: #f0f2f5;
             border-radius: 10px;
             border: 1px solid #e8e8e8;
         }
@@ -258,7 +265,7 @@
             font-size: 1.05rem; font-weight: 600; color: #1a472a;
         }
 
-        /* ── Transfer Complete Animation ── */
+        /* -- Transfer Complete Animation -- */
         .transfer-complete-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(26,71,42,0.92);
@@ -353,12 +360,12 @@
             100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
         }
 
-        /* ── Currency Conversion ── */
+        /* -- Currency Conversion -- */
         .currency-selector {
             display: flex; gap: 8px; margin-bottom: 12px;
         }
         .currency-option {
-            flex: 1; padding: 10px 6px; border: 2px solid #e0e0e0; border-radius: 8px;
+            flex: 1; padding: 10px 6px; border: 1px solid #e2e8f0; border-radius: 8px;
             text-align: center; cursor: pointer; transition: all 0.2s;
             font-weight: 600; font-size: 0.9rem; background: white;
         }
@@ -401,7 +408,7 @@
         .conv-label { font-size: 0.78rem; opacity: 0.7; }
         .conv-amount { font-size: 1.15rem; font-weight: 700; }
         .conv-rate {
-            text-align: center; font-size: 0.78rem; color: #666;
+            text-align: center; font-size: 0.78rem; color: #64748b;
             margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ccc;
         }
         .conv-rate i { color: #d4af37; margin-right: 4px; }
@@ -418,7 +425,7 @@
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 14px 15px;
-            border: 2px solid #e0e0e0;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
             font-size: 1rem;
             transition: border-color 0.3s;
@@ -428,7 +435,7 @@
             border-color: #1a472a;
         }
         .form-group small {
-            color: #666;
+            color: #64748b;
             font-size: 0.85rem;
             margin-top: 5px;
             display: block;
@@ -442,7 +449,7 @@
             left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: #666;
+            color: #64748b;
             font-size: 1.2rem;
         }
         .amount-input input {
@@ -458,7 +465,7 @@
         }
         .quick-amount {
             padding: 8px 16px;
-            border: 1px solid #ddd;
+            border: 1px solid #e2e8f0;
             border-radius: 20px;
             background: white;
             cursor: pointer;
@@ -505,7 +512,7 @@
         .alert-warning { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
         
         .recipient-preview {
-            background: #f8f9fa;
+            background: #f0f2f5;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -513,10 +520,10 @@
         }
         .recipient-preview.show { display: block; }
         .recipient-preview h4 { color: #1a472a; margin-bottom: 5px; }
-        .recipient-preview p { color: #666; font-size: 0.9rem; }
+        .recipient-preview p { color: #64748b; font-size: 0.9rem; }
         
         .transfer-summary {
-            background: #f8f9fa;
+            background: #f0f2f5;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -525,7 +532,7 @@
             display: flex;
             justify-content: space-between;
             padding: 10px 0;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #e2e8f0;
         }
         .summary-row:last-child { border-bottom: none; }
         .summary-row.total {
@@ -546,10 +553,10 @@
             display: flex;
             align-items: center;
             padding: 12px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #e2e8f0;
             cursor: pointer;
         }
-        .transfer-item:hover { background: #f8f9fa; }
+        .transfer-item:hover { background: #f0f2f5; }
         .transfer-icon {
             width: 40px;
             height: 40px;
@@ -563,7 +570,7 @@
         .transfer-icon i { color: #1a472a; }
         .transfer-details { flex: 1; }
         .transfer-details h4 { font-size: 0.95rem; color: #333; }
-        .transfer-details span { font-size: 0.85rem; color: #666; }
+        .transfer-details span { font-size: 0.85rem; color: #64748b; }
         
         /* Global word-wrap */
         h1, h2, h3, h4, p, span, strong, .rvalue { overflow-wrap: break-word; word-wrap: break-word; }
@@ -628,6 +635,7 @@
     </style>
 </head>
 <body>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="container">
         <div class="header">
             <button class="back-btn" onclick="location.href='dashboard.html'" title="Back to Dashboard"><i class="fas fa-arrow-left"></i></button>
@@ -694,7 +702,7 @@
                     <div class="form-group">
                         <label>Payment Reference</label>
                         <input type="text" id="ukReference" placeholder="e.g., Invoice 12345" maxlength="18">
-                        <small>Up to 18 characters — shown on the recipient's statement</small>
+                        <small>Up to 18 characters ? shown on the recipient's statement</small>
                     </div>
                 </div>
 
@@ -765,12 +773,12 @@
                             <span class="cur-label">US Dollar</span>
                         </div>
                         <div class="currency-option" onclick="setRecipientCurrency('GBP', this)">
-                            <span class="cur-symbol">Â£</span>
+                            <span class="cur-symbol">�</span>
                             GBP
                             <span class="cur-label">British Pound</span>
                         </div>
                         <div class="currency-option" onclick="setRecipientCurrency('EUR', this)">
-                            <span class="cur-symbol">€</span>
+                            <span class="cur-symbol">?</span>
                             EUR
                             <span class="cur-label">Euro</span>
                         </div>
@@ -785,7 +793,7 @@
                     <div class="conversion-arrow"><i class="fas fa-arrow-down"></i></div>
                     <div class="conv-receive">
                         <div><div class="conv-label">Recipient Receives</div></div>
-                        <div class="conv-amount" id="convReceiveAmount">Â£0.00</div>
+                        <div class="conv-amount" id="convReceiveAmount">�0.00</div>
                     </div>
                     <div class="conv-rate" id="convRate">
                         <i class="fas fa-chart-line"></i> Exchange rate: 1 USD = 0.79 GBP
@@ -905,7 +913,7 @@
                 <div class="receipt-row"><span class="rlabel">Reference</span><span class="rvalue" id="receiptRef">-</span></div>
                 <div class="receipt-row"><span class="rlabel">Description</span><span class="rvalue" id="receiptDesc">-</span></div>
                 <div class="receipt-row initially-hidden" id="receiptCurrencyRow"><span class="rlabel">Currency</span><span class="rvalue" id="receiptCurrency">-</span></div>
-                <div class="receipt-row"><span class="rlabel">Status</span><span class="rvalue receipt-status-success" id="receiptStatus">Completed ✓</span></div>
+                <div class="receipt-row"><span class="rlabel">Status</span><span class="rvalue receipt-status-success" id="receiptStatus">Completed ?</span></div>
                 <hr class="receipt-divider">
                 <div class="receipt-row"><span class="rlabel">Transaction Fee</span><span class="rvalue" id="receiptFee">$0.00</span></div>
                 <div class="receipt-row receipt-total-row"><span class="rlabel">Total Debited</span><span class="rvalue" id="receiptTotal">$0.00</span></div>
@@ -939,13 +947,13 @@
         let lastTransactionId = null;
         let recipientCurrency = 'USD';
 
-        // Exchange rates (USD base → target)
+        // Exchange rates (USD base ? target)
         const EXCHANGE_RATES = {
             USD: 1.00,
             GBP: 0.79,
             EUR: 0.92
         };
-        const CURRENCY_SYMBOLS = { GBP: 'Â£', USD: '$', EUR: '€' };
+        const CURRENCY_SYMBOLS = { GBP: '�', USD: '$', EUR: '?' };
         const CURRENCY_NAMES = { GBP: 'British Pound', USD: 'US Dollar', EUR: 'Euro' };
 
         function setRecipientCurrency(cur, el) {
@@ -1202,7 +1210,7 @@
                 if (selectedUkBank && ukAcc && ukAcc.length >= 6) {
                     preview.classList.add('show');
                     document.getElementById('recipientName').textContent = recipName || selectedUkBank.name + ' Account';
-                    document.getElementById('recipientInfo').textContent = `${selectedUkBank.name} • Sort: ${selectedUkBank.sortCode} • Acc: ****${ukAcc.slice(-4)}`;
+                    document.getElementById('recipientInfo').textContent = `${selectedUkBank.name} ? Sort: ${selectedUkBank.sortCode} ? Acc: ****${ukAcc.slice(-4)}`;
                 } else {
                     preview.classList.remove('show');
                 }
@@ -1364,7 +1372,7 @@
                 }
 
                 if (isForeignCurrency) {
-                    body.description += ` | Converted: $${amount.toFixed(2)} → ${recvSym}${convertedAmount.toFixed(2)} (Rate: 1 USD = ${exchangeRate.toFixed(4)} ${recipientCurrency})`;
+                    body.description += ` | Converted: $${amount.toFixed(2)} ? ${recvSym}${convertedAmount.toFixed(2)} (Rate: 1 USD = ${exchangeRate.toFixed(4)} ${recipientCurrency})`;
                 }
                 
                 const res = await fetch(`${API_URL}/api/user/transfer`, {
@@ -1390,7 +1398,7 @@
                         bankDisplay = selectedUsBank.name;
                     }
 
-                    // Show receipt modal — pending or completed
+                    // Show receipt modal ? pending or completed
                     // Determine account number for display
                     let acctDisplay = '';
                     if (transferType === 'usbank') {
@@ -1458,7 +1466,7 @@
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Money';
         });
 
-        // ── Receipt Modal Functions ──
+        // -- Receipt Modal Functions --
         function showTransferCompleteAnimation(details, onDone) {
             const overlay = document.getElementById('tcOverlay');
             document.getElementById('tcAmount').textContent = '$' + details.amount.toLocaleString(undefined, {minimumFractionDigits: 2});
@@ -1554,13 +1562,13 @@
                 stampEl.textContent = 'PENDING';
                 stampEl.style.borderColor = '#f0ad4e';
                 stampEl.style.color = '#f0ad4e';
-                statusEl.textContent = 'Pending Approval ⏳';
+                statusEl.textContent = 'Pending Approval ?';
                 statusEl.style.color = '#f0ad4e';
             } else {
                 stampEl.textContent = 'SUCCESSFUL';
                 stampEl.style.borderColor = '';
                 stampEl.style.color = '';
-                statusEl.textContent = 'Completed ✓';
+                statusEl.textContent = 'Completed ?';
                 statusEl.style.color = '#28a745';
             }
             document.getElementById('receiptDate').textContent = now.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) + ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -1585,7 +1593,7 @@
                 curRow.style.display = 'flex';
                 document.getElementById('receiptRecvAmount').textContent = sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2});
                 document.getElementById('receiptExRate').textContent = `Rate: 1 USD = ${rate.toFixed(4)} ${details.recipientCurrency}`;
-                document.getElementById('receiptCurrency').textContent = `USD → ${details.recipientCurrency}`;
+                document.getElementById('receiptCurrency').textContent = `USD ? ${details.recipientCurrency}`;
             } else {
                 convRow.style.display = 'none';
                 curRow.style.display = 'none';
@@ -1664,7 +1672,7 @@
             const container = document.getElementById('beneficiariesList');
             
             if (beneficiaries.length === 0) {
-                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No saved beneficiaries. Add one to make transfers easier!</p>';
+                container.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 20px;">No saved beneficiaries. Add one to make transfers easier!</p>';
                 return;
             }
             
@@ -1672,8 +1680,8 @@
                 <div class="beneficiary-item">
                     <div>
                         <h4>${escapeHtml(b.nickname || b.name)}</h4>
-                        <p>${escapeHtml(b.accountNumber)} ${b.bankName !== 'Heritage Bank' ? ' • ' + escapeHtml(b.bankName) : ''}</p>
-                        ${b.email ? `<p style="font-size: 12px; color: #999;">${escapeHtml(b.email)}</p>` : ''}
+                        <p>${escapeHtml(b.accountNumber)} ${b.bankName !== 'Heritage Bank' ? ' ? ' + escapeHtml(b.bankName) : ''}</p>
+                        ${b.email ? `<p style="font-size: 12px; color: #94a3b8;">${escapeHtml(b.email)}</p>` : ''}
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <button class="btn-small" onclick="transferToBeneficiary('${escapeHtml(b.accountNumber)}', '${escapeHtml(b.email || '')}', '${escapeHtml(b.name)}')">
@@ -1778,7 +1786,7 @@
                         justify-content: space-between;
                         align-items: center;
                         padding: 15px;
-                        background: #f8f9fa;
+                        background: #f0f2f5;
                         border-radius: 8px;
                         margin-bottom: 10px;
                     }
@@ -1788,7 +1796,7 @@
                     }
                     .beneficiary-item p {
                         margin: 0;
-                        color: #666;
+                        color: #64748b;
                         font-size: 14px;
                     }
                     .btn-small {
@@ -1939,10 +1947,12 @@
                 <a href="disclosures.html">Disclosures</a>
                 <a href="security.html">Security</a>
             </div>
-            <p class="app-footer-copy">&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p class="app-footer-copy">&copy; 2026 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
         </div>
     </footer>
     <script src="cookie-consent.js"></script>
+<script src="app-sidebar.js"></script>
+<script>window.addEventListener('load',function(){var l=document.getElementById('pageLoader');if(l)l.classList.add('hidden');setTimeout(function(){if(l)l.remove()},500)});</script>
 </body>
 </html>
 

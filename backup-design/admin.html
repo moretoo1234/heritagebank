@@ -1,0 +1,2943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Heritage Bank administration dashboard for managing users, transactions, and system settings.">
+    <title>Admin Dashboard - Heritage Bank</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; color: #fff; }
+        
+        .header {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+        .logo { font-size: 24px; font-weight: 700; color: #ffd700; }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .admin-info { text-align: right; }
+        .admin-info .name { color: #ffd700; font-weight: 600; }
+        .admin-info .balance { color: #27ae60; font-size: 14px; }
+        .logout-btn { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: 500; }
+        .logout-btn:hover { background: #c0392b; }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+        .stat-card i { font-size: 30px; color: #ffd700; margin-bottom: 10px; }
+        .stat-card .value { font-size: 28px; font-weight: 700; color: #fff; }
+        .stat-card .label { color: #888; font-size: 12px; text-transform: uppercase; }
+        .stat-card.highlight { background: linear-gradient(135deg, #ffd700, #ffab00); }
+        .stat-card.highlight .value, .stat-card.highlight .label, .stat-card.highlight i { color: #1a1a2e; }
+
+        /* Sidebar Navigation */
+        .main-content { display: flex; gap: 30px; }
+        .sidebar {
+            width: 250px;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px 0;
+            height: fit-content;
+            position: sticky;
+            top: 80px;
+        }
+        .nav-item {
+            padding: 15px 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ccc;
+            border-left: 3px solid transparent;
+        }
+        .nav-item:hover { background: rgba(255,215,0,0.1); color: #ffd700; }
+        .nav-item.active { background: rgba(255,215,0,0.2); color: #ffd700; border-left-color: #ffd700; }
+        .nav-item i { width: 20px; text-align: center; }
+
+        /* Content Area */
+        .content-area { flex: 1; min-width: 0; }
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Cards */
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+        .card h2 { color: #ffd700; margin-bottom: 20px; font-size: 20px; display: flex; align-items: center; gap: 10px; }
+        .card h3 { color: #ffd700; margin-bottom: 15px; font-size: 16px; }
+
+        /* Tables */
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        th { background: rgba(255,215,0,0.1); color: #ffd700; font-weight: 600; font-size: 13px; text-transform: uppercase; }
+        tr:hover { background: rgba(255,255,255,0.03); }
+        td { font-size: 14px; }
+
+        /* Forms */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #aaa; font-size: 14px; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 14px;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #ffd700;
+        }
+
+        /* Password visibility toggle */
+        .password-wrap {
+            position: relative;
+        }
+        .password-wrap input {
+            padding-right: 44px;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.06);
+            color: #ffd700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .password-toggle:hover {
+            background: rgba(255,255,255,0.10);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary { background: linear-gradient(135deg, #ffd700, #ffab00); color: #1a1a2e; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(255,215,0,0.3); }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-info { background: #3498db; color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+        /* Badges */
+        .badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: rgba(39,174,96,0.2); color: #27ae60; }
+        .badge-warning { background: rgba(243,156,18,0.2); color: #f39c12; }
+        .badge-danger { background: rgba(231,76,60,0.2); color: #e74c3c; }
+        .badge-info { background: rgba(52,152,219,0.2); color: #3498db; }
+
+        /* Alerts */
+        .alert { padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .alert.show { display: block; }
+        .alert-success { background: rgba(39,174,96,0.2); border: 1px solid #27ae60; color: #27ae60; }
+        .alert-error { background: rgba(231,76,60,0.2); border: 1px solid #e74c3c; color: #e74c3c; }
+
+        /* Search Box */
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: #1a1a2e;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,215,0,0.3);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h3 { color: #ffd700; }
+        .modal-close { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+
+        /* Loader */
+        .loader { text-align: center; padding: 40px; color: #888; }
+        .loader i { font-size: 30px; margin-bottom: 10px; }
+
+        .clickable-row { cursor: pointer; }
+        .clickable-row:hover { background: rgba(255,215,0,0.08); }
+
+        /* Quick Actions */
+        .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+
+        /* User Details Card */
+        .user-details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .detail-item { padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; }
+        .detail-item .label { font-size: 12px; color: #888; }
+        .detail-item .value { font-size: 16px; color: #fff; font-weight: 500; }
+
+        /* Global word-wrap */
+        h1, h2, h3, h4, p, span, td, th, .value { overflow-wrap: break-word; word-wrap: break-word; }
+
+        @media (max-width: 900px) {
+            .main-content { flex-direction: column; }
+            .sidebar { width: 100%; position: static; display: flex; flex-wrap: wrap; gap: 5px; padding: 10px; border-radius: 10px; }
+            .nav-item { padding: 10px 15px; font-size: 13px; border-left: none; border-bottom: 3px solid transparent; }
+            .nav-item.active { border-left-color: transparent; border-bottom-color: #ffd700; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 600px) {
+            .header { padding: 12px 15px; flex-wrap: wrap; gap: 10px; }
+            .logo { font-size: 16px; }
+            .header-right { gap: 10px; }
+            .admin-info .name { font-size: 13px; }
+            .admin-info .balance { font-size: 12px; }
+            .logout-btn { padding: 8px 12px; font-size: 12px; }
+            .container { padding: 12px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .stat-card { padding: 14px; }
+            .stat-card i { font-size: 22px; margin-bottom: 6px; }
+            .stat-card .value { font-size: 20px; }
+            .stat-card .label { font-size: 10px; }
+            .card { padding: 16px; }
+            .card h2 { font-size: 16px; }
+            .card h3 { font-size: 14px; }
+            th, td { padding: 8px 6px; font-size: 12px; }
+            th { font-size: 10px; }
+            .btn { padding: 8px 12px; font-size: 12px; }
+            .btn-sm { padding: 5px 8px; font-size: 10px; }
+            .badge { font-size: 9px; padding: 3px 7px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .form-group label { font-size: 12px; }
+            .form-group input, .form-group select, .form-group textarea { padding: 10px 12px; font-size: 13px; }
+            .search-box { flex-direction: column; }
+            .search-box input { min-width: 0; }
+            .modal-content { padding: 20px; }
+            .user-details-grid { grid-template-columns: 1fr; }
+            .detail-item .value { font-size: 14px; }
+            .sidebar { flex-wrap: nowrap; overflow-x: auto; overflow-x: auto; }
+            .nav-item { white-space: nowrap; flex-shrink: 0; padding: 8px 12px; font-size: 12px; }
+            .quick-actions { flex-direction: column; }
+        }
+
+        /* Utility classes */
+        .text-center-muted { text-align: center; color: #888; }
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .btn-filter-all { background: #555; color: #fff; }
+        .check-image-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; align-items: center; flex-direction: column; gap: 20px; padding: 20px; overflow-y: auto; }
+        .check-modal-close { position: fixed; top: 20px; right: 30px; background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; z-index: 10001; }
+        .check-modal-grid { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; align-items: flex-start; max-width: 1200px; }
+        .check-modal-item { text-align: center; }
+        .check-modal-item h3 { color: #fff; margin-bottom: 10px; }
+        .check-modal-item img { max-width: 550px; max-height: 400px; border-radius: 8px; border: 2px solid #c9a84c; }
+        .ticket-filter-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+        .admin-select-filter { padding: 10px; border-radius: 5px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+        .response-card-detail { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .response-body-text { color: #ccc; margin-top: 5px; }
+        .admin-textarea { width: 100%; }
+        .admin-select-full { width: 100%; padding: 10px; }
+        .btn-cancel-ml { margin-left: 10px; }
+        .stats-grid-mt { margin-top: 20px; }
+        .app-footer { background: #1a2332; padding: 20px 0; margin-top: 40px; text-align: center; }
+        .app-footer-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .app-footer-links { margin-bottom: 10px; }
+        .app-footer-links a { color: #8899aa; text-decoration: none; margin: 0 10px; font-size: 0.8rem; }
+        .app-footer-links a:hover { color: #aabbcc; }
+        .app-footer-copy { color: #556677; font-size: 0.75rem; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo"><i class="fas fa-university"></i> Heritage Bank Admin</div>
+        <div class="header-right">
+            <div class="admin-info">
+                <div class="name" id="headerAdminName">Loading...</div>
+                <div class="balance">Balance: $<span id="headerAdminBalance">0.00</span></div>
+            </div>
+            <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Dashboard Stats -->
+        <div class="stats-grid">
+            <div class="stat-card highlight">
+                <i class="fas fa-users"></i>
+                <div class="value" id="statTotalUsers">0</div>
+                <div class="label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-dollar-sign"></i>
+                <div class="value" id="statTotalBalance">$0</div>
+                <div class="label">Total Balance</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-exchange-alt"></i>
+                <div class="value" id="statTodayTxns">0</div>
+                <div class="label">Today's Transactions</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <div class="value" id="statPendingLoans">0</div>
+                <div class="label">Pending Loans</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-chart-line"></i>
+                <div class="value" id="statMonthlyVolume">$0</div>
+                <div class="label">Monthly Volume</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-user-check"></i>
+                <div class="value" id="statActiveUsers">0</div>
+                <div class="label">Active Users (30d)</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Sidebar Navigation -->
+            <div class="sidebar">
+                <div class="nav-item active" onclick="showSection('dashboard', this)">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </div>
+                <div class="nav-item" onclick="showSection('users', this)">
+                    <i class="fas fa-users"></i> User Management
+                </div>
+                <div class="nav-item" onclick="showSection('create-user', this)">
+                    <i class="fas fa-user-plus"></i> Create User
+                </div>
+                <div class="nav-item" onclick="showSection('transactions', this)">
+                    <i class="fas fa-exchange-alt"></i> Transactions
+                </div>
+                <div class="nav-item" onclick="showSection('cards', this)">
+                    <i class="fas fa-credit-card"></i> Cards
+                </div>
+                <div class="nav-item" onclick="showSection('transfers', this)">
+                    <i class="fas fa-paper-plane"></i> Fund Account
+                </div>
+                <div class="nav-item" onclick="showSection('transfer-approvals', this)">
+                    <i class="fas fa-clock"></i> Transfer Approvals
+                </div>
+                <div class="nav-item" onclick="showSection('check-deposits', this)">
+                    <i class="fas fa-camera"></i> Check Deposits
+                </div>
+                <div class="nav-item" onclick="showSection('support-tickets', this)">
+                    <i class="fas fa-headset"></i> Support Tickets
+                </div>
+                <div class="nav-item" onclick="showSection('user-messages', this)">
+                    <i class="fas fa-envelope"></i> User Messages
+                </div>
+                <div class="nav-item" onclick="showSection('loans', this)">
+                    <i class="fas fa-hand-holding-usd"></i> Loan Applications
+                </div>
+                <div class="nav-item" onclick="showSection('activity', this)">
+                    <i class="fas fa-history"></i> Activity Logs
+                </div>
+                <div class="nav-item" onclick="showSection('reports', this)">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Dashboard Section -->
+                <div id="dashboard" class="section active">
+                    <div class="card">
+                        <h2><i class="fas fa-tachometer-alt"></i> Quick Actions</h2>
+                        <div class="quick-actions">
+                            <button class="btn btn-primary" onclick="showSection('create-user')"><i class="fas fa-user-plus"></i> Create User</button>
+                            <button class="btn btn-success" onclick="showSection('transfers')"><i class="fas fa-paper-plane"></i> Fund Account</button>
+                            <button class="btn btn-info" onclick="showSection('loans')"><i class="fas fa-hand-holding-usd"></i> Review Loans</button>
+                            <button class="btn btn-primary" onclick="refreshAllData()"><i class="fas fa-sync"></i> Refresh Data</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2><i class="fas fa-clock"></i> Recent Transactions</h2>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Amount</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentTransactionsBody">
+                                    <tr><td colspan="6" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div id="users" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-users"></i> User Management</h2>
+                        <div class="search-box">
+                            <input type="text" id="userSearchInput" placeholder="Search by name, email, or account number..." onkeyup="searchUsers()">
+                            <button class="btn btn-primary" onclick="searchUsers()"><i class="fas fa-search"></i> Search</button>
+                            <button class="btn btn-info" onclick="loadAllUsers()"><i class="fas fa-sync"></i> Refresh</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Account</th>
+                                        <th>Balance</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <tr><td colspan="6" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create User Section -->
+                <div id="create-user" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-user-plus"></i> Create New User Account</h2>
+                        <div id="createUserAlert" class="alert"></div>
+                        <form id="createUserForm" onsubmit="createUser(event)">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>First Name *</label>
+                                    <input type="text" id="firstName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Last Name *</label>
+                                    <input type="text" id="lastName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Email Address *</label>
+                                    <input type="email" id="email" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Phone Number</label>
+                                    <input type="tel" id="phone">
+                                </div>
+                                <div class="form-group">
+                                    <label>Password *</label>
+                                    <div class="password-wrap">
+                                        <input type="password" id="password" minlength="8" required>
+                                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password', 'passwordToggleIcon')" aria-label="Show/Hide password" title="Show/Hide password">
+                                            <i id="passwordToggleIcon" class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Initial Balance ($)</label>
+                                    <input type="number" id="initialBalance" value="1000" min="0" step="0.01">
+                                </div>
+                                <div class="form-group">
+                                    <label>Account Type</label>
+                                    <select id="accountType">
+                                        <option value="checking">Checking</option>
+                                        <option value="savings">Savings</option>
+                                        <option value="business">Business</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Country</label>
+                                    <input type="text" id="country" value="United States">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Address</label>
+                                <input type="text" id="address">
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>City</label>
+                                    <input type="text" id="city">
+                                </div>
+                                <div class="form-group">
+                                    <label>State</label>
+                                    <input type="text" id="state">
+                                </div>
+                                <div class="form-group">
+                                    <label>ZIP Code</label>
+                                    <input type="text" id="zip">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="createUserBtn">
+                                <i class="fas fa-user-plus"></i> Create User Account
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Transactions Section -->
+                <div id="transactions" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-exchange-alt"></i> All Transactions</h2>
+                        <div class="search-box">
+                            <input type="text" id="txnSearchInput" placeholder="Search by account, email, or reference...">
+                            <button class="btn btn-primary" onclick="searchTransactions()"><i class="fas fa-search"></i> Search</button>
+                            <button class="btn btn-info" onclick="loadTransactions()"><i class="fas fa-sync"></i> Refresh</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>From Account</th>
+                                        <th>To Account</th>
+                                        <th>Amount</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionsTableBody">
+                                    <tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cards Section -->
+                <div id="cards" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-credit-card"></i> Cards</h2>
+                        <div class="search-box">
+                            <input type="text" id="cardSearchInput" placeholder="Search by email, name, account number, or masked card..." onkeyup="if(event.key==='Enter'){searchCards();}">
+                            <button class="btn btn-primary" onclick="searchCards()"><i class="fas fa-search"></i> Search</button>
+                            <button class="btn btn-info" onclick="loadCards()"><i class="fas fa-sync"></i> Refresh</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Issued</th>
+                                        <th>User</th>
+                                        <th>Masked</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Delivery</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cardsTableBody">
+                                    <tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fund Account Section -->
+                <div id="transfers" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-search"></i> Find User</h2>
+                        <div class="search-box">
+                            <input type="text" id="lookupEmail" placeholder="Enter email or account number">
+                            <button class="btn btn-primary" onclick="lookupUser()"><i class="fas fa-search"></i> Find</button>
+                        </div>
+                        <div id="lookupResult" class="user-details-grid initially-hidden">
+                            <div class="detail-item"><div class="label">Name</div><div class="value" id="resultName">-</div></div>
+                            <div class="detail-item"><div class="label">Email</div><div class="value" id="resultEmail">-</div></div>
+                            <div class="detail-item"><div class="label">Account</div><div class="value" id="resultAccount">-</div></div>
+                            <div class="detail-item"><div class="label">Balance</div><div class="value" id="resultBalance">$0.00</div></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2><i class="fas fa-paper-plane"></i> Send Funds to User (Deducts Admin Balance)</h2>
+                        <div id="creditAlert" class="alert"></div>
+                        <form onsubmit="creditAccount(event)">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Recipient Email or Account Number *</label>
+                                    <input type="text" id="creditRecipient" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Amount ($) *</label>
+                                    <input type="number" id="creditAmount" min="0.01" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Transfer Fee ($)</label>
+                                    <input type="number" id="creditFee" min="0" step="0.01" value="0" placeholder="0.00">
+                                </div>
+                                <div class="form-group">
+                                    <label>Transfer Type</label>
+                                    <select id="creditTransferType">
+                                        <option value="direct_deposit" selected>Direct Deposit</option>
+                                        <option value="ach">ACH Credit</option>
+                                        <option value="wire">Wire Transfer</option>
+                                        <option value="income">Income</option>
+                                        <option value="salary">Salary</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Description</label>
+                                    <input type="text" id="creditDescription" placeholder="e.g., Salary payment, Refund, Bonus">
+                                </div>
+                                <div class="form-group">
+                                    <label>Destination Country</label>
+                                    <select id="creditDestinationCountry" title="Select destination country">
+                                        <option value="US" selected>\ud83c\uddfa\ud83c\uddf8 United States</option>
+                                        <option value="GB">\ud83c\uddec\ud83c\udde7 United Kingdom</option>
+                                        <option value="CA">\ud83c\udde8\ud83c\udde6 Canada</option>
+                                        <option value="MX">\ud83c\uddf2\ud83c\uddfd Mexico</option>
+                                        <option value="DE">\ud83c\udde9\ud83c\uddea Germany</option>
+                                        <option value="FR">\ud83c\uddeb\ud83c\uddf7 France</option>
+                                        <option value="ES">\ud83c\uddea\ud83c\uddf8 Spain</option>
+                                        <option value="IT">\ud83c\uddee\ud83c\uddf9 Italy</option>
+                                        <option value="CH">\ud83c\udde8\ud83c\udded Switzerland</option>
+                                        <option value="NG">\ud83c\uddf3\ud83c\uddec Nigeria</option>
+                                        <option value="GH">\ud83c\uddec\ud83c\udded Ghana</option>
+                                        <option value="IN">\ud83c\uddee\ud83c\uddf3 India</option>
+                                        <option value="CN">\ud83c\udde8\ud83c\uddf3 China</option>
+                                        <option value="JP">\ud83c\uddef\ud83c\uddf5 Japan</option>
+                                        <option value="AU">\ud83c\udde6\ud83c\uddfa Australia</option>
+                                        <option value="BR">\ud83c\udde7\ud83c\uddf7 Brazil</option>
+                                        <option value="AE">\ud83c\udde6\ud83c\uddea United Arab Emirates</option>
+                                        <option value="PH">\ud83c\uddf5\ud83c\udded Philippines</option>
+                                        <option value="JM">\ud83c\uddef\ud83c\uddf2 Jamaica</option>
+                                        <option value="KR">\ud83c\uddf0\ud83c\uddf7 South Korea</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success"><i class="fas fa-paper-plane"></i> Send Funds</button>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h2><i class="fas fa-minus-circle"></i> Debit Account (Deduct Funds)</h2>
+                        <div id="debitAlert" class="alert"></div>
+                        <form onsubmit="debitAccount(event)">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Email or Account Number *</label>
+                                    <input type="text" id="debitRecipient" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Amount ($) *</label>
+                                    <input type="number" id="debitAmount" min="0.01" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Transfer Fee ($)</label>
+                                    <input type="number" id="debitFee" min="0" step="0.01" value="0" placeholder="0.00">
+                                </div>
+                                <div class="form-group">
+                                    <label>Reason / Description</label>
+                                    <input type="text" id="debitDescription" placeholder="e.g., Wire Transfer, Mortgage Payment">
+                                </div>
+                                <div class="form-group">
+                                    <label>Destination Country</label>
+                                    <select id="debitDestinationCountry" title="Select destination country">
+                                        <option value="US" selected>\ud83c\uddfa\ud83c\uddf8 United States</option>
+                                        <option value="GB">\ud83c\uddec\ud83c\udde7 United Kingdom</option>
+                                        <option value="CA">\ud83c\udde8\ud83c\udde6 Canada</option>
+                                        <option value="MX">\ud83c\uddf2\ud83c\uddfd Mexico</option>
+                                        <option value="DE">\ud83c\udde9\ud83c\uddea Germany</option>
+                                        <option value="FR">\ud83c\uddeb\ud83c\uddf7 France</option>
+                                        <option value="ES">\ud83c\uddea\ud83c\uddf8 Spain</option>
+                                        <option value="IT">\ud83c\uddee\ud83c\uddf9 Italy</option>
+                                        <option value="CH">\ud83c\udde8\ud83c\udded Switzerland</option>
+                                        <option value="NG">\ud83c\uddf3\ud83c\uddec Nigeria</option>
+                                        <option value="GH">\ud83c\uddec\ud83c\udded Ghana</option>
+                                        <option value="IN">\ud83c\uddee\ud83c\uddf3 India</option>
+                                        <option value="CN">\ud83c\udde8\ud83c\uddf3 China</option>
+                                        <option value="JP">\ud83c\uddef\ud83c\uddf5 Japan</option>
+                                        <option value="AU">\ud83c\udde6\ud83c\uddfa Australia</option>
+                                        <option value="BR">\ud83c\udde7\ud83c\uddf7 Brazil</option>
+                                        <option value="AE">\ud83c\udde6\ud83c\uddea United Arab Emirates</option>
+                                        <option value="PH">\ud83c\uddf5\ud83c\udded Philippines</option>
+                                        <option value="JM">\ud83c\uddef\ud83c\uddf2 Jamaica</option>
+                                        <option value="KR">\ud83c\uddf0\ud83c\uddf7 South Korea</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <hr style="margin:16px 0;border-color:var(--border-color);">
+                            <h3 style="margin-bottom:12px;"><i class="fas fa-user"></i> Recipient Information</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Recipient Name</label>
+                                    <input type="text" id="debitRecipientName" placeholder="e.g., Santander Mortga">
+                                </div>
+                                <div class="form-group">
+                                    <label>Recipient Address</label>
+                                    <textarea id="debitRecipientAddress" rows="3" placeholder="Floor 1&#10;33 Princeway&#10;Redhill, RH1 1SR" style="resize:vertical;"></textarea>
+                                </div>
+                            </div>
+
+                            <hr style="margin:16px 0;border-color:var(--border-color);">
+                            <h3 style="margin-bottom:12px;"><i class="fas fa-university"></i> Recipient Bank Information</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Bank Name</label>
+                                    <input type="text" id="debitBankName" placeholder="e.g., SANTANDER UK PLC">
+                                </div>
+                                <div class="form-group">
+                                    <label>Bank ID (SWIFT/BIC)</label>
+                                    <input type="text" id="debitSwiftCode" placeholder="e.g., ABBYGB2LXXX" maxlength="20">
+                                </div>
+                                <div class="form-group">
+                                    <label>Account Number / IBAN</label>
+                                    <input type="text" id="debitIban" placeholder="e.g., GB10ABBY09009290004049" maxlength="50">
+                                </div>
+                            </div>
+
+                            <hr style="margin:16px 0;border-color:var(--border-color);">
+                            <h3 style="margin-bottom:12px;"><i class="fas fa-exchange-alt"></i> Exchange Rate & Recipient Amount</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Exchange Rate</label>
+                                    <input type="text" id="debitExchangeRate" placeholder="e.g., 1 USD = 0.78610 GBP">
+                                </div>
+                                <div class="form-group">
+                                    <label>Recipient Currency</label>
+                                    <input type="text" id="debitRecipientCurrency" placeholder="e.g., GBP" maxlength="10">
+                                </div>
+                                <div class="form-group">
+                                    <label>Recipient Amount</label>
+                                    <input type="number" id="debitRecipientAmount" min="0" step="0.01" placeholder="e.g., 8000.00">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-danger"><i class="fas fa-minus"></i> Debit Account</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Transfer Approvals Section -->
+                <div id="transfer-approvals" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-hourglass-half"></i> Pending Transactions</h2>
+                        <p class="admin-desc">All user-initiated transfers waiting for admin approval. Approve to complete the transfer or deny with a reason.</p>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadPendingTransactions()"><i class="fas fa-sync"></i> Refresh</button>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Amount</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pendingTransactionsBody">
+                                    <tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2><i class="fas fa-clock"></i> Pending Transfer Approvals (Restricted Users)</h2>
+                        <p class="admin-desc">These are transfers from users with restricted accounts that require your approval.</p>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadPendingTransfers()"><i class="fas fa-sync"></i> Refresh</button>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Amount</th>
+                                        <th>Description</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pendingTransfersBody">
+                                    <tr><td colspan="6" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2><i class="fas fa-user-lock"></i> Manage Transfer Restrictions</h2>
+                        <p class="admin-desc">Enable transfer restrictions on specific accounts. Users with restrictions need admin approval for all transfers.</p>
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>User Email or Account Number</label>
+                                <input type="text" id="restrictionUserInput" placeholder="Enter email or account number">
+                            </div>
+                            <div class="form-group admin-restrict-actions">
+                                <button class="btn btn-danger" onclick="toggleTransferRestriction(true)"><i class="fas fa-lock"></i> Enable Restriction</button>
+                                <button class="btn btn-success" onclick="toggleTransferRestriction(false)"><i class="fas fa-unlock"></i> Remove Restriction</button>
+                            </div>
+                        </div>
+                        <div id="restrictionAlert" class="alert admin-restrict-alert"></div>
+                    </div>
+
+                    <div class="card">
+                        <h2><i class="fas fa-list"></i> Users with Transfer Restrictions</h2>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadRestrictedUsers()"><i class="fas fa-sync"></i> Refresh</button>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Account</th>
+                                        <th>Balance</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="restrictedUsersBody">
+                                    <tr><td colspan="5" class="text-center-muted">Click refresh to load restricted users</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Check Deposits Section -->
+                <div id="check-deposits" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-camera"></i> Check Deposit Approvals</h2>
+                        <div class="filter-bar">
+                            <button class="btn btn-info" onclick="loadCheckDeposits('pending')"><i class="fas fa-clock"></i> Pending</button>
+                            <button class="btn btn-success" onclick="loadCheckDeposits('approved')"><i class="fas fa-check"></i> Approved</button>
+                            <button class="btn btn-danger" onclick="loadCheckDeposits('rejected')"><i class="fas fa-times"></i> Rejected</button>
+                            <button class="btn btn-filter-all" onclick="loadCheckDeposits('')"><i class="fas fa-list"></i> All</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>User</th>
+                                        <th>Amount</th>
+                                        <th>Account</th>
+                                        <th>Check #</th>
+                                        <th>Payer</th>
+                                        <th>Reference</th>
+                                        <th>Status</th>
+                                        <th>Check Images</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="checkDepositsBody">
+                                    <tr><td colspan="10" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Check Image Modal -->
+                <div id="checkImageModal" class="check-image-modal">
+                    <button onclick="document.getElementById('checkImageModal').style.display='none'" class="check-modal-close"><i class="fas fa-times"></i></button>
+                    <div class="check-modal-grid">
+                        <div class="check-modal-item">
+                            <h3>Front of Check</h3>
+                            <img id="modalCheckFront" src="" />
+                        </div>
+                        <div class="check-modal-item">
+                            <h3>Back of Check</h3>
+                            <img id="modalCheckBack" src="" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loans Section -->
+                <div id="loans" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-hand-holding-usd"></i> Loan Applications</h2>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadLoans()"><i class="fas fa-sync"></i> Refresh</button>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Applicant</th>
+                                        <th>Loan Type</th>
+                                        <th>Amount</th>
+                                        <th>Duration</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="loansTableBody">
+                                    <tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Support Tickets Section -->
+                <div id="support-tickets" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-headset"></i> Support Tickets</h2>
+                        <div class="ticket-filter-bar">
+                            <button class="btn btn-info" onclick="loadSupportTickets()"><i class="fas fa-sync"></i> Refresh</button>
+                            <select id="ticketStatusFilter" onchange="loadSupportTickets()" class="admin-select-filter">
+                                <option value="">All Status</option>
+                                <option value="open">Open</option>
+                                <option value="pending">Pending</option>
+                                <option value="resolved">Resolved</option>
+                            </select>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Category</th>
+                                        <th>Subject</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="supportTicketsTableBody">
+                                    <tr><td colspan="8" class="text-center-muted">Loading tickets...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Ticket Response Modal -->
+                    <div id="ticketResponseCard" class="card initially-hidden">
+                        <h3><i class="fas fa-reply"></i> Respond to Ticket #<span id="respondTicketId"></span></h3>
+                        <div id="ticketDetails" class="response-card-detail">
+                            <p><strong>Subject:</strong> <span id="ticketSubjectDisplay"></span></p>
+                            <p><strong>Message:</strong></p>
+                            <p id="ticketMessageDisplay" class="response-body-text"></p>
+                        </div>
+                        <div class="form-group">
+                            <label>Your Response</label>
+                            <textarea id="ticketResponse" rows="4" placeholder="Enter your response to the user..." class="admin-textarea"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Update Status</label>
+                            <select id="ticketNewStatus" class="admin-select-full">
+                                <option value="pending">Pending</option>
+                                <option value="resolved">Resolved</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-success" onclick="submitTicketResponse()"><i class="fas fa-paper-plane"></i> Send Response</button>
+                        <button class="btn btn-secondary btn-cancel-ml" onclick="hideTicketResponse()">Cancel</button>
+                    </div>
+                </div>
+                
+                <!-- User Messages Section -->
+                <div id="user-messages" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-envelope"></i> User Messages</h2>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadUserMessages()"><i class="fas fa-sync"></i> Refresh</button>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Subject</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userMessagesTableBody">
+                                    <tr><td colspan="6" class="text-center-muted">Loading messages...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Message Response Card -->
+                    <div id="messageResponseCard" class="card initially-hidden">
+                        <h3><i class="fas fa-reply"></i> Reply to Message #<span id="respondMessageId"></span></h3>
+                        <div class="response-card-detail">
+                            <p><strong>Subject:</strong> <span id="messageSubjectDisplay"></span></p>
+                            <p><strong>From:</strong> <span id="messageFromDisplay"></span></p>
+                            <p><strong>Message:</strong></p>
+                            <p id="messageBodyDisplay" class="response-body-text"></p>
+                        </div>
+                        <div class="form-group">
+                            <label>Your Reply</label>
+                            <textarea id="messageReply" rows="4" placeholder="Enter your reply..." class="admin-textarea"></textarea>
+                        </div>
+                        <button class="btn btn-success" onclick="submitMessageReply()"><i class="fas fa-paper-plane"></i> Send Reply</button>
+                        <button class="btn btn-secondary btn-cancel-ml" onclick="hideMessageResponse()">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Activity Logs Section -->
+                <div id="activity" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-history"></i> Activity Logs</h2>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadActivityLogs()"><i class="fas fa-sync"></i> Refresh</button>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date/Time</th>
+                                        <th>User</th>
+                                        <th>Action</th>
+                                        <th>Details</th>
+                                        <th>IP Address</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="activityTableBody">
+                                    <tr><td colspan="5" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Section -->
+                <div id="reports" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-chart-bar"></i> Monthly Report</h2>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Select Month</label>
+                                <input type="month" id="reportMonth" onchange="loadMonthlyReport()">
+                            </div>
+                        </div>
+                        <div id="monthlyReportData">
+                            <div class="stats-grid stats-grid-mt">
+                                <div class="stat-card">
+                                    <i class="fas fa-user-plus"></i>
+                                    <div class="value" id="reportNewUsers">0</div>
+                                    <div class="label">New Users</div>
+                                </div>
+                                <div class="stat-card">
+                                    <i class="fas fa-exchange-alt"></i>
+                                    <div class="value" id="reportTotalTxns">0</div>
+                                    <div class="label">Total Transactions</div>
+                                </div>
+                                <div class="stat-card">
+                                    <i class="fas fa-dollar-sign"></i>
+                                    <div class="value" id="reportTotalVolume">$0</div>
+                                    <div class="label">Transaction Volume</div>
+                                </div>
+                                <div class="stat-card">
+                                    <i class="fas fa-hand-holding-usd"></i>
+                                    <div class="value" id="reportLoansApproved">0</div>
+                                    <div class="label">Loans Approved</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Detail Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user"></i> User Details</h3>
+                <button class="modal-close" onclick="closeModal('userModal')">&times;</button>
+            </div>
+            <div id="userModalContent"></div>
+        </div>
+    </div>
+
+    <!-- Loan Detail Modal -->
+    <div id="loanModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-invoice-dollar"></i> Loan Details</h3>
+                <button class="modal-close" onclick="closeModal('loanModal')">&times;</button>
+            </div>
+            <div id="loanModalContent"></div>
+        </div>
+    </div>
+
+    <!-- Transaction Detail Modal -->
+    <div id="transactionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-receipt"></i> Transaction Details</h3>
+                <button class="modal-close" onclick="closeModal('transactionModal')">&times;</button>
+            </div>
+            <div id="transactionModalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3001'
+            : window.location.origin;
+
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (!input) return;
+
+            const willShow = input.type === 'password';
+            input.type = willShow ? 'text' : 'password';
+
+            if (icon) {
+                icon.classList.remove('fa-eye', 'fa-eye-slash');
+                icon.classList.add(willShow ? 'fa-eye-slash' : 'fa-eye');
+            }
+        }
+
+        function showSection(sectionId, el) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            if (el) {
+                const navItem = el.closest('.nav-item');
+                if (navItem) navItem.classList.add('active');
+            } else {
+                document.querySelector(`.nav-item[onclick*="'${sectionId}'"]`)?.classList.add('active');
+            }
+            
+            // Load data for specific sections
+            if (sectionId === 'users') loadAllUsers();
+            if (sectionId === 'transactions') loadTransactions();
+            if (sectionId === 'cards') loadCards();
+            if (sectionId === 'loans') loadLoans();
+            if (sectionId === 'activity') loadActivityLogs();
+            if (sectionId === 'support-tickets') loadSupportTickets();
+            if (sectionId === 'user-messages') loadUserMessages();
+            if (sectionId === 'transfer-approvals') { loadPendingTransactions(); loadPendingTransfers(); }
+            if (sectionId === 'check-deposits') loadCheckDeposits('pending');
+        }
+
+        function fmtDate(value) {
+            if (!value) return '-';
+            const d = new Date(value);
+            if (isNaN(d.getTime())) return '-';
+            return d.toLocaleString();
+        }
+
+        function formatDateTime(value) {
+            return fmtDate(value);
+        }
+
+        function escapeHtml(value) {
+            const s = String(value ?? '');
+            return s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        async function loadCards(query) {
+            const tbody = document.getElementById('cardsTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            try {
+                const q = (query ?? '').toString().trim();
+                const url = `${API_BASE}/api/admin/cards?limit=200${q ? `&q=${encodeURIComponent(q)}` : ''}`;
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#e74c3c;">${escapeHtml(data.message || 'Error loading cards')}</td></tr>`;
+                    return;
+                }
+
+                const cards = Array.isArray(data.cards) ? data.cards : [];
+                if (cards.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No cards found</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = cards.map(c => {
+                    const status = String(c.status || '').toLowerCase();
+                    const type = String(c.cardType || '').toLowerCase();
+                    const userLabel = `${c.firstName || ''} ${c.lastName || ''}`.trim() || (c.email || 'User');
+                    const dStatus = String(c.deliveryStatus || 'not_applicable').toLowerCase();
+                    const delivery = type === 'virtual'
+                        ? 'Instant'
+                        : (c.deliveryEtaText || '7-8 business days');
+
+                    const deliveryBadge = {
+                        not_applicable: '<span style="color:#888;">N/A</span>',
+                        processing: '<span style="color:#e67e22;"><i class="fas fa-box"></i> Processing</span>',
+                        shipped: '<span style="color:#3498db;"><i class="fas fa-shipping-fast"></i> Shipped</span>',
+                        in_transit: '<span style="color:#8e44ad;"><i class="fas fa-truck"></i> In Transit</span>',
+                        out_for_delivery: '<span style="color:#2ecc71;"><i class="fas fa-truck-loading"></i> Out for Delivery</span>',
+                        delivered: '<span style="color:#27ae60;"><i class="fas fa-check-circle"></i> Delivered</span>'
+                    }[dStatus] || escapeHtml(dStatus);
+
+                    const freezeBtn = (status === 'frozen')
+                        ? `<button class="btn btn-info" onclick="adminSetCardStatus('${c.id}','unfreeze')"><i class="fas fa-fire"></i> Unfreeze</button>`
+                        : `<button class="btn btn-primary" onclick="adminSetCardStatus('${c.id}','freeze')"><i class="fas fa-snowflake"></i> Freeze</button>`;
+
+                    const pauseBtn = (status === 'paused')
+                        ? `<button class="btn btn-info" onclick="adminSetCardStatus('${c.id}','unpause')"><i class="fas fa-play"></i> Unpause</button>`
+                        : `<button class="btn btn-warning" onclick="adminSetCardStatus('${c.id}','pause')"><i class="fas fa-pause"></i> Pause</button>`;
+
+                    const deliveryBtn = (type !== 'virtual' && dStatus !== 'delivered')
+                        ? `<button class="btn btn-success" onclick="showDeliveryModal('${c.id}','${dStatus}','${escapeHtml(c.cardNumberMasked || '')}')"><i class="fas fa-truck"></i> Delivery</button>`
+                        : '';
+
+                    return `
+                        <tr>
+                            <td>${escapeHtml(fmtDate(c.issuedAt))}</td>
+                            <td>${escapeHtml(userLabel)}<br><span style="color:#888;font-size:12px;">${escapeHtml(c.email || '')}</span></td>
+                            <td>${escapeHtml(c.cardNumberMasked || '—')}</td>
+                            <td>${escapeHtml(type || '—')}</td>
+                            <td>${escapeHtml(status ? status.toUpperCase() : '—')}</td>
+                            <td>${deliveryBadge}<br><span style="font-size:11px;color:#888;">${escapeHtml(delivery)}</span></td>
+                            <td style="display:flex; gap:8px; flex-wrap:wrap;">
+                                ${pauseBtn}
+                                ${freezeBtn}
+                                ${deliveryBtn}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Error loading cards</td></tr>';
+            }
+        }
+
+        function searchCards() {
+            const q = document.getElementById('cardSearchInput').value;
+            loadCards(q);
+        }
+
+        async function adminSetCardStatus(cardId, action) {
+            const reason = prompt('Optional reason (leave blank if none):') || '';
+
+            const routeMap = {
+                freeze: 'freeze',
+                unfreeze: 'unfreeze',
+                pause: 'pause',
+                unpause: 'unpause'
+            };
+            const route = routeMap[action];
+            if (!route) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/cards/${cardId}/${route}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ reason })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadCards(document.getElementById('cardSearchInput').value);
+                } else {
+                    alert(data.message || 'Failed to update card');
+                }
+            } catch (e) {
+                alert('Failed to update card');
+            }
+        }
+
+        function showDeliveryModal(cardId, currentStatus, maskedCard) {
+            const steps = ['processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered'];
+            const currentIndex = steps.indexOf(currentStatus);
+            const options = steps.map((s, i) => {
+                const labels = {
+                    processing: 'Processing', shipped: 'Shipped',
+                    in_transit: 'In Transit', out_for_delivery: 'Out for Delivery',
+                    delivered: 'Delivered'
+                };
+                const disabled = i <= currentIndex ? 'disabled' : '';
+                const selected = i === currentIndex + 1 ? 'selected' : '';
+                return `<option value="${s}" ${disabled} ${selected}>${labels[s]}</option>`;
+            }).join('');
+
+            const modal = document.createElement('div');
+            modal.id = 'deliveryModal';
+            modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:flex;justify-content:center;align-items:center;z-index:2000;';
+            modal.innerHTML = `
+                <div style="background:#fff;border-radius:12px;max-width:440px;width:90%;padding:0;overflow:hidden;">
+                    <div style="background:#1a472a;color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;">
+                        <h3 style="margin:0;font-size:16px;"><i class="fas fa-truck"></i> Update Delivery Status</h3>
+                        <button style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;" onclick="document.getElementById('deliveryModal').remove()">&times;</button>
+                    </div>
+                    <div style="padding:24px;">
+                        <p style="color:#666;margin:0 0 6px;font-size:13px;">Card: <strong>${maskedCard}</strong></p>
+                        <p style="color:#888;margin:0 0 18px;font-size:12px;">Current: <strong>${currentStatus.replace(/_/g, ' ').toUpperCase()}</strong></p>
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block;margin-bottom:6px;font-weight:600;color:#1a472a;font-size:14px;">New Delivery Status</label>
+                            <select id="deliveryStatusSelect" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+                                ${options}
+                            </select>
+                        </div>
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block;margin-bottom:6px;font-weight:600;color:#1a472a;font-size:14px;">ETA Text (optional)</label>
+                            <input type="text" id="deliveryEtaInput" placeholder="e.g. Arriving March 25" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box;">
+                        </div>
+                        <button class="btn btn-primary" style="width:100%;" onclick="submitDeliveryUpdate('${cardId}')">
+                            <i class="fas fa-check"></i> Update Delivery
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function submitDeliveryUpdate(cardId) {
+            const deliveryStatus = document.getElementById('deliveryStatusSelect').value;
+            const deliveryEtaText = document.getElementById('deliveryEtaInput').value.trim();
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/cards/${cardId}/delivery`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ deliveryStatus, deliveryEtaText: deliveryEtaText || undefined })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const el = document.getElementById('deliveryModal');
+                    if (el) el.remove();
+                    loadCards(document.getElementById('cardSearchInput').value);
+                } else {
+                    alert(data.message || 'Failed to update delivery');
+                }
+            } catch (e) {
+                alert('Failed to update delivery status');
+            }
+        }
+
+        function showAlert(elementId, message, isSuccess) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = 'alert show ' + (isSuccess ? 'alert-success' : 'alert-error');
+            setTimeout(() => el.classList.remove('show'), 5000);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Cache admin identity for transfer operations
+        let ADMIN_EMAIL = '';
+
+        // Load Admin Account Info
+        async function loadAdminAccount() {
+            try {
+                const res = await fetch(`${API_BASE}/api/user/profile`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.user) {
+                    ADMIN_EMAIL = (data.user.email || '').toString().trim().toLowerCase();
+                    document.getElementById('headerAdminName').textContent = `${data.user.firstName} ${data.user.lastName}`;
+                    document.getElementById('headerAdminBalance').textContent = parseFloat(data.user.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                }
+            } catch (e) {
+                console.error('Error loading admin account:', e);
+            }
+        }
+
+        // Load Dashboard Stats
+        async function loadDashboardStats() {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/dashboard-stats`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const s = data.stats || data;
+                    document.getElementById('statTotalUsers').textContent = s.totalUsers || 0;
+                    document.getElementById('statTotalBalance').textContent = '$' + parseFloat(s.totalBalance || 0).toLocaleString();
+                    document.getElementById('statTodayTxns').textContent = s.todayTransactions || 0;
+                    document.getElementById('statPendingLoans').textContent = s.pendingLoans || 0;
+                    document.getElementById('statMonthlyVolume').textContent = '$' + parseFloat(s.monthlyVolume || 0).toLocaleString();
+                    document.getElementById('statActiveUsers').textContent = s.activeUsers || 0;
+                }
+            } catch (e) {
+                console.error('Error loading stats:', e);
+            }
+        }
+
+        // Load All Users
+        async function loadAllUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/users-with-balances`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.users) {
+                    if (data.users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No users found</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.users.map(u => {
+                        const restrictionBadge = u.transferRestricted 
+                            ? '<span class="badge badge-danger" title="Transfer Restricted"><i class="fas fa-lock"></i></span>' 
+                            : '';
+                        return `
+                        <tr>
+                            <td>${u.firstName} ${u.lastName} ${restrictionBadge}</td>
+                            <td>${u.email}</td>
+                            <td>${u.accountNumber || 'N/A'}</td>
+                            <td>$${parseFloat(u.balance || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            <td><span class="badge ${u.accountStatus === 'active' ? 'badge-success' : 'badge-warning'}">${u.accountStatus || 'active'}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewUser(${u.id})"><i class="fas fa-eye"></i></button>
+                                <button class="btn btn-sm btn-success" onclick="quickCredit('${u.email}')"><i class="fas fa-plus"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="quickDebit('${u.email}')"><i class="fas fa-minus"></i></button>
+                            </td>
+                        </tr>
+                    `;}).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Error loading users</td></tr>';
+            }
+        }
+
+        // Search Users
+        async function searchUsers() {
+            const query = document.getElementById('userSearchInput').value;
+            if (!query) return loadAllUsers();
+            
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '<tr><td colspan="6" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Searching...</td></tr>';
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/search-users?query=${encodeURIComponent(query)}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.users) {
+                    if (data.users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">No users found</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.users.map(u => `
+                        <tr>
+                            <td>${u.firstName} ${u.lastName}</td>
+                            <td>${u.email}</td>
+                            <td>${u.accountNumber || 'N/A'}</td>
+                            <td>$${parseFloat(u.balance || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            <td><span class="badge ${u.accountStatus === 'active' ? 'badge-success' : 'badge-warning'}">${u.accountStatus || 'active'}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewUser(${u.id})"><i class="fas fa-eye"></i></button>
+                                <button class="btn btn-sm btn-success" onclick="quickCredit('${u.email}')"><i class="fas fa-plus"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#e74c3c;">Error searching</td></tr>';
+            }
+        }
+
+        // Create User
+        async function createUser(e) {
+            e.preventDefault();
+            const btn = document.getElementById('createUserBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/create-user`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({
+                        firstName: document.getElementById('firstName').value,
+                        lastName: document.getElementById('lastName').value,
+                        email: document.getElementById('email').value,
+                        phone: document.getElementById('phone').value,
+                        password: document.getElementById('password').value,
+                        initialBalance: parseFloat(document.getElementById('initialBalance').value) || 1000,
+                        accountType: document.getElementById('accountType').value,
+                        country: document.getElementById('country').value,
+                        address: document.getElementById('address').value,
+                        city: document.getElementById('city').value,
+                        state: document.getElementById('state').value,
+                        zip: document.getElementById('zip').value
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert('createUserAlert', `✓ User created! Account: ${data.user.accountNumber}`, true);
+                    document.getElementById('createUserForm').reset();
+                    document.getElementById('initialBalance').value = '1000';
+                    loadDashboardStats();
+                } else {
+                    showAlert('createUserAlert', '✗ ' + data.message, false);
+                }
+            } catch (e) {
+                showAlert('createUserAlert', '✗ Error: ' + e.message, false);
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-user-plus"></i> Create User Account';
+        }
+
+        function formatTxnDate(t) {
+            const raw = t.createdAt || t.created_at || t.created || t.timestamp;
+            if (!raw) return '-';
+            const d = new Date(raw);
+            return isNaN(d.getTime()) ? '-' : d.toLocaleString();
+        }
+
+        function formatTxnFrom(t) {
+            const raw = (
+                t.fromAccount ||
+                t.fromAccountNumber ||
+                t.senderAccountNumber ||
+                t.senderEmail ||
+                (t.senderFirst ? `${t.senderFirst} ${t.senderLast || ''}`.trim() : '') ||
+                (t.fromUserId ? `User #${t.fromUserId}` : '') ||
+                'System'
+            );
+            return escapeHtml(raw);
+        }
+
+        function formatTxnTo(t) {
+            const raw = (
+                t.toAccount ||
+                t.toAccountNumber ||
+                t.recipientAccountNumber ||
+                t.recipientEmail ||
+                (t.recipientFirst ? `${t.recipientFirst} ${t.recipientLast || ''}`.trim() : '') ||
+                (t.toUserId ? `User #${t.toUserId}` : '') ||
+                'N/A'
+            );
+            return escapeHtml(raw);
+        }
+
+        // Keep the last loaded transaction list in memory so we can show details on click.
+        // (Avoids needing an extra API endpoint for transaction-by-id.)
+        let ADMIN_TRANSACTIONS_CACHE = [];
+
+        function formatMoney(value) {
+            const n = Number(value);
+            if (!isFinite(n)) return '$0.00';
+            return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function findTxnById(id) {
+            const txnId = Number(id);
+            if (!isFinite(txnId)) return null;
+            return ADMIN_TRANSACTIONS_CACHE.find(t => Number(t.id) === txnId) || null;
+        }
+
+        async function downloadTxnReceipt(txnId) {
+            try {
+                const res = await fetch(`${API_BASE}/api/transactions/${txnId}/receipt`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                if (!res.ok) {
+                    const text = await res.text().catch(() => '');
+                    throw new Error(`Receipt download failed (${res.status}) ${text}`);
+                }
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `transaction_receipt_${txnId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error('Error downloading receipt:', e);
+                alert('Could not download receipt. Please try again.');
+            }
+        }
+
+        // UK Bank Transfer description parser
+        const UK_BANKS = ['Santander','Barclays','HSBC','Lloyds','NatWest','Halifax','Nationwide','TSB','Monzo','Starling','Revolut'];
+
+        function parseUkTransferDesc(desc) {
+            const m = (desc || '').match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)\s*\|\s*Account:\s*(\d+)\s*\|\s*Sort Code:\s*([\d-]+)(?:\s*\|\s*Ref:\s*(.+))?/);
+            if (!m) return null;
+            return { bank: m[1].trim(), recipient: m[2].trim(), account: m[3].trim(), sortCode: m[4].trim(), ref: (m[5] || '').trim() };
+        }
+
+        function buildUkTransferDesc(bank, recipient, account, sortCode, ref) {
+            let d = `UK Bank Transfer to ${bank} | Recipient: ${recipient} | Account: ${account} | Sort Code: ${sortCode}`;
+            if (ref) d += ` | Ref: ${ref}`;
+            return d;
+        }
+
+        function buildEditFields(t) {
+            const desc = t.description || '';
+            const uk = parseUkTransferDesc(desc);
+            if (uk) {
+                return `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div>
+                            <label style="font-weight:600;font-size:13px;">Recipient Bank</label>
+                            <select id="editTxnBank-${t.id}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                                ${UK_BANKS.map(b => `<option value="${b}" ${b === uk.bank ? 'selected' : ''}>${b}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-weight:600;font-size:13px;">Recipient Name</label>
+                            <input type="text" id="editTxnRecipient-${t.id}" value="${escapeHtml(uk.recipient)}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                        </div>
+                        <div>
+                            <label style="font-weight:600;font-size:13px;">Account Number</label>
+                            <input type="text" id="editTxnAccount-${t.id}" value="${escapeHtml(uk.account)}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;" maxlength="8" pattern="\\d{8}">
+                        </div>
+                        <div>
+                            <label style="font-weight:600;font-size:13px;">Sort Code</label>
+                            <input type="text" id="editTxnSortCode-${t.id}" value="${escapeHtml(uk.sortCode)}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;" placeholder="XX-XX-XX">
+                        </div>
+                        <div style="grid-column:1/3;">
+                            <label style="font-weight:600;font-size:13px;">Payment Reference</label>
+                            <input type="text" id="editTxnRef-${t.id}" value="${escapeHtml(uk.ref)}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                        </div>
+                    </div>
+                    <input type="hidden" id="editTxnIsUk-${t.id}" value="1">
+                `;
+            }
+            return `
+                <div>
+                    <label style="font-weight:600;font-size:13px;">Description</label>
+                    <textarea id="editTxnDesc-${t.id}" rows="3" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;resize:vertical;">${escapeHtml(desc)}</textarea>
+                </div>
+            `;
+        }
+
+        function showEditTransaction(txnId) {
+            const el = document.getElementById('editTxnForm-' + txnId);
+            if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function saveEditTransaction(txnId) {
+            const alertEl = document.getElementById('editTxnAlert-' + txnId);
+            const isUk = document.getElementById('editTxnIsUk-' + txnId);
+            let description;
+
+            if (isUk) {
+                const bank = document.getElementById('editTxnBank-' + txnId).value;
+                const recipient = document.getElementById('editTxnRecipient-' + txnId).value.trim();
+                const account = document.getElementById('editTxnAccount-' + txnId).value.trim();
+                const sortCode = document.getElementById('editTxnSortCode-' + txnId).value.trim();
+                const ref = document.getElementById('editTxnRef-' + txnId).value.trim();
+                if (!recipient || !account || !sortCode) {
+                    alertEl.style.display = 'block';
+                    alertEl.style.background = '#f8d7da';
+                    alertEl.style.color = '#721c24';
+                    alertEl.textContent = 'Recipient name, account number, and sort code are required.';
+                    return;
+                }
+                description = buildUkTransferDesc(bank, recipient, account, sortCode, ref);
+            } else {
+                description = document.getElementById('editTxnDesc-' + txnId).value.trim();
+                if (!description) {
+                    alertEl.style.display = 'block';
+                    alertEl.style.background = '#f8d7da';
+                    alertEl.style.color = '#721c24';
+                    alertEl.textContent = 'Description cannot be empty.';
+                    return;
+                }
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/edit-transaction/${txnId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+                    body: JSON.stringify({ description })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alertEl.style.display = 'block';
+                    alertEl.style.background = '#d4edda';
+                    alertEl.style.color = '#155724';
+                    alertEl.textContent = 'Transaction updated successfully!';
+                    // Update the cached transaction
+                    if (data.transaction) {
+                        const idx = ADMIN_TRANSACTIONS_CACHE.findIndex(t => t.id == txnId);
+                        if (idx >= 0) ADMIN_TRANSACTIONS_CACHE[idx].description = data.transaction.description;
+                    }
+                    setTimeout(() => { closeModal('transactionModal'); loadTransactions(); }, 1200);
+                } else {
+                    alertEl.style.display = 'block';
+                    alertEl.style.background = '#f8d7da';
+                    alertEl.style.color = '#721c24';
+                    alertEl.textContent = data.message || 'Failed to update.';
+                }
+            } catch (e) {
+                alertEl.style.display = 'block';
+                alertEl.style.background = '#f8d7da';
+                alertEl.style.color = '#721c24';
+                alertEl.textContent = 'Network error. Please try again.';
+            }
+        }
+
+        function openTransactionDetails(txnId) {
+            const t = findTxnById(txnId);
+            if (!t) {
+                alert('Transaction details not available. Please refresh transactions and try again.');
+                return;
+            }
+
+            const created = t.createdAt || t.created_at || t.created || t.timestamp;
+            const createdText = created ? (isNaN(new Date(created).getTime()) ? String(created) : new Date(created).toLocaleString()) : '-';
+
+            const fromName = (t.senderFirst ? `${t.senderFirst} ${t.senderLast || ''}`.trim() : '') || '-';
+            const toName = (t.recipientFirst ? `${t.recipientFirst} ${t.recipientLast || ''}`.trim() : '') || '-';
+
+            const fromEmail = t.senderEmail || '-';
+            const toEmail = t.recipientEmail || '-';
+
+            const fromAcct = t.senderAccountNumber || t.fromAccountNumber || t.fromAccount || '-';
+            const toAcct = t.recipientAccountNumber || t.toAccountNumber || t.toAccount || '-';
+
+            const status = t.status || 'completed';
+            const type = t.type || 'transfer';
+            const ref = t.reference || t.reference_id || '-';
+            const desc = t.description || '-';
+
+            document.getElementById('transactionModalContent').innerHTML = `
+                <div class="user-details-grid">
+                    <div class="detail-item"><div class="label">Transaction ID</div><div class="value">${escapeHtml(t.id)}</div></div>
+                    <div class="detail-item"><div class="label">Date</div><div class="value">${escapeHtml(createdText)}</div></div>
+                    <div class="detail-item"><div class="label">Type</div><div class="value">${escapeHtml(type)}</div></div>
+                    <div class="detail-item"><div class="label">Status</div><div class="value">${escapeHtml(status)}</div></div>
+
+                    <div class="detail-item"><div class="label">Amount</div><div class="value">${escapeHtml(formatMoney(t.amount))}</div></div>
+                    <div class="detail-item"><div class="label">Reference</div><div class="value">${escapeHtml(ref)}</div></div>
+
+                    <div class="detail-item"><div class="label">From (Name)</div><div class="value">${escapeHtml(fromName)}</div></div>
+                    <div class="detail-item"><div class="label">From (Email)</div><div class="value">${escapeHtml(fromEmail)}</div></div>
+                    <div class="detail-item"><div class="label">From (Account)</div><div class="value">${escapeHtml(fromAcct)}</div></div>
+                    <div class="detail-item"><div class="label">From User ID</div><div class="value">${escapeHtml((t.fromUserId ?? t.from_user_id) ?? '-')}</div></div>
+
+                    <div class="detail-item"><div class="label">To (Name)</div><div class="value">${escapeHtml(toName)}</div></div>
+                    <div class="detail-item"><div class="label">To (Email)</div><div class="value">${escapeHtml(toEmail)}</div></div>
+                    <div class="detail-item"><div class="label">To (Account)</div><div class="value">${escapeHtml(toAcct)}</div></div>
+                    <div class="detail-item"><div class="label">To User ID</div><div class="value">${escapeHtml((t.toUserId ?? t.to_user_id) ?? '-')}</div></div>
+                </div>
+
+                <div style="margin-top: 16px;">
+                    <div class="detail-item" style="margin-bottom: 12px;">
+                        <div class="label">Description</div>
+                        <div class="value" style="font-size: 14px; white-space: pre-wrap;">${escapeHtml(desc)}</div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="downloadTxnReceipt(${Number(t.id)})"><i class="fas fa-download"></i> Download Receipt</button>
+                        <button class="btn btn-info" onclick="showEditTransaction(${Number(t.id)})"><i class="fas fa-edit"></i> Edit Transaction</button>
+                    </div>
+                </div>
+
+                <div id="editTxnForm-${t.id}" style="display:none;margin-top:18px;padding:16px;background:#f8f9fa;border-radius:8px;border:1px solid #dee2e6;">
+                    <h4 style="margin:0 0 12px;color:#1a472a;"><i class="fas fa-pen"></i> Edit Transaction</h4>
+                    <div id="editTxnAlert-${t.id}" style="display:none;padding:8px 12px;border-radius:4px;margin-bottom:10px;"></div>
+                    ${buildEditFields(t)}
+                    <div style="margin-top:14px;display:flex;gap:8px;">
+                        <button class="btn btn-primary" onclick="saveEditTransaction(${Number(t.id)})"><i class="fas fa-save"></i> Save Changes</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('editTxnForm-${t.id}').style.display='none'">Cancel</button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('transactionModal').classList.add('active');
+        }
+
+        // Load Transactions
+        async function loadTransactions() {
+            const tbody = document.getElementById('transactionsTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/api/transactions/all`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.transactions) {
+                    ADMIN_TRANSACTIONS_CACHE = Array.isArray(data.transactions) ? data.transactions : [];
+                    if (data.transactions.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No transactions found</td></tr>';
+                        document.getElementById('recentTransactionsBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">No recent transactions</td></tr>';
+                        return;
+                    }
+                    const rows = data.transactions.map(t => `
+                        <tr class="clickable-row" onclick="openTransactionDetails(${Number(t.id)})" title="Click to view transaction details">
+                            <td>${formatTxnDate(t)}</td>
+                            <td>${formatTxnFrom(t)}</td>
+                            <td>${formatTxnTo(t)}</td>
+                            <td>$${parseFloat(t.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            <td><span class="badge badge-info">${escapeHtml(t.type || 'transfer')}</span></td>
+                            <td>${escapeHtml(t.description || '-')}</td>
+                            <td><span class="badge ${t.status === 'completed' ? 'badge-success' : 'badge-warning'}">${escapeHtml(t.status || 'completed')}</span></td>
+                        </tr>
+                    `).join('');
+                    tbody.innerHTML = rows;
+                    
+                    // Update recent transactions on dashboard
+                    document.getElementById('recentTransactionsBody').innerHTML = data.transactions.slice(0, 5).map(t => `
+                        <tr class="clickable-row" onclick="openTransactionDetails(${Number(t.id)})" title="Click to view transaction details">
+                            <td>${formatTxnDate(t)}</td>
+                            <td>${formatTxnFrom(t)}</td>
+                            <td>${formatTxnTo(t)}</td>
+                            <td>$${parseFloat(t.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            <td><span class="badge badge-info">${escapeHtml(t.type || 'transfer')}</span></td>
+                            <td><span class="badge ${t.status === 'completed' ? 'badge-success' : 'badge-warning'}">${escapeHtml(t.status || 'completed')}</span></td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Error loading transactions</td></tr>';
+            }
+        }
+
+        // Search Transactions
+        async function searchTransactions() {
+            const query = document.getElementById('txnSearchInput').value;
+            if (!query) return loadTransactions();
+            
+            const tbody = document.getElementById('transactionsTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Searching...</td></tr>';
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/search-transactions?query=${encodeURIComponent(query)}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.transactions) {
+                    ADMIN_TRANSACTIONS_CACHE = Array.isArray(data.transactions) ? data.transactions : [];
+                    if (data.transactions.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No transactions found</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.transactions.map(t => `
+                        <tr class="clickable-row" onclick="openTransactionDetails(${Number(t.id)})" title="Click to view transaction details">
+                            <td>${formatTxnDate(t)}</td>
+                            <td>${formatTxnFrom(t)}</td>
+                            <td>${formatTxnTo(t)}</td>
+                            <td>$${parseFloat(t.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            <td><span class="badge badge-info">${escapeHtml(t.type || 'transfer')}</span></td>
+                            <td>${escapeHtml(t.description || '-')}</td>
+                            <td><span class="badge ${t.status === 'completed' ? 'badge-success' : 'badge-warning'}">${escapeHtml(t.status || 'completed')}</span></td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Error searching</td></tr>';
+            }
+        }
+
+        // Lookup User
+        async function lookupUser() {
+            const query = document.getElementById('lookupEmail').value;
+            if (!query) {
+                alert('Please enter email or account number');
+                return;
+            }
+            try {
+                // Try by email first, then by account
+                const isEmail = query.includes('@');
+                const res = await fetch(`${API_BASE}/api/admin/lookup-user?${isEmail ? 'email' : 'accountNumber'}=${encodeURIComponent(query)}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.user) {
+                    document.getElementById('resultName').textContent = `${data.user.firstName} ${data.user.lastName}`;
+                    document.getElementById('resultEmail').textContent = data.user.email;
+                    document.getElementById('resultAccount').textContent = data.user.accountNumber;
+                    document.getElementById('resultBalance').textContent = '$' + parseFloat(data.user.balance).toLocaleString('en-US', {minimumFractionDigits: 2});
+                    document.getElementById('lookupResult').style.display = 'grid';
+                    
+                    // Auto-fill the credit/debit forms
+                    document.getElementById('creditRecipient').value = data.user.email;
+                    document.getElementById('debitRecipient').value = data.user.email;
+                } else {
+                    alert('User not found');
+                    document.getElementById('lookupResult').style.display = 'none';
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Credit Account
+        async function creditAccount(e) {
+            e.preventDefault();
+            try {
+                const recipientRaw = document.getElementById('creditRecipient').value;
+                const amountVal = parseFloat(document.getElementById('creditAmount').value);
+                const feeVal = parseFloat(document.getElementById('creditFee').value) || 0;
+                const descVal = (document.getElementById('creditDescription').value || '').trim();
+                const transferTypeVal = (document.getElementById('creditTransferType')?.value || '').trim();
+
+                // For admin "send funds" we treat this as a transfer FROM the admin account.
+                const isEmail = String(recipientRaw || '').includes('@');
+                const payload = {
+                    fromEmail: ADMIN_EMAIL,
+                    amount: amountVal,
+                    fee: feeVal,
+                    description: descVal || 'Direct Deposit',
+                    transferType: transferTypeVal || 'direct_deposit',
+                    destinationCountry: document.getElementById('creditDestinationCountry').value || 'US'
+                };
+                if (isEmail) payload.toEmail = String(recipientRaw || '').trim();
+                else payload.toAccountNumber = String(recipientRaw || '').trim();
+
+                const res = await fetch(`${API_BASE}/api/admin/transfer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const raw = await res.text();
+                let data = null;
+                try { data = raw ? JSON.parse(raw) : null; } catch (_) { data = null; }
+
+                if (res.ok && data && data.success) {
+                    showAlert('creditAlert', `✓ Sent $${document.getElementById('creditAmount').value} successfully!${feeVal > 0 ? ` (Fee: $${feeVal.toFixed(2)})` : ''}`, true);
+                    document.getElementById('creditAmount').value = '';
+                    document.getElementById('creditFee').value = '0';
+                    document.getElementById('creditDescription').value = '';
+                    // Refresh dashboards/lists so the admin immediately sees updated balances/transactions.
+                    try {
+                        await loadAdminAccount();
+                        await loadDashboardStats();
+                        await loadAllUsers();
+                        await loadTransactions();
+                    } catch (_) {
+                        // best-effort
+                    }
+                } else {
+                    const msg = (data && data.message)
+                        ? data.message
+                        : (raw ? raw : 'Request failed');
+                    showAlert('creditAlert', `✗ (${res.status}) ${msg}`, false);
+                }
+            } catch (e) {
+                showAlert('creditAlert', '✗ Error: ' + e.message, false);
+            }
+        }
+
+        // Debit Account
+        async function debitAccount(e) {
+            e.preventDefault();
+            if (!confirm('Are you sure you want to debit this account?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/debit-account`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({
+                        recipient: document.getElementById('debitRecipient').value,
+                        amount: parseFloat(document.getElementById('debitAmount').value),
+                        fee: parseFloat(document.getElementById('debitFee').value) || 0,
+                        description: document.getElementById('debitDescription').value || 'Account Debit',
+                        destinationCountry: document.getElementById('debitDestinationCountry').value || 'US',
+                        recipientName: document.getElementById('debitRecipientName').value || '',
+                        recipientAddress: document.getElementById('debitRecipientAddress').value || '',
+                        bankName: document.getElementById('debitBankName').value || '',
+                        swiftCode: document.getElementById('debitSwiftCode').value || '',
+                        iban: document.getElementById('debitIban').value || '',
+                        exchangeRate: document.getElementById('debitExchangeRate').value || '',
+                        recipientCurrency: document.getElementById('debitRecipientCurrency').value || '',
+                        recipientAmount: parseFloat(document.getElementById('debitRecipientAmount').value) || 0
+                    })
+                });
+                const raw = await res.text();
+                let data = null;
+                try { data = raw ? JSON.parse(raw) : null; } catch (_) { data = null; }
+
+                if (res.ok && data && data.success) {
+                    const debitFee = parseFloat(document.getElementById('debitFee').value) || 0;
+                    showAlert('debitAlert', `✓ Debited $${document.getElementById('debitAmount').value} successfully!${debitFee > 0 ? ` (Fee: $${debitFee.toFixed(2)})` : ''}`, true);
+                    document.getElementById('debitAmount').value = '';
+                    document.getElementById('debitFee').value = '0';
+                    document.getElementById('debitDescription').value = '';
+                    document.getElementById('debitRecipientName').value = '';
+                    document.getElementById('debitRecipientAddress').value = '';
+                    document.getElementById('debitBankName').value = '';
+                    document.getElementById('debitSwiftCode').value = '';
+                    document.getElementById('debitIban').value = '';
+                    document.getElementById('debitExchangeRate').value = '';
+                    document.getElementById('debitRecipientCurrency').value = '';
+                    document.getElementById('debitRecipientAmount').value = '';
+                    // Refresh dashboards/lists so the admin immediately sees updated balances/transactions.
+                    try {
+                        await loadAdminAccount();
+                        await loadDashboardStats();
+                        await loadAllUsers();
+                        await loadTransactions();
+                    } catch (_) {
+                        // best-effort
+                    }
+                } else {
+                    const msg = (data && data.message)
+                        ? data.message
+                        : (raw ? raw : 'Request failed');
+                    showAlert('debitAlert', `✗ (${res.status}) ${msg}`, false);
+                }
+            } catch (e) {
+                showAlert('debitAlert', '✗ Error: ' + e.message, false);
+            }
+        }
+
+        // Quick Credit/Debit
+        function quickCredit(email) {
+            showSection('transfers');
+            document.getElementById('creditRecipient').value = email;
+            document.getElementById('creditAmount').focus();
+        }
+
+        function quickDebit(email) {
+            showSection('transfers');
+            document.getElementById('debitRecipient').value = email;
+            document.getElementById('debitAmount').focus();
+        }
+
+        // ==================== TRANSFER APPROVALS ====================
+
+        // Load Pending Transfers
+        // ════════════ Pending Transactions (all user transfers) ════════════
+        async function loadPendingTransactions() {
+            const tbody = document.getElementById('pendingTransactionsBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/pending-transactions`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.pendingTransactions) {
+                    if (data.pendingTransactions.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No pending transactions</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.pendingTransactions.map(t => `
+                        <tr>
+                            <td>${new Date(t.createdAt).toLocaleString()}</td>
+                            <td>${t.senderFirstName || ''} ${t.senderLastName || ''}<br><small style="color:#888;">${t.senderEmail || ''}</small></td>
+                            <td>${t.recipientFirstName || ''} ${t.recipientLastName || ''}<br><small style="color:#888;">${t.recipientEmail || ''}</small></td>
+                            <td style="color:#27ae60; font-weight:600;">$${parseFloat(t.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}${parseFloat(t.fee) > 0 ? `<br><small style="color:#888;">Fee: $${parseFloat(t.fee).toFixed(2)}</small>` : ''}</td>
+                            <td>${t.description || '-'}</td>
+                            <td><span style="background:#ffc107;color:#000;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">PENDING</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="approveTransaction(${t.id})" style="margin-bottom:4px;"><i class="fas fa-check"></i> Approve</button>
+                                <button class="btn btn-sm btn-danger" onclick="denyTransaction(${t.id})"><i class="fas fa-times"></i> Deny</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Error loading pending transactions</td></tr>';
+            }
+        }
+
+        async function approveTransaction(transactionId) {
+            if (!confirm('Are you sure you want to approve this transaction? Funds will be transferred immediately.')) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/approve-transaction/${transactionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Transaction approved successfully!\n' + (data.message || ''));
+                    loadPendingTransactions();
+                    loadTransactions();
+                    loadDashboardStats();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function denyTransaction(transactionId) {
+            const reason = prompt('Enter denial reason:');
+            if (reason === null) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/deny-transaction/${transactionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ reason: reason || 'Denied by admin' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Transaction denied.');
+                    loadPendingTransactions();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // ════════════ Pending Transfers (restricted users only) ════════════
+        async function loadPendingTransfers() {
+            const tbody = document.getElementById('pendingTransfersBody');
+            tbody.innerHTML = '<tr><td colspan="6" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/pending-transfers`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.pendingTransfers) {
+                    if (data.pendingTransfers.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">No pending transfers</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.pendingTransfers.map(t => `
+                        <tr>
+                            <td>${new Date(t.createdAt).toLocaleString()}</td>
+                            <td>${t.senderFirstName || ''} ${t.senderLastName || ''}<br><small style="color:#888;">${t.senderEmail || t.senderAccountNumber || ''}</small></td>
+                            <td>${t.recipientFirstName || ''} ${t.recipientLastName || ''}<br><small style="color:#888;">${t.recipientEmail || t.recipientAccountNumber || ''}</small></td>
+                            <td style="color:#27ae60; font-weight:600;">$${parseFloat(t.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            <td>${t.description || '-'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="approveTransfer(${t.id})"><i class="fas fa-check"></i> Approve</button>
+                                <button class="btn btn-sm btn-danger" onclick="rejectTransfer(${t.id})"><i class="fas fa-times"></i> Reject</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#e74c3c;">Error loading pending transfers</td></tr>';
+            }
+        }
+
+        // Approve Transfer
+        async function approveTransfer(transferId) {
+            if (!confirm('Are you sure you want to approve this transfer? The funds will be transferred immediately.')) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/approve-transfer/${transferId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Transfer approved successfully!');
+                    loadPendingTransfers();
+                    loadTransactions();
+                    loadDashboardStats();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Reject Transfer
+        async function rejectTransfer(transferId) {
+            const reason = prompt('Enter rejection reason (optional):');
+            if (reason === null) return; // User cancelled
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/reject-transfer/${transferId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ reason: reason || 'Rejected by admin' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Transfer rejected.');
+                    loadPendingTransfers();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Toggle Transfer Restriction
+        async function toggleTransferRestriction(restrict) {
+            const input = document.getElementById('restrictionUserInput').value.trim();
+            if (!input) {
+                showAlert('restrictionAlert', 'Please enter a user email or account number', false);
+                return;
+            }
+            try {
+                const payload = { restricted: restrict };
+                if (input.includes('@')) {
+                    payload.email = input;
+                } else {
+                    payload.accountNumber = input;
+                }
+
+                const res = await fetch(`${API_BASE}/api/admin/toggle-transfer-restriction`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert('restrictionAlert', `✓ ${data.message}`, true);
+                    document.getElementById('restrictionUserInput').value = '';
+                    loadRestrictedUsers();
+                } else {
+                    showAlert('restrictionAlert', '✗ ' + data.message, false);
+                }
+            } catch (e) {
+                showAlert('restrictionAlert', '✗ Error: ' + e.message, false);
+            }
+        }
+
+        // Load Restricted Users
+        async function loadRestrictedUsers() {
+            const tbody = document.getElementById('restrictedUsersBody');
+            tbody.innerHTML = '<tr><td colspan="5" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/restricted-users`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.users) {
+                    if (data.users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;">No users with transfer restrictions</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.users.map(u => `
+                        <tr>
+                            <td>${u.firstName || ''} ${u.lastName || ''}</td>
+                            <td>${u.email}</td>
+                            <td>${u.accountNumber || 'N/A'}</td>
+                            <td>$${parseFloat(u.balance || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="removeRestriction('${u.email}')"><i class="fas fa-unlock"></i> Remove Restriction</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#e74c3c;">Error loading users</td></tr>';
+            }
+        }
+
+        // Quick Remove Restriction
+        async function removeRestriction(email) {
+            if (!confirm(`Remove transfer restriction from ${email}?`)) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/toggle-transfer-restriction`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ email, restricted: false })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Restriction removed successfully!');
+                    loadRestrictedUsers();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // ===== Check Deposits =====
+        async function loadCheckDeposits(status) {
+            const tbody = document.getElementById('checkDepositsBody');
+            tbody.innerHTML = '<tr><td colspan="10" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            try {
+                const url = `${API_BASE}/api/admin/check-deposits${status ? '?status=' + status : ''}`;
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${getToken()}` } });
+                const data = await res.json();
+                if (!data.success || !data.deposits.length) {
+                    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#888;">No check deposits found</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.deposits.map(d => `
+                    <tr>
+                        <td>${escapeHtml(fmtDate(d.createdAt))}</td>
+                        <td>${escapeHtml(d.firstName + ' ' + d.lastName)}<br><small style="color:#888;">${escapeHtml(d.email)}</small></td>
+                        <td style="font-weight:600;color:#c9a84c;">$${Number(d.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td>${escapeHtml(d.accountType)}</td>
+                        <td>${escapeHtml(d.checkNumber || '-')}</td>
+                        <td>${escapeHtml(d.payer || '-')}</td>
+                        <td><small>${escapeHtml(d.reference)}</small></td>
+                        <td><span class="badge badge-${d.status === 'approved' ? 'success' : d.status === 'rejected' ? 'danger' : 'warning'}">${d.status}</span></td>
+                        <td>
+                            <button class="btn btn-info" onclick="viewCheckImages('${d.frontImage || ''}','${d.backImage || ''}')" style="padding:4px 8px;font-size:12px;"><i class="fas fa-eye"></i> View</button>
+                        </td>
+                        <td>
+                            ${d.status === 'pending' ? `
+                                <button class="btn btn-success" onclick="approveCheckDeposit(${d.id})" style="padding:4px 8px;font-size:12px;margin:2px;"><i class="fas fa-check"></i> Approve</button>
+                                <button class="btn btn-danger" onclick="rejectCheckDeposit(${d.id})" style="padding:4px 8px;font-size:12px;margin:2px;"><i class="fas fa-times"></i> Reject</button>
+                            ` : d.status === 'rejected' ? `<small style="color:#888;">${escapeHtml(d.rejectionReason || '')}</small>` : '<small style="color:#27ae60;">Credited</small>'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#e74c3c;">Error loading check deposits</td></tr>';
+            }
+        }
+
+        function viewCheckImages(front, back) {
+            document.getElementById('modalCheckFront').src = front || '';
+            document.getElementById('modalCheckBack').src = back || '';
+            document.getElementById('checkImageModal').style.display = 'flex';
+        }
+
+        async function approveCheckDeposit(id) {
+            if (!confirm('Approve this check deposit? The amount will be credited to the user\'s account.')) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/approve-check-deposit/${id}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Check deposit approved and balance credited!');
+                    loadCheckDeposits('pending');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('Error approving deposit');
+            }
+        }
+
+        async function rejectCheckDeposit(id) {
+            const reason = prompt('Enter rejection reason:');
+            if (reason === null) return;
+            if (!reason.trim()) { alert('Please provide a reason'); return; }
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/reject-check-deposit/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+                    body: JSON.stringify({ reason: reason.trim() })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Check deposit rejected');
+                    loadCheckDeposits('pending');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('Error rejecting deposit');
+            }
+        }
+
+        // Load Loans
+        async function loadLoans() {
+            const tbody = document.getElementById('loansTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/loans/pending`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.applications) {
+                    if (data.applications.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No loan applications</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.applications.map(loan => `
+                        <tr>
+                            <td>${loan.userName || 'User #' + loan.user_id}</td>
+                            <td>${loan.loan_type}</td>
+                            <td>$${parseFloat(loan.loan_amount).toLocaleString()}</td>
+                            <td>${loan.loan_duration_months} months</td>
+                            <td><span class="badge ${loan.status === 'pending' ? 'badge-warning' : loan.status === 'approved' ? 'badge-success' : 'badge-danger'}">${loan.status}</span></td>
+                            <td>${new Date(loan.created_at).toLocaleDateString()}</td>
+                            <td>
+                                ${loan.status === 'pending' ? `
+                                    <button class="btn btn-sm btn-success" onclick="approveLoan(${loan.id})"><i class="fas fa-check"></i></button>
+                                    <button class="btn btn-sm btn-danger" onclick="rejectLoan(${loan.id})"><i class="fas fa-times"></i></button>
+                                ` : '-'}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Error loading loans</td></tr>';
+            }
+        }
+
+        // Approve Loan
+        async function approveLoan(loanId) {
+            const rate = prompt('Enter interest rate (APR %):', '7.5');
+            if (!rate) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/loans/${loanId}/approve`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ interestRate: parseFloat(rate) })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Loan approved!');
+                    loadLoans();
+                    loadDashboardStats();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Reject Loan
+        async function rejectLoan(loanId) {
+            const reason = prompt('Enter rejection reason:');
+            if (!reason) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/loans/${loanId}/reject`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ rejectionReason: reason })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Loan rejected.');
+                    loadLoans();
+                    loadDashboardStats();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Load Activity Logs
+        async function loadActivityLogs() {
+            const tbody = document.getElementById('activityTableBody');
+            tbody.innerHTML = '<tr><td colspan="5" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/activity-logs`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.logs) {
+                    if (data.logs.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;">No activity logs</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.logs.map(log => `
+                        <tr>
+                            <td>${new Date(log.created_at).toLocaleString()}</td>
+                            <td>${log.userName || 'User #' + log.user_id}</td>
+                            <td><span class="badge badge-info">${log.action_type}</span></td>
+                            <td>${log.action_details || '-'}</td>
+                            <td>${log.ip_address || 'N/A'}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#e74c3c;">Error loading activity logs</td></tr>';
+            }
+        }
+
+        // Load Monthly Report
+        async function loadMonthlyReport() {
+            const month = document.getElementById('reportMonth').value;
+            if (!month) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/monthly-report?month=${month}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('reportNewUsers').textContent = data.newUsers || 0;
+                    document.getElementById('reportTotalTxns').textContent = data.totalTransactions || 0;
+                    document.getElementById('reportTotalVolume').textContent = '$' + parseFloat(data.totalVolume || 0).toLocaleString();
+                    document.getElementById('reportLoansApproved').textContent = data.loansApproved || 0;
+                }
+            } catch (e) {
+                console.error('Error loading report:', e);
+            }
+        }
+
+        // View User
+        async function viewUser(userId) {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/users-with-balances`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                if (!res.ok) {
+                    const text = await res.text().catch(() => '');
+                    throw new Error(`Request failed (${res.status}) ${text}`);
+                }
+                const data = await res.json();
+                const user = data.users?.find(u => u.id === userId);
+                if (user) {
+                    const isRestricted = !!user.transferRestricted;
+                    const isVerified = !!user.isVerified;
+                    const restrictionBadge = isRestricted 
+                        ? '<span class="badge badge-danger">Restricted</span>' 
+                        : '<span class="badge badge-success">Allowed</span>';
+                    const verificationBadge = isVerified
+                        ? '<span class="badge badge-success">Verified</span>'
+                        : '<span class="badge badge-warning" style="background:#fff3e0;color:#e65100;">Unverified</span>';
+                    const restrictionBtn = isRestricted
+                        ? `<button class="btn btn-success" onclick="toggleUserRestriction(${user.id}, '${user.email}', false)"><i class="fas fa-unlock"></i> Allow Transfers</button>`
+                        : `<button class="btn btn-danger" onclick="toggleUserRestriction(${user.id}, '${user.email}', true)"><i class="fas fa-lock"></i> Restrict Transfers</button>`;
+                    const verifyBtn = isVerified
+                        ? `<button class="btn btn-warning" style="background:#ff9800;color:#fff;" onclick="toggleVerification(${user.id}, false)"><i class="fas fa-times-circle"></i> Unverify</button>`
+                        : `<button class="btn btn-success" onclick="toggleVerification(${user.id}, true)"><i class="fas fa-check-circle"></i> Verify</button>`;
+                    
+                    document.getElementById('userModalContent').innerHTML = `
+                        <div class="user-details-grid">
+                            <div class="detail-item"><div class="label">ID</div><div class="value">${user.id}</div></div>
+                            <div class="detail-item"><div class="label">Name</div><div class="value">${user.firstName} ${user.lastName}</div></div>
+                            <div class="detail-item"><div class="label">Email</div><div class="value">${user.email}</div></div>
+                            <div class="detail-item"><div class="label">Account</div><div class="value">${user.accountNumber}</div></div>
+                            <div class="detail-item"><div class="label">Balance</div><div class="value">$${parseFloat(user.balance).toLocaleString()}</div></div>
+                            <div class="detail-item"><div class="label">Status</div><div class="value">${user.accountStatus || 'active'}</div></div>
+                            <div class="detail-item"><div class="label">Type</div><div class="value">${user.accountType || 'checking'}</div></div>
+                            <div class="detail-item"><div class="label">Transfer Status</div><div class="value">${restrictionBadge}</div></div>
+                            <div class="detail-item"><div class="label">Verification</div><div class="value">${verificationBadge}</div></div>
+                        </div>
+                        <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-success" onclick="quickCredit('${user.email}'); closeModal('userModal');"><i class="fas fa-plus"></i> Credit</button>
+                            <button class="btn btn-danger" onclick="quickDebit('${user.email}'); closeModal('userModal');"><i class="fas fa-minus"></i> Debit</button>
+                            ${restrictionBtn}
+                            ${verifyBtn}
+                            <button class="btn btn-primary" onclick="requestDocuments(${user.id})"><i class="fas fa-file-upload"></i> Request Documents</button>
+                        </div>
+                    `;
+                    document.getElementById('userModal').classList.add('active');
+                }
+            } catch (e) {
+                console.error('Error loading user details:', e);
+                alert('Error loading user details. Please refresh and try again.');
+            }
+        }
+
+        // Toggle User Transfer Restriction from modal
+        async function toggleUserRestriction(userId, email, restrict) {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/toggle-transfer-restriction`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ userId, restricted: restrict })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    closeModal('userModal');
+                    loadAllUsers();
+                    loadRestrictedUsers();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Toggle User Verification
+        async function toggleVerification(userId, verify) {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/verify-user/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ isVerified: verify })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    closeModal('userModal');
+                    loadAllUsers();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Request Documents from User
+        async function requestDocuments(userId) {
+            const message = prompt('Enter document request message (or leave blank for default):', 'Please upload your government-issued ID and proof of address for verification.');
+            if (message === null) return; // cancelled
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/request-documents/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ message: message || undefined })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Document request sent! User will see a notification on their dashboard.');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Refresh All Data
+        function refreshAllData() {
+            loadAdminAccount();
+            loadDashboardStats();
+            loadTransactions();
+        }
+
+        // Logout
+        function logout() {
+            const consent = localStorage.getItem('cookieConsent');
+            localStorage.clear();
+            if (consent) localStorage.setItem('cookieConsent', consent);
+            window.location.href = 'signin.html';
+        }
+
+        // Check Admin Auth
+        function checkAdminAuth() {
+            const token = getToken();
+            const storedUser = localStorage.getItem('user');
+            if (!token) {
+                window.location.href = 'signin.html';
+                return false;
+            }
+            if (storedUser) {
+                const user = JSON.parse(storedUser);
+                if (!user.isAdmin) {
+                    alert('Access denied. Admin privileges required.');
+                    window.location.href = 'dashboard.html';
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        // =====================
+        // Support Tickets Functions
+        // =====================
+        
+        async function loadSupportTickets() {
+            const tbody = document.getElementById('supportTicketsTableBody');
+            const status = document.getElementById('ticketStatusFilter')?.value || '';
+            tbody.innerHTML = '<tr><td colspan="8" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            
+            try {
+                let url = `${API_BASE}/api/admin/support-tickets`;
+                if (status) url += `?status=${status}`;
+                
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                
+                if (data.success && data.tickets?.length > 0) {
+                    tbody.innerHTML = data.tickets.map(t => `
+                        <tr>
+                            <td>#${t.id}</td>
+                            <td>${escapeHtml(t.userEmail || 'Unknown')}</td>
+                            <td>${escapeHtml(t.category || 'General')}</td>
+                            <td>${escapeHtml(t.subject)}</td>
+                            <td><span class="status-badge status-${escapeHtml(t.priority || 'low')}">${escapeHtml(t.priority || 'low')}</span></td>
+                            <td><span class="status-badge status-${escapeHtml(t.status)}">${escapeHtml(t.status)}</span></td>
+                            <td>${formatDateTime(t.createdAt)}</td>
+                            <td>
+                                <button class="btn btn-small btn-success" data-ticket-id="${t.id}" data-subject="${escapeHtml(t.subject)}" data-description="${escapeHtml(t.description)}" onclick="showTicketResponse(Number(this.dataset.ticketId), this.dataset.subject, this.dataset.description)"><i class="fas fa-reply"></i></button>
+                                ${t.status !== 'resolved' ? `<button class="btn btn-small btn-info" onclick="resolveTicket(${Number(t.id)})"><i class="fas fa-check"></i></button>` : ''}
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #888;">No tickets found</td></tr>';
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #e74c3c;">Error loading tickets</td></tr>';
+            }
+        }
+        
+        function showTicketResponse(id, subject, message) {
+            document.getElementById('respondTicketId').textContent = id;
+            document.getElementById('ticketSubjectDisplay').textContent = subject;
+            document.getElementById('ticketMessageDisplay').textContent = message;
+            document.getElementById('ticketResponse').value = '';
+            document.getElementById('ticketResponseCard').style.display = 'block';
+            document.getElementById('ticketResponseCard').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function hideTicketResponse() {
+            document.getElementById('ticketResponseCard').style.display = 'none';
+        }
+        
+        async function submitTicketResponse() {
+            const id = document.getElementById('respondTicketId').textContent;
+            const response = document.getElementById('ticketResponse').value.trim();
+            const status = document.getElementById('ticketNewStatus').value;
+            
+            if (!response) {
+                alert('Please enter a response');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/support-tickets/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ adminReply: response, status })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    alert('Response sent successfully');
+                    hideTicketResponse();
+                    loadSupportTickets();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        async function resolveTicket(id) {
+            if (!confirm('Mark this ticket as resolved?')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/support-tickets/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ status: 'resolved' })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    loadSupportTickets();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        // =====================
+        // User Messages Functions
+        // =====================
+        
+        async function loadUserMessages() {
+            const tbody = document.getElementById('userMessagesTableBody');
+            tbody.innerHTML = '<tr><td colspan="6" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/messages`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                
+                if (data.success && data.messages?.length > 0) {
+                    tbody.innerHTML = data.messages.map(m => `
+                        <tr>
+                            <td>#${m.id}</td>
+                            <td>${escapeHtml(m.userEmail || 'Unknown')}</td>
+                            <td>${escapeHtml(m.subject)}</td>
+                            <td><span class="status-badge ${m.adminReply ? 'status-success' : 'status-pending'}">${m.adminReply ? 'Replied' : 'Pending'}</span></td>
+                            <td>${formatDateTime(m.createdAt)}</td>
+                            <td>
+                                <button class="btn btn-small btn-success" data-msg-id="${m.id}" data-subject="${escapeHtml(m.subject)}" data-email="${escapeHtml(m.userEmail || '')}" data-body="${escapeHtml(m.body)}" onclick="showMessageResponse(Number(this.dataset.msgId), this.dataset.subject, this.dataset.email, this.dataset.body)"><i class="fas fa-reply"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">No messages found</td></tr>';
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #e74c3c;">Error loading messages</td></tr>';
+            }
+        }
+        
+        function showMessageResponse(id, subject, from, body) {
+            document.getElementById('respondMessageId').textContent = id;
+            document.getElementById('messageSubjectDisplay').textContent = subject;
+            document.getElementById('messageFromDisplay').textContent = from;
+            document.getElementById('messageBodyDisplay').textContent = body;
+            document.getElementById('messageReply').value = '';
+            document.getElementById('messageResponseCard').style.display = 'block';
+            document.getElementById('messageResponseCard').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function hideMessageResponse() {
+            document.getElementById('messageResponseCard').style.display = 'none';
+        }
+        
+        async function submitMessageReply() {
+            const id = document.getElementById('respondMessageId').textContent;
+            const reply = document.getElementById('messageReply').value.trim();
+            
+            if (!reply) {
+                alert('Please enter a reply');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/messages/${id}/reply`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ adminReply: reply })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    alert('Reply sent successfully');
+                    hideMessageResponse();
+                    loadUserMessages();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Initialize
+        if (checkAdminAuth()) {
+            // Set default month for report
+            const now = new Date();
+            document.getElementById('reportMonth').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            
+            loadAdminAccount();
+            loadDashboardStats();
+            loadTransactions();
+            
+            // Auto-refresh every 60 seconds
+            setInterval(refreshAllData, 60000);
+        }
+    </script>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
+            </div>
+            <p class="app-footer-copy">&copy; 2025 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+        </div>
+    </footer>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>

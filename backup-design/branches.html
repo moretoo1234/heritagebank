@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Find Heritage Bank branch locations and hours near you across the United States.">
+    <title>Branch Locations - Heritage Bank</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+    <style>
+        .branches-hero { background: linear-gradient(135deg, #1a5f7a 0%, #2c3e50 100%); padding: 100px 0 60px; color: white; text-align: center; }
+        .branches-hero h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .search-section { padding: 40px 0; background: white; border-bottom: 1px solid #eee; }
+        .search-box { max-width: 600px; margin: 0 auto; display: flex; gap: 10px; }
+        .search-box input { flex: 1; padding: 15px 20px; border: 2px solid #ddd; border-radius: 10px; font-size: 1rem; }
+        .search-box button { padding: 15px 30px; background: #1a5f7a; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        .search-box button:hover { background: #145266; }
+        .branches-section { padding: 60px 0; background: #f8f9fa; }
+        .region-title { font-size: 1.5rem; color: #1a5f7a; margin: 40px 0 20px; padding-bottom: 10px; border-bottom: 2px solid #1a5f7a; display: flex; align-items: center; gap: 10px; }
+        .region-title:first-of-type { margin-top: 0; }
+        .branches-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px; }
+        .branch-card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); transition: all 0.3s; }
+        .branch-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+        .branch-card h3 { color: #1a5f7a; margin-bottom: 15px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
+        .branch-card h3 i { color: #1a5f7a; }
+        .branch-info { margin-bottom: 20px; }
+        .branch-info p { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; color: #666; }
+        .branch-info p i { color: #1a5f7a; margin-top: 4px; width: 16px; }
+        .branch-services { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .branch-services span { background: #e8f4f8; color: #1a5f7a; padding: 5px 12px; border-radius: 15px; font-size: 0.8rem; }
+        .branch-actions { display: flex; gap: 10px; }
+        .branch-actions a { flex: 1; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 0.9rem; }
+        .btn-directions { background: #1a5f7a; color: white; }
+        .btn-directions:hover { background: #145266; }
+        .btn-call { background: #e8f4f8; color: #1a5f7a; }
+        .btn-call:hover { background: #d0e8ef; }
+        .atm-section { padding: 60px 0; background: white; }
+        .atm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .atm-card { background: #f8f9fa; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 15px; }
+        .atm-card i { font-size: 2rem; color: #1a5f7a; }
+        .atm-card h4 { margin-bottom: 5px; }
+        .atm-card p { color: #666; font-size: 0.9rem; }
+        .map-placeholder { background: linear-gradient(135deg, #1a5f7a, #2c3e50); height: 400px; border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; margin-bottom: 40px; }
+        .map-placeholder i { font-size: 4rem; margin-bottom: 20px; opacity: 0.5; }
+        .map-placeholder p { opacity: 0.8; }
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
+        .stat-item { background: white; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
+        .stat-item i { font-size: 2rem; color: #1a5f7a; margin-bottom: 10px; }
+        .stat-item h3 { font-size: 2rem; color: #1a5f7a; margin-bottom: 5px; }
+        .stat-item p { color: #666; }
+        @media (max-width: 768px) {
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .search-box { flex-direction: column; }
+            .branches-hero { padding: 70px 0 40px; }
+            .branches-hero h1 { font-size: 1.6rem; }
+            .branches-grid { grid-template-columns: 1fr; }
+            .region-title { font-size: 1.2rem; }
+            .stat-item h3 { font-size: 1.5rem; }
+            .stat-item i { font-size: 1.5rem; }
+            .map-placeholder { height: 250px; }
+            .atm-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .branches-hero { padding: 60px 0 30px; }
+            .branches-hero h1 { font-size: 1.3rem; }
+            .stats-bar { gap: 10px; }
+            .stat-item { padding: 15px; }
+            .stat-item h3 { font-size: 1.2rem; }
+            .stat-item i { font-size: 1.2rem; }
+            .branch-card { padding: 18px; }
+            .branch-card h3 { font-size: 1rem; }
+            .branch-actions { flex-direction: column; }
+            .branch-actions a { font-size: 0.82rem; }
+            .search-box input { padding: 12px 15px; font-size: 0.9rem; }
+            .search-box button { padding: 12px; font-size: 0.9rem; }
+            .atm-card i { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-wrapper">
+                <div class="logo-section">
+                    <a href="index.html"><img src="./assets/logo.png" alt="Heritage Bank" class="logo"></a>
+                </div>
+                <button class="hamburger" id="hamburger" title="Toggle Navigation"><span></span><span></span><span></span></button>
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="index.html#services">Services</a></li>
+                    <li><a href="faq.html">FAQ</a></li>
+                    <li><a href="blog.html">Blog</a></li>
+                    <li><a href="branches.html" class="active">Branches</a></li>
+                    <li><a href="signin.html" class="signin-link"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
+                    <li class="cta-button"><a href="open-account.html">Open Account</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="branches-hero">
+        <div class="container">
+            <h1><i class="fas fa-map-marker-alt"></i> Find a Branch</h1>
+            <p>Visit us at over 150 locations nationwide for personalized banking services</p>
+        </div>
+    </section>
+
+    <!-- Search -->
+    <section class="search-section">
+        <div class="container">
+            <div class="search-box">
+                <input type="text" placeholder="Enter city, state, or ZIP code...">
+                <button><i class="fas fa-search"></i> Search</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Branches -->
+    <section class="branches-section">
+        <div class="container">
+            <!-- Stats -->
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <i class="fas fa-building"></i>
+                    <h3>150+</h3>
+                    <p>Branch Locations</p>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <h3>500+</h3>
+                    <p>ATM Machines</p>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-globe-americas"></i>
+                    <h3>25</h3>
+                    <p>States Covered</p>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-headset"></i>
+                    <h3>24/7</h3>
+                    <p>Phone Support</p>
+                </div>
+            </div>
+
+            <!-- Interactive Map -->
+            <div id="branchMap" class="branch-map"></div>
+
+            <!-- New York -->
+            <h2 class="region-title"><i class="fas fa-city"></i> New York</h2>
+            <div class="branches-grid">
+                <div class="branch-card">
+                    <h3><i class="fas fa-building"></i> Manhattan - Main Branch</h3>
+                    <div class="branch-info">
+                        <p><i class="fas fa-map-marker-alt"></i> 350 Fifth Avenue, Suite 1500, New York, NY 10118</p>
+                        <p><i class="fas fa-phone"></i> (212) 555-0100</p>
+                        <p><i class="fas fa-clock"></i> Mon-Fri: 9AM-6PM | Sat: 9AM-2PM</p>
+                    </div>
+                    <div class="branch-services">
+                        <span>Full Service</span>
+                        <span>Safe Deposit</span>
+                        <span>Business Banking</span>
+                        <span>Mortgage</span>
+                    </div>
+                    <div class="branch-actions">
+                        <a href="#" class="btn-directions"><i class="fas fa-directions"></i> Directions</a>
+                        <a href="tel:2125550100" class="btn-call"><i class="fas fa-phone"></i> Call</a>
+                    </div>
+                </div>
+
+                <div class="branch-card">
+                    <h3><i class="fas fa-building"></i> Brooklyn Heights</h3>
+                    <div class="branch-info">
+                        <p><i class="fas fa-map-marker-alt"></i> 123 Court Street, Brooklyn, NY 11201</p>
+                        <p><i class="fas fa-phone"></i> (718) 555-0200</p>
+                        <p><i class="fas fa-clock"></i> Mon-Fri: 9AM-5PM | Sat: 10AM-2PM</p>
+                    </div>
+                    <div class="branch-services">
+                        <span>Full Service</span>
+                        <span>ATM</span>
+                        <span>Drive-Thru</span>
+                    </div>
+                    <div class="branch-actions">
+                        <a href="#" class="btn-directions"><i class="fas fa-directions"></i> Directions</a>
+                        <a href="tel:7185550200" class="btn-call"><i class="fas fa-phone"></i> Call</a>
+                    </div>
+                </div>
+
+                <div class="branch-card">
+                    <h3><i class="fas fa-building"></i> Queens - Forest Hills</h3>
+                    <div class="branch-info">
+                        <p><i class="fas fa-map-marker-alt"></i> 71-15 Austin Street, Forest Hills, NY 11375</p>
+                        <p><i class="fas fa-phone"></i> (718) 555-0300</p>
+                        <p><i class="fas fa-clock"></i> Mon-Fri: 9AM-5PM | Sat: Closed</p>
+                    </div>
+                    <div class="branch-services">
+                        <span>Full Service</span>
+                        <span>ATM</span>
+                        <span>Notary</span>
+                    </div>
+                    <div class="branch-actions">
+                        <a href="#" class="btn-directions"><i class="fas fa-directions"></i> Directions</a>
+                        <a href="tel:7185550300" class="btn-call"><i class="fas fa-phone"></i> Call</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- California -->
+            <h2 class="region-title"><i class="fas fa-sun"></i> California</h2>
+            <div class="branches-grid">
+                <div class="branch-card">
+                    <h3><i class="fas fa-building"></i> Los Angeles - Downtown</h3>
+                    <div class="branch-info">
+                        <p><i class="fas fa-map-marker-alt"></i> 633 West 5th Street, Los Angeles, CA 90071</p>
+                        <p><i class="fas fa-phone"></i> (213) 555-0400</p>
+                        <p><i class="fas fa-clock"></i> Mon-Fri: 9AM-5PM | Sat: 9AM-1PM</p>
+                    </div>
+                    <div class="branch-services">
+                        <span>Full Service</span>
+                        <span>Business Banking</span>
+                        <span>Wealth Management</span>
+                    </div>
+                    <div class="branch-actions">
+                        <a href="#" class="btn-directions"><i class="fas fa-directions"></i> Directions</a>
+                        <a href="tel:2135550400" class="btn-call"><i class="fas fa-phone"></i> Call</a>
+                    </div>
+                </div>
+
+                <div class="branch-card">
+                    <h3><i class="fas fa-building"></i> San Francisco - Financial District</h3>
+                    <div class="branch-info">
+                        <p><i class="fas fa-map-marker-alt"></i> 555 California Street, San Francisco, CA 94104</p>
+                        <p><i class="fas fa-phone"></i> (415) 555-0500</p>
+                        <p><i class="fas fa-clock"></i> Mon-Fri: 8:30AM-5:30PM | Sat: Closed</p>
+                    </div>
+                    <div class="branch-services">
+                        <span>Full Service</span>
+                        <span>Commercial Banking</span>
+                        <span>International</span>
+                    </div>
+                    <div class="branch-actions">
+                        <a href="#" class="btn-directions"><i class="fas fa-directions"></i> Directions</a>
+                        <a href="tel:4155550500" class="btn-call"><i class="fas fa-phone"></i> Call</a>
+                    </div>
+                </div>
+
+                <div class="branch-card">
+                    <h3><i class="fas fa-building"></i> San Diego - Gaslamp</h3>
+                    <div class="branch-info">
+                        <p><i class="fas fa-map-marker-alt"></i> 401 B Street, San Diego, CA 92101</p>
+                        <p><i class="fas fa-phone"></i> (619) 555-0600</p>
+                        <p><i class="fas fa-clock"></i> Mon-Fri: 9AM-5PM | Sat: 10AM-2PM</p>
+                    </div>
+                    <div class="branch-services">
+                        <span>Full Service</span>
+                        <span>ATM</span>
+                        <span>Safe Deposit</span>
+                    </div>
+                    <div class="branch-actions">
+                        <a href="#" class="btn-directions"><i class="fas fa-directions"></i> Directions</a>
+                        <a href="tel:6195550600" class="btn-call"><i class="fas fa-phone"></i> Call</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Texas -->
+            <h2 class="region-title"><i class="fas fa-star"></i> Texas</h2>
+            <div class="branches-grid">
+                <div class="branch-card">
+                    <h3><i class="fas fa-building"></i> Houston - Galleria</h3>
+                    <div class="branch-info">
+                        <p><i class="fas fa-map-marker-alt"></i> 2929 Allen Parkway, Houston, TX 77019</p>
+                        <p><i class="fas fa-phone"></i> (713) 555-0700</p>
+                        <p><i class="fas fa-clock"></i> Mon-Fri: 9AM-6PM | Sat: 9AM-2PM</p>
+                    </div>
+                    <div class="branch-services">
+                        <span>Full Service</span>
+                        <span>Drive-Thru</span>
+                        <span>Business Banking</span>
+                    </div>
+                    <div class="branch-actions">
+                        <a href="#" class="btn-directions"><i class="fas fa-directions"></i> Directions</a>
+                        <a href="tel:7135550700" class="btn-call"><i class="fas fa-phone"></i> Call</a>
+                    </div>
+                </div>
+
+                <div class="branch-card">
+                    <h3><i class="fas fa-building"></i> Dallas - Uptown</h3>
+                    <div class="branch-info">
+                        <p><i class="fas fa-map-marker-alt"></i> 2001 Ross Avenue, Dallas, TX 75201</p>
+                        <p><i class="fas fa-phone"></i> (214) 555-0800</p>
+                        <p><i class="fas fa-clock"></i> Mon-Fri: 9AM-5PM | Sat: 9AM-1PM</p>
+                    </div>
+                    <div class="branch-services">
+                        <span>Full Service</span>
+                        <span>Mortgage</span>
+                        <span>Investment</span>
+                    </div>
+                    <div class="branch-actions">
+                        <a href="#" class="btn-directions"><i class="fas fa-directions"></i> Directions</a>
+                        <a href="tel:2145550800" class="btn-call"><i class="fas fa-phone"></i> Call</a>
+                    </div>
+                </div>
+
+                <div class="branch-card">
+                    <h3><i class="fas fa-building"></i> Austin - Downtown</h3>
+                    <div class="branch-info">
+                        <p><i class="fas fa-map-marker-alt"></i> 100 Congress Avenue, Austin, TX 78701</p>
+                        <p><i class="fas fa-phone"></i> (512) 555-0900</p>
+                        <p><i class="fas fa-clock"></i> Mon-Fri: 9AM-5PM | Sat: Closed</p>
+                    </div>
+                    <div class="branch-services">
+                        <span>Full Service</span>
+                        <span>ATM</span>
+                        <span>Notary</span>
+                    </div>
+                    <div class="branch-actions">
+                        <a href="#" class="btn-directions"><i class="fas fa-directions"></i> Directions</a>
+                        <a href="tel:5125550900" class="btn-call"><i class="fas fa-phone"></i> Call</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Florida -->
+            <h2 class="region-title"><i class="fas fa-palm-tree"></i> Florida</h2>
+            <div class="branches-grid">
+                <div class="branch-card">
+                    <h3><i class="fas fa-building"></i> Miami - Brickell</h3>
+                    <div class="branch-info">
+                        <p><i class="fas fa-map-marker-alt"></i> 1111 Brickell Avenue, Miami, FL 33131</p>
+                        <p><i class="fas fa-phone"></i> (305) 555-1000</p>
+                        <p><i class="fas fa-clock"></i> Mon-Fri: 9AM-5PM | Sat: 10AM-2PM</p>
+                    </div>
+                    <div class="branch-services">
+                        <span>Full Service</span>
+                        <span>International</span>
+                        <span>Private Banking</span>
+                    </div>
+                    <div class="branch-actions">
+                        <a href="#" class="btn-directions"><i class="fas fa-directions"></i> Directions</a>
+                        <a href="tel:3055551000" class="btn-call"><i class="fas fa-phone"></i> Call</a>
+                    </div>
+                </div>
+
+                <div class="branch-card">
+                    <h3><i class="fas fa-building"></i> Orlando - Downtown</h3>
+                    <div class="branch-info">
+                        <p><i class="fas fa-map-marker-alt"></i> 200 S. Orange Avenue, Orlando, FL 32801</p>
+                        <p><i class="fas fa-phone"></i> (407) 555-1100</p>
+                        <p><i class="fas fa-clock"></i> Mon-Fri: 9AM-5PM | Sat: 9AM-1PM</p>
+                    </div>
+                    <div class="branch-services">
+                        <span>Full Service</span>
+                        <span>Drive-Thru</span>
+                        <span>ATM</span>
+                    </div>
+                    <div class="branch-actions">
+                        <a href="#" class="btn-directions"><i class="fas fa-directions"></i> Directions</a>
+                        <a href="tel:4075551100" class="btn-call"><i class="fas fa-phone"></i> Call</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ATM Locator -->
+    <section class="atm-section">
+        <div class="container">
+            <h2 class="loan-section-heading"><i class="fas fa-money-bill-wave"></i> 24/7 ATM Locations</h2>
+            <div class="atm-grid">
+                <div class="atm-card">
+                    <i class="fas fa-atm"></i>
+                    <div>
+                        <h4>Times Square ATM</h4>
+                        <p>1500 Broadway, New York, NY</p>
+                    </div>
+                </div>
+                <div class="atm-card">
+                    <i class="fas fa-atm"></i>
+                    <div>
+                        <h4>LAX Airport ATM</h4>
+                        <p>Terminal 4, Los Angeles, CA</p>
+                    </div>
+                </div>
+                <div class="atm-card">
+                    <i class="fas fa-atm"></i>
+                    <div>
+                        <h4>Navy Pier ATM</h4>
+                        <p>600 E Grand Ave, Chicago, IL</p>
+                    </div>
+                </div>
+                <div class="atm-card">
+                    <i class="fas fa-atm"></i>
+                    <div>
+                        <h4>South Beach ATM</h4>
+                        <p>Ocean Drive, Miami Beach, FL</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <img src="./assets/logo.png" alt="Heritage Bank" class="footer-logo">
+                    <p>Building financial legacies since 1999.</p>
+                    <div class="social-links">
+                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                        <li><a href="faq.html">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="terms.html">Terms of Service</a></li>
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                        <li><a href="cookie-policy.html">Cookie Policy</a></li>
+                        <li><a href="accessibility.html">Accessibility</a></li>
+                        <li><a href="disclosures.html">Disclosures</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-phone"></i> 1-800-HERITAGE</li>
+                        <li><i class="fas fa-envelope"></i> support@heritagebank.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Heritage Bank. All rights reserved. Member FDIC.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Heritage Bank Branch Locations Map
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize map centered on US
+            const map = L.map('branchMap').setView([39.8283, -98.5795], 4);
+            
+            // Add tile layer (OpenStreetMap)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            // Custom marker icon
+            const bankIcon = L.divIcon({
+                className: 'bank-marker',
+                html: '<div style="background: #1a5f7a; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"><i class="fas fa-university" style="font-size: 14px;"></i></div>',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
+            });
+            
+            // Branch data
+            const branches = [
+                { name: 'Manhattan - Main Branch', lat: 40.7484, lng: -73.9857, address: '350 Fifth Avenue, Suite 1500, New York, NY 10118', phone: '(212) 555-0100', hours: 'Mon-Fri: 9AM-6PM | Sat: 9AM-2PM' },
+                { name: 'Brooklyn Heights', lat: 40.6961, lng: -73.9936, address: '123 Court Street, Brooklyn, NY 11201', phone: '(718) 555-0200', hours: 'Mon-Fri: 9AM-5PM | Sat: 10AM-2PM' },
+                { name: 'Queens - Forest Hills', lat: 40.7185, lng: -73.8449, address: '71-15 Austin Street, Forest Hills, NY 11375', phone: '(718) 555-0300', hours: 'Mon-Fri: 9AM-5PM' },
+                { name: 'Los Angeles - Downtown', lat: 34.0522, lng: -118.2560, address: '633 West 5th Street, Los Angeles, CA 90071', phone: '(213) 555-0400', hours: 'Mon-Fri: 9AM-5PM | Sat: 9AM-1PM' },
+                { name: 'San Francisco - Financial District', lat: 37.7909, lng: -122.3983, address: '555 California Street, San Francisco, CA 94104', phone: '(415) 555-0500', hours: 'Mon-Fri: 9AM-5PM' },
+                { name: 'San Diego - Gaslamp', lat: 32.7107, lng: -117.1611, address: '789 Market Street, San Diego, CA 92101', phone: '(619) 555-0600', hours: 'Mon-Fri: 9AM-5PM | Sat: 10AM-2PM' },
+                { name: 'Chicago - Loop', lat: 41.8781, lng: -87.6298, address: '111 West Washington Street, Chicago, IL 60602', phone: '(312) 555-0700', hours: 'Mon-Fri: 8:30AM-5PM' },
+                { name: 'Chicago - Lincoln Park', lat: 41.9214, lng: -87.6513, address: '2300 North Lincoln Avenue, Chicago, IL 60614', phone: '(312) 555-0800', hours: 'Mon-Fri: 9AM-5PM | Sat: 9AM-1PM' },
+                { name: 'Houston - Downtown', lat: 29.7604, lng: -95.3698, address: '1000 Main Street, Houston, TX 77002', phone: '(713) 555-0900', hours: 'Mon-Fri: 9AM-5PM' },
+                { name: 'Dallas - Uptown', lat: 32.7948, lng: -96.8017, address: '2500 McKinney Avenue, Dallas, TX 75201', phone: '(214) 555-1000', hours: 'Mon-Fri: 9AM-5PM | Sat: 9AM-12PM' },
+                { name: 'Miami - Brickell', lat: 25.7619, lng: -80.1896, address: '1001 Brickell Bay Drive, Miami, FL 33131', phone: '(305) 555-1100', hours: 'Mon-Fri: 9AM-5PM' },
+                { name: 'Boston - Financial District', lat: 42.3555, lng: -71.0556, address: '100 Federal Street, Boston, MA 02110', phone: '(617) 555-1200', hours: 'Mon-Fri: 9AM-5PM' },
+                { name: 'Seattle - Downtown', lat: 47.6062, lng: -122.3321, address: '1001 4th Avenue, Seattle, WA 98154', phone: '(206) 555-1300', hours: 'Mon-Fri: 9AM-5PM' },
+                { name: 'Phoenix - Central', lat: 33.4484, lng: -112.0740, address: '201 East Washington Street, Phoenix, AZ 85004', phone: '(602) 555-1400', hours: 'Mon-Fri: 9AM-5PM | Sat: 9AM-1PM' },
+                { name: 'Denver - Downtown', lat: 39.7392, lng: -104.9903, address: '1801 California Street, Denver, CO 80202', phone: '(303) 555-1500', hours: 'Mon-Fri: 9AM-5PM' }
+            ];
+            
+            // Add markers for each branch
+            branches.forEach(branch => {
+                const marker = L.marker([branch.lat, branch.lng], { icon: bankIcon }).addTo(map);
+                
+                marker.bindPopup(`
+                    <div style="min-width: 220px;">
+                        <h4 style="color: #1a5f7a; margin: 0 0 10px 0; font-size: 14px;">${branch.name}</h4>
+                        <p style="margin: 5px 0; font-size: 12px; color: #666;"><i class="fas fa-map-marker-alt" style="color: #1a5f7a; width: 16px;"></i> ${branch.address}</p>
+                        <p style="margin: 5px 0; font-size: 12px; color: #666;"><i class="fas fa-phone" style="color: #1a5f7a; width: 16px;"></i> ${branch.phone}</p>
+                        <p style="margin: 5px 0; font-size: 12px; color: #666;"><i class="fas fa-clock" style="color: #1a5f7a; width: 16px;"></i> ${branch.hours}</p>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${branch.lat},${branch.lng}" target="_blank" style="display: inline-block; margin-top: 10px; padding: 6px 12px; background: #1a5f7a; color: white; text-decoration: none; border-radius: 5px; font-size: 12px;"><i class="fas fa-directions"></i> Get Directions</a>
+                    </div>
+                `);
+            });
+            
+            // Search functionality
+            const searchInput = document.querySelector('.search-box input');
+            const searchButton = document.querySelector('.search-box button');
+            
+            function searchBranches() {
+                const query = searchInput.value.toLowerCase().trim();
+                if (!query) return;
+                
+                const found = branches.filter(b => 
+                    b.name.toLowerCase().includes(query) || 
+                    b.address.toLowerCase().includes(query)
+                );
+                
+                if (found.length > 0) {
+                    // Zoom to first found branch
+                    map.setView([found[0].lat, found[0].lng], 14);
+                    
+                    // Highlight matching branch cards
+                    document.querySelectorAll('.branch-card').forEach(card => {
+                        const cardName = card.querySelector('h3').textContent.toLowerCase();
+                        if (found.some(b => cardName.includes(b.name.toLowerCase().split(' - ')[1] || b.name.toLowerCase()))) {
+                            card.style.border = '3px solid #1a5f7a';
+                            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        } else {
+                            card.style.border = '3px solid transparent';
+                        }
+                    });
+                } else {
+                    alert('No branches found matching your search. Try a different city or state.');
+                }
+            }
+            
+            searchButton.addEventListener('click', searchBranches);
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchBranches();
+            });
+            
+            // Make directions buttons work
+            document.querySelectorAll('.btn-directions').forEach((btn, index) => {
+                if (branches[index]) {
+                    btn.href = `https://www.google.com/maps/dir/?api=1&destination=${branches[index].lat},${branches[index].lng}`;
+                    btn.target = '_blank';
+                }
+            });
+        });
+    </script>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>
