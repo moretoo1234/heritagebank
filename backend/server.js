@@ -802,7 +802,7 @@ async function initializeDatabase() {
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 userId INT NOT NULL,
                 accountNumber VARCHAR(12) UNIQUE NOT NULL,
-                accountType ENUM('checking', 'savings', 'money_market', 'cd') NOT NULL DEFAULT 'checking',
+                accountType ENUM('checking', 'savings', 'business', 'premium', 'money_market', 'cd') NOT NULL DEFAULT 'checking',
                 accountName VARCHAR(100),
                 ledgerBalance DECIMAL(15,2) NOT NULL DEFAULT 0.00,
                 availableBalance DECIMAL(15,2) NOT NULL DEFAULT 0.00,
@@ -820,6 +820,9 @@ async function initializeDatabase() {
                 INDEX idx_account_status (status)
             )
         `);
+
+        // Ensure bank_accounts.accountType includes all account types
+        try { await connection.execute("ALTER TABLE bank_accounts MODIFY COLUMN accountType ENUM('checking', 'savings', 'business', 'premium', 'money_market', 'cd') NOT NULL DEFAULT 'checking'"); } catch (e) {}
 
         // Virtual Cards table
         await connection.execute(`
@@ -3339,9 +3342,9 @@ app.post('/api/auth/register', async (req, res) => {
             }
         }
         
-        // Validate initial deposit
-        const deposit = parseFloat(initialDeposit) || 0;
-        if (deposit < 50) {
+        // Validate initial deposit (only enforced when explicitly provided via full application)
+        const deposit = initialDeposit != null ? parseFloat(initialDeposit) : 0;
+        if (initialDeposit != null && deposit < 50) {
             return res.status(400).json({ success: false, message: 'Minimum initial deposit is $50.00' });
         }
         
