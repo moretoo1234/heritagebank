@@ -16,48 +16,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <style>
-        .faq-hero { background: linear-gradient(135deg, #1a472a 0%, #2c3e50 100%); padding: 110px 0 60px; color: white; text-align: center; }
-        .faq-hero h1 { font-size: 2.2rem; margin-bottom: 1rem; }
-        .faq-section { padding: 60px 0; }
-        .faq-container { max-width: 800px; margin: 0 auto; }
-        .faq-category { margin-bottom: 40px; }
-        .faq-category h2 { color: #1a472a; border-bottom: 2px solid #1a472a; padding-bottom: 10px; margin-bottom: 20px; }
-        .faq-item { background: white; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; }
-        .faq-question { padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; transition: background 0.3s; }
-        .faq-question:hover { background: #f0f2f5; }
-        .faq-question i { transition: transform 0.3s; color: #1a472a; }
-        .faq-item.active .faq-question i { transform: rotate(180deg); }
-        .faq-answer { padding: 0 20px; max-height: 0; overflow: hidden; transition: max-height 0.3s, padding 0.3s; }
-        .faq-item.active .faq-answer { max-height: 500px; padding: 0 20px 20px; }
-        .faq-answer p { color: #64748b; line-height: 1.7; }
-        .search-box { max-width: 500px; margin: 0 auto 40px; position: relative; }
-        .search-box input { width: 100%; padding: 15px 50px 15px 20px; border: 1px solid #e2e8f0; border-radius: 30px; font-size: 1rem; }
-        .search-box i { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #1a472a; }
-        .contact-cta { background: #f0f2f5; padding: 40px; border-radius: 16px; text-align: center; margin-top: 40px; }
-        .contact-cta h3 { margin-bottom: 15px; }
-        .contact-cta p { color: #64748b; margin-bottom: 20px; }
-
-        @media (max-width: 768px) {
-            .faq-hero { padding: 70px 0 40px; }
-            .faq-hero h1 { font-size: 1.6rem; }
-            .faq-section { padding: 30px 0; }
-            .faq-question { padding: 16px; font-size: 0.95rem; }
-            .contact-cta { padding: 25px; }
-        }
-
-        @media (max-width: 480px) {
-            .faq-hero { padding: 60px 0 30px; }
-            .faq-hero h1 { font-size: 1.3rem; }
-            .search-box input { padding: 12px 45px 12px 15px; font-size: 0.9rem; }
-            .faq-question { padding: 14px; font-size: 0.9rem; }
-            .faq-answer { font-size: 0.9rem; }
-        }
-    </style>
+    <link rel="stylesheet" href="loading.css">
+    <style>html{scroll-behavior:smooth}</style>
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar">
+    <nav class="navbar navbar-solid" id="mainNav">
         <div class="container">
             <div class="navbar-wrapper">
                 <div class="logo-section">
@@ -78,15 +42,16 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="faq-hero">
+    <section class="page-hero">
         <div class="container">
+            <span class="section-tag"><i class="fas fa-question-circle"></i> Help Center</span>
             <h1>Frequently Asked Questions</h1>
             <p>Find answers to common questions about our banking services</p>
         </div>
     </section>
 
     <!-- FAQ Section -->
-    <section class="faq-section">
+    <section class="page-content">
         <div class="container">
             <div class="faq-container">
                 <div class="search-box">
@@ -315,6 +280,9 @@
         </div>
     </footer>
 
+    <!-- Back to Top -->
+    <button class="back-to-top" id="backToTop" title="Back to top"><i class="fas fa-arrow-up"></i></button>
+
     <script src="script.js"></script>
     <script>
         // FAQ Accordion
@@ -335,6 +303,10 @@
                 item.style.display = text.includes(search) ? 'block' : 'none';
             });
         });
+
+        const backBtn = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => { backBtn.classList.toggle('visible', window.scrollY > 400); });
+        backBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
     </script>
     <script src="cookie-consent.js"></script>
 </body>

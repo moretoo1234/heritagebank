@@ -12,43 +12,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <style>
-        .terms-hero { background: linear-gradient(135deg, #1a472a 0%, #0f2b1a 100%); padding: 110px 0 60px; color: white; text-align: center; }
-        .terms-hero h1 { font-size: 2.2rem; margin-bottom: 1rem; }
-        .terms-content { padding: 60px 0; background: #f0f2f5; }
-        .terms-container { max-width: 900px; margin: 0 auto; background: white; padding: 50px; border-radius: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
-        .terms-container h2 { color: #1a472a; margin: 30px 0 15px; font-size: 1.4rem; padding-bottom: 10px; border-bottom: 2px solid #e8f5e9; }
-        .terms-container h2:first-of-type { margin-top: 0; }
-        .terms-container p { color: #64748b; line-height: 1.8; margin-bottom: 15px; }
-        .terms-container ul { margin: 15px 0; padding-left: 25px; }
-        .terms-container li { color: #64748b; margin-bottom: 10px; line-height: 1.7; }
-        .last-updated { background: #e8f5e9; padding: 15px 20px; border-radius: 10px; margin-bottom: 30px; color: #1a472a; font-weight: 500; }
-        .highlight-box { background: #fff9e6; border-left: 4px solid #f0ad4e; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
-        .cookie-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-        .cookie-table th, .cookie-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-        .cookie-table th { background: #f0f2f5; color: #1a472a; font-weight: 600; }
-        .cookie-table td { color: #64748b; font-size: 0.9rem; line-height: 1.6; }
-        .toc { background: #f0f2f5; padding: 25px; border-radius: 10px; margin-bottom: 30px; }
-        .toc h3 { color: #1a472a; margin-bottom: 15px; }
-        .toc ul { list-style: none; padding: 0; }
-        .toc li { margin-bottom: 8px; }
-        .toc a { color: #1a472a; text-decoration: none; }
-        .toc a:hover { text-decoration: underline; }
-        @media (max-width: 768px) {
-            .terms-hero { padding: 70px 0 40px; }
-            .terms-hero h1 { font-size: 1.6rem; }
-            .terms-container { padding: 30px 20px; margin: 0 15px; }
-            .cookie-table { font-size: 0.8rem; }
-            .cookie-table th, .cookie-table td { padding: 8px; }
-        }
-        @media (max-width: 480px) {
-            .terms-hero h1 { font-size: 1.3rem; }
-            .terms-container { padding: 25px 15px; }
-        }
-    </style>
+    <link rel="stylesheet" href="loading.css">
+    <style>html{scroll-behavior:smooth}</style>
 </head>
 <body>
-    <nav class="navbar">
+    <nav class="navbar navbar-solid" id="mainNav">
         <div class="container">
             <div class="navbar-wrapper">
                 <div class="logo-section">
@@ -68,16 +36,17 @@
         </div>
     </nav>
 
-    <section class="terms-hero">
+    <section class="page-hero">
         <div class="container">
-            <h1><i class="fas fa-cookie-bite"></i> Cookie Policy</h1>
+            <span class="section-tag"><i class="fas fa-cookie-bite"></i> Legal</span>
+            <h1>Cookie Policy</h1>
             <p>How we use cookies and similar technologies</p>
         </div>
     </section>
 
-    <section class="terms-content">
+    <section class="page-content">
         <div class="container">
-            <div class="terms-container">
+            <div class="page-card">
                 <div class="last-updated">
                     <i class="fas fa-calendar-alt"></i> Last Updated: January 15, 2025
                 </div>
@@ -222,7 +191,15 @@
             </div>
         </div>
     </footer>
+    <!-- Back to Top -->
+    <button class="back-to-top" id="backToTop" title="Back to top"><i class="fas fa-arrow-up"></i></button>
+
     <script src="script.js"></script>
     <script src="cookie-consent.js"></script>
+    <script>
+        const backBtn = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => { backBtn.classList.toggle('visible', window.scrollY > 400); });
+        backBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    </script>
 </body>
 </html>

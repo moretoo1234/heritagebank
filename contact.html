@@ -16,59 +16,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <style>
-        .contact-hero { background: linear-gradient(135deg, #1a472a 0%, #2c3e50 100%); padding: 110px 0 60px; color: white; text-align: center; }
-        .contact-hero h1 { font-size: 2.2rem; margin-bottom: 1rem; }
-        .contact-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; margin: 0 auto; }
-        .contact-content { padding: 60px 0; background: #f0f2f5; }
-        .contact-container { max-width: 960px; margin: 0 auto; padding: 0 20px; }
-        .contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-bottom: 30px; }
-        .contact-card { background: white; padding: 35px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; text-align: center; transition: transform 0.3s; }
-        .contact-card:hover { transform: translateY(-5px); }
-        .contact-card i.card-icon { font-size: 2.5rem; color: #d4af37; margin-bottom: 15px; display: block; }
-        .contact-card h3 { color: #1a472a; margin-bottom: 10px; }
-        .contact-card p { color: #64748b; line-height: 1.7; }
-        .contact-card a { color: #1a472a; font-weight: 600; text-decoration: none; }
-        .contact-card a:hover { color: #d4af37; }
-        .form-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; margin-bottom: 30px; }
-        .form-card h2 { color: #1a472a; margin-bottom: 25px; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .form-group { margin-bottom: 18px; }
-        .form-group label { display: block; margin-bottom: 6px; color: #1e293b; font-weight: 600; font-size: 0.9rem; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; font-family: inherit; transition: border-color 0.3s; box-sizing: border-box; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #1a472a; box-shadow: 0 0 0 3px rgba(26,71,42,0.08); }
-        .form-group textarea { resize: vertical; min-height: 120px; }
-        .submit-btn { background: #1a472a; color: white; padding: 14px 40px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.3s; }
-        .submit-btn:hover { background: #2d6b45; }
-        .hours-card { background: white; padding: 35px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
-        .hours-card h2 { color: #1a472a; margin-bottom: 20px; }
-        .hours-table { width: 100%; border-collapse: collapse; }
-        .hours-table td { padding: 10px 0; border-bottom: 1px solid #f0f0f0; color: #64748b; }
-        .hours-table td:first-child { font-weight: 600; color: #1e293b; }
-        .hours-table td:last-child { text-align: right; }
-        .hours-table tr:last-child td { border-bottom: none; }
-        .alert { padding: 15px 20px; border-radius: 8px; margin-top: 15px; display: none; }
-        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .emergency-banner { background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px; padding: 20px 25px; margin-bottom: 30px; display: flex; align-items: center; gap: 15px; }
-        .emergency-banner i { font-size: 1.5rem; color: #856404; }
-        .emergency-banner p { color: #856404; margin: 0; font-size: 0.95rem; }
-        .emergency-banner strong { color: #664d03; }
-
-        @media (max-width: 768px) {
-            .contact-hero { padding: 70px 0 40px; }
-            .contact-hero h1 { font-size: 1.6rem; }
-            .form-row { grid-template-columns: 1fr; }
-            .form-card { padding: 25px 20px; }
-        }
-        @media (max-width: 480px) {
-            .contact-hero h1 { font-size: 1.3rem; }
-        }
-    </style>
+    <link rel="stylesheet" href="loading.css">
+    <style>html{scroll-behavior:smooth}</style>
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar">
+    <nav class="navbar navbar-solid" id="mainNav">
         <div class="container">
             <div class="navbar-wrapper">
                 <div class="logo-section">
@@ -89,16 +42,17 @@
     </nav>
 
     <!-- Hero -->
-    <section class="contact-hero">
+    <section class="page-hero">
         <div class="container">
-            <h1><i class="fas fa-envelope"></i> Contact Us</h1>
+            <span class="section-tag"><i class="fas fa-envelope"></i> Get in Touch</span>
+            <h1>Contact Us</h1>
             <p>We're here to help. Reach out to us through any of the channels below.</p>
         </div>
     </section>
 
     <!-- Content -->
-    <section class="contact-content">
-        <div class="contact-container">
+    <section class="page-content">
+        <div class="page-container">
 
             <!-- Emergency Banner -->
             <div class="emergency-banner">
@@ -177,7 +131,7 @@
             </div>
 
             <!-- Business Hours -->
-            <div class="hours-card">
+            <div class="page-card">
                 <h2><i class="fas fa-clock"></i> Business Hours</h2>
                 <table class="hours-table">
                     <tr><td>Monday - Friday</td><td>8:00 AM - 6:00 PM EST</td></tr>
@@ -239,6 +193,9 @@
         </div>
     </footer>
 
+    <!-- Back to Top -->
+    <button class="back-to-top" id="backToTop" title="Back to top"><i class="fas fa-arrow-up"></i></button>
+
     <script src="script.js"></script>
     <script>
         function submitContactForm(e) {
@@ -248,6 +205,9 @@
             document.getElementById('contactForm').reset();
             setTimeout(() => { document.getElementById('cfSuccess').style.display = 'none'; }, 5000);
         }
+        const backBtn = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => { backBtn.classList.toggle('visible', window.scrollY > 400); });
+        backBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
     </script>
     <script src="cookie-consent.js"></script>
 </body>
