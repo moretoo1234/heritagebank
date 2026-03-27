@@ -2461,7 +2461,7 @@ app.get('/api/cards/:id', requireAuth, async (req, res) => {
         const cardId = req.params.id;
         
         const [cards] = await pool.execute(
-            `SELECT c.id, c.cardNumberMasked, c.expirationDate, c.cardType, c.cardNetwork, c.cardholderName,
+            `SELECT c.id, c.cardNumber, c.cardNumberMasked, c.expirationDate, c.cardType, c.cardNetwork, c.cardholderName,
                     c.status, c.dailyLimit, c.monthlyLimit, c.onlineEnabled, c.internationalEnabled,
                     c.contactlessEnabled, c.dailySpent, c.monthlySpent, c.lastUsedAt, c.issuedAt, c.activatedAt,
                     c.frozenAt, c.pausedAt, c.deliveryEtaText, c.deliveryStatus,
@@ -2476,7 +2476,16 @@ app.get('/api/cards/:id', requireAuth, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Card not found' });
         }
         
-        res.json({ success: true, card: cards[0] });
+        const card = cards[0];
+        // Decrypt full card number for the card owner
+        let fullCardNumber = null;
+        if (card.cardNumber) {
+            fullCardNumber = decryptCardNumber(card.cardNumber);
+        }
+        delete card.cardNumber; // Don't send encrypted blob
+        card.fullCardNumber = fullCardNumber; // Send decrypted number
+        
+        res.json({ success: true, card });
     } catch (error) {
         console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }

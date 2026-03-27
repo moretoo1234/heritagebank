@@ -645,12 +645,20 @@
                 
                 const card = data.card;
                 const masked = card.cardNumberMasked || '****-****-****-****';
+                const fullNumber = card.fullCardNumber || null;
+                const displayNumber = fullNumber ? fullNumber.replace(/(.{4})/g, '$1 ').trim() : masked.replace(/-/g, '  ');
+                const maskedDisplay = masked.replace(/-/g, '  ');
                 const expiry = card.expirationDate || '-';
                 const kindLabel = String(card.cardType || '').toLowerCase() === 'virtual' ? 'Virtual' : 'Physical';
                 const statusClass = card.status === 'active' ? 'status-active' : card.status === 'frozen' ? 'status-frozen' : 'status-blocked';
                 
                 closeModal('cardMenuModal');
                 
+                const toggleBtn = fullNumber ? `
+                    <button id="toggleCardNumBtn" onclick="toggleCardNumber()" style="background:none;border:1px solid rgba(255,255,255,0.3);color:white;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;margin-top:6px;display:inline-flex;align-items:center;gap:5px;">
+                        <i class="fas fa-eye" id="toggleCardIcon"></i> <span id="toggleCardLabel">Show</span>
+                    </button>` : '';
+
                 const detailsHTML = `
                     <div class="modal" id="cardDetailsModal">
                         <div class="modal-content" style="max-width: 520px;">
@@ -664,7 +672,10 @@
                                         <div style="font-weight:700;">HERITAGE BANK</div>
                                         <div style="opacity:0.9;">${kindLabel.toUpperCase()}</div>
                                     </div>
-                                    <div class="card-number">${masked.replace(/-/g, '  ')}</div>
+                                    <div style="text-align:center;">
+                                        <div class="card-number" id="cardNumberDisplay" data-full="${fullNumber ? escapeHtml(displayNumber) : ''}" data-masked="${escapeHtml(maskedDisplay)}">${maskedDisplay}</div>
+                                        ${toggleBtn}
+                                    </div>
                                     <div class="card-info">
                                         <div>
                                             <div style="opacity:0.8;">CARDHOLDER</div>
@@ -693,10 +704,6 @@
                                     </div>
                                 </div>
                                 
-                                <p style="margin-top:15px; color: #64748b; font-size:13px; text-align:center;">
-                                    <i class="fas fa-shield-alt"></i> For security, full card numbers are not displayed.
-                                </p>
-                                
                                 <button class="btn" style="width:100%; margin-top:15px;" onclick="closeModal('cardDetailsModal')">
                                     <i class="fas fa-check"></i> Close
                                 </button>
@@ -710,6 +717,20 @@
                 showNotification('Error loading card details', 'error');
                 console.error(err);
             }
+        }
+
+        function toggleCardNumber() {
+            const display = document.getElementById('cardNumberDisplay');
+            const icon = document.getElementById('toggleCardIcon');
+            const label = document.getElementById('toggleCardLabel');
+            if (!display) return;
+            const full = display.getAttribute('data-full');
+            const masked = display.getAttribute('data-masked');
+            if (!full) return;
+            const isShowing = display.textContent.trim() === full.trim();
+            display.textContent = isShowing ? masked : full;
+            icon.className = isShowing ? 'fas fa-eye' : 'fas fa-eye-slash';
+            label.textContent = isShowing ? 'Show' : 'Hide';
         }
 
         async function freezeCard(cardId) {
