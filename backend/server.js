@@ -518,6 +518,21 @@ function generateAccountNumber() {
     return (Math.floor(Math.random() * 9000000000) + 1000000000).toString();
 }
 
+// Sync bank_accounts balances with users.balance (single source of truth)
+async function syncBankAccountBalance(userId) {
+    try {
+        const [users] = await pool.execute('SELECT balance FROM users WHERE id = ?', [userId]);
+        if (users.length === 0) return;
+        const balance = parseFloat(users[0].balance) || 0;
+        const [accounts] = await pool.execute('SELECT id FROM bank_accounts WHERE userId = ? AND isPrimary = TRUE', [userId]);
+        if (accounts.length > 0) {
+            await pool.execute('UPDATE bank_accounts SET ledgerBalance = ?, availableBalance = ?, lastActivityAt = NOW() WHERE userId = ? AND isPrimary = TRUE', [balance, balance, userId]);
+        }
+    } catch (e) {
+        console.error('syncBankAccountBalance error:', e.message);
+    }
+}
+
 // Initialize database
 async function initializeDatabase() {
     try {
@@ -540,7 +555,7 @@ async function initializeDatabase() {
                 country VARCHAR(100) DEFAULT 'United States',
                 accountNumber VARCHAR(20) UNIQUE,
                 routingNumber VARCHAR(20),
-                balance DECIMAL(15,2) DEFAULT 50000,
+                balance DECIMAL(15,2) DEFAULT 0.00,
                 accountType ENUM('checking', 'savings', 'business', 'premium') DEFAULT 'checking',
                 accountStatus ENUM('active', 'frozen', 'suspended', 'closed') DEFAULT 'active',
                 isAdmin BOOLEAN DEFAULT false,
@@ -1837,6 +1852,9 @@ async function postMonthlyInterest() {
              WHERE accountId = ? AND status = 'accrued' AND periodStart >= ? AND periodEnd <= ?`,
             [accrual.accountId, monthStart.toISOString().split('T')[0], monthEnd.toISOString().split('T')[0]]
         );
+
+        // Sync bank_accounts
+        await syncBankAccountBalance(accrual.accountId);
     }
     
     return { accountsProcessed: accruals.length };
@@ -1921,6 +1939,9 @@ async function chargePendingFees() {
                 `UPDATE account_fees SET status = 'charged', chargedAt = NOW() WHERE id = ?`,
                 [fee.id]
             );
+
+            // Sync bank_accounts
+            await syncBankAccountBalance(fee.accountId);
             
             charged++;
         } else {
@@ -2385,6 +2406,9 @@ app.post('/api/accounts/open', requireAuth, async (req, res) => {
                  VALUES (?, NULL, 'transfer_out', ?, ?, 'completed', ?)`,
                 [req.auth.id, deposit, `Initial deposit to new ${accountType} account`, generateReferenceId('TRF')]
             );
+
+            // Sync bank_accounts
+            await syncBankAccountBalance(req.auth.id);
         }
         
         await createNotification(req.auth.id, 'account', 'New Account Opened',
@@ -3584,6 +3608,10 @@ app.post('/api/admin/fund-user', requireAuth, requireAdmin, async (req, res) => 
 
         await connection.commit();
 
+        // Sync bank_accounts balances
+        await syncBankAccountBalance(sender.id);
+        await syncBankAccountBalance(recipient.id);
+
         res.json({
             success: true,
             message: `$${amountValue.toLocaleString()} sent to ${recipient.firstName} ${recipient.lastName}`,
@@ -3659,6 +3687,19 @@ app.post('/api/admin/create-user', requireAuth, requireAdmin, async (req, res) =
                 isAdminValue
             ]
         );
+
+        // Create primary bank_accounts record for the new user
+        const bankAccountNumber = generateBankAccountNumber();
+        const interestRate = accountTypeValue === 'savings' ? 0.0425 : 0.0001;
+        try {
+            await pool.execute(
+                `INSERT INTO bank_accounts (userId, accountNumber, accountType, accountName, ledgerBalance, availableBalance, interestRate, isPrimary)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)`,
+                [insertResult.insertId, bankAccountNumber, accountTypeValue, `${accountTypeValue.charAt(0).toUpperCase() + accountTypeValue.slice(1)} Account`, balance, balance, interestRate]
+            );
+        } catch (e) {
+            console.error('Admin create-user: bank_accounts insert error:', e.message);
+        }
 
         res.status(201).json({
             success: true,
@@ -3917,6 +3958,10 @@ app.post('/api/admin/transfer', requireAuth, requireAdmin, async (req, res) => {
 
         await connection.commit();
 
+        // Sync bank_accounts balances
+        await syncBankAccountBalance(sender.id);
+        await syncBankAccountBalance(recipient.id);
+
         res.json({
             success: true,
             message: `$${amountValue.toLocaleString()} transferred from ${sender.firstName} ${sender.lastName} to ${recipient.firstName} ${recipient.lastName}`,
@@ -4016,6 +4061,9 @@ app.post('/api/admin/credit-account', requireAuth, requireAdmin, async (req, res
         }
 
         await connection.commit();
+
+        // Sync bank_accounts balance
+        await syncBankAccountBalance(user.id);
 
         res.json({
             success: true,
@@ -4133,6 +4181,9 @@ app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res)
         } catch (e) {}
 
         await connection.commit();
+
+        // Sync bank_accounts balance
+        await syncBankAccountBalance(user.id);
 
         res.json({
             success: true,
@@ -4369,6 +4420,10 @@ app.post('/api/admin/approve-transfer/:transferId', requireAuth, requireAdmin, a
 
         await connection.commit();
 
+        // Sync bank_accounts balances
+        await syncBankAccountBalance(sender.id);
+        await syncBankAccountBalance(recipientUser.id);
+
         res.json({
             success: true,
             message: `Transfer of $${amountValue.toLocaleString()} from ${sender.firstName} ${sender.lastName} to ${recipientUser.firstName} ${recipientUser.lastName} has been approved`,
@@ -4553,6 +4608,10 @@ app.post('/api/admin/approve-transaction/:transactionId', requireAuth, requireAd
 
         await connection.commit();
 
+        // Sync bank_accounts for both sender and recipient
+        await syncBankAccountBalance(sender.id);
+        await syncBankAccountBalance(recipient.id);
+
         res.json({
             success: true,
             message: `Transfer of $${amountValue.toLocaleString()} from ${sender.firstName} ${sender.lastName} to ${recipient.firstName} ${recipient.lastName} has been approved`
@@ -4733,6 +4792,9 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
 
             await connection.commit();
 
+            // Sync bank_accounts
+            await syncBankAccountBalance(sender.id);
+
             return res.json({
                 success: true,
                 pending: false,
@@ -4845,6 +4907,10 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
         } catch (e) {}
 
         await connection.commit();
+
+        // Sync bank_accounts for both sender and recipient
+        await syncBankAccountBalance(sender.id);
+        await syncBankAccountBalance(recipientUser.id);
 
         res.json({
             success: true,
@@ -5279,6 +5345,9 @@ app.post('/api/bills/pay', requireAuth, async (req, res) => {
         const fromAcctNum = cardLastFour || (user.accountNumber ? String(user.accountNumber).slice(-4) : null);
 
         await pool.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amount, user.id]);
+
+        // Sync bank_accounts
+        await syncBankAccountBalance(user.id);
 
         // Record bill payment transaction
         const biller = BILLERS.find(b => String(b.id) === String(billerId));
@@ -7117,6 +7186,11 @@ app.post('/api/admin/reverse-transaction/:transactionId', requireAuth, requireAd
         );
 
         await connection.commit();
+
+        // Sync bank_accounts for affected users
+        if (transaction.fromUserId) await syncBankAccountBalance(transaction.fromUserId);
+        if (transaction.toUserId) await syncBankAccountBalance(transaction.toUserId);
+
         res.json({ success: true, message: 'Transaction reversed successfully' });
     } catch (error) {
         await connection.rollback();
@@ -8565,7 +8639,8 @@ app.post('/api/admin/users/:userId/adjust-balance', requireAuth, requireAdmin, a
 
         await pool.execute('UPDATE users SET balance = ? WHERE id = ?', [newBalance, userId]);
 
-        // Create transaction record
+        // Sync bank_accounts balance
+        await syncBankAccountBalance(userId);
         const txType = adjustmentType === 'debit' ? 'debit' : 'credit';
         const referenceId = `ADJ-${Date.now()}`;
         if (adjustmentType === 'debit') {
@@ -8951,6 +9026,10 @@ app.post('/api/transfer/internal', requireAuth, async (req, res) => {
             conn.release();
             throw txErr;
         }
+
+        // Sync bank_accounts for both sender and recipient
+        await syncBankAccountBalance(sender.id);
+        await syncBankAccountBalance(recipient.id);
 
         // Update spent limits
         await updateSpentLimits(sender.id, transferAmount);
@@ -10633,6 +10712,9 @@ app.post('/api/investments/invest', requireAuth, async (req, res) => {
         // Deduct from balance
         await pool.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [investAmount, userId]);
 
+        // Sync bank_accounts
+        await syncBankAccountBalance(userId);
+
         // Create investment record
         const [result] = await pool.execute(`
             INSERT INTO investments (user_id, product_name, product_type, amount, apy, period_years, estimated_return, maturity_date)
@@ -10753,6 +10835,9 @@ app.post('/api/investments/:id/withdraw', requireAuth, async (req, res) => {
 
         // Credit user's balance
         await pool.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [payout, userId]);
+
+        // Sync bank_accounts
+        await syncBankAccountBalance(userId);
 
         // Mark investment as withdrawn
         await pool.execute(
@@ -11092,6 +11177,9 @@ app.post('/api/admin/approve-check-deposit/:depositId', requireAuth, requireAdmi
         } catch (e) {}
 
         await connection.commit();
+
+        // Sync bank_accounts
+        await syncBankAccountBalance(deposit.userId);
 
         // Fetch updated user info for response
         const [users] = await pool.execute('SELECT firstName, lastName, balance FROM users WHERE id = ?', [deposit.userId]);
