@@ -1339,6 +1339,117 @@ async function initializeDatabase() {
             )
         `);
 
+        // Interest accruals table
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS interest_accruals (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                accountId INT NOT NULL,
+                interestEarned DECIMAL(15,6) NOT NULL DEFAULT 0,
+                periodStart DATE NOT NULL,
+                periodEnd DATE NOT NULL,
+                status ENUM('accrued', 'posted') DEFAULT 'accrued',
+                postedAt TIMESTAMP NULL,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_ia_account (accountId),
+                INDEX idx_ia_status (status),
+                INDEX idx_ia_period (periodStart, periodEnd)
+            )
+        `);
+
+        // Fee schedule table
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS fee_schedule (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                feeType VARCHAR(50) NOT NULL,
+                feeName VARCHAR(100) NOT NULL,
+                amount DECIMAL(15,2) NOT NULL,
+                description VARCHAR(500),
+                accountTypes VARCHAR(255) DEFAULT 'checking',
+                minBalanceWaiver DECIMAL(15,2) DEFAULT NULL,
+                isActive BOOLEAN DEFAULT TRUE,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Account fees table
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS account_fees (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                accountId INT NOT NULL,
+                feeScheduleId INT NULL,
+                amount DECIMAL(15,2) NOT NULL,
+                description VARCHAR(500),
+                status ENUM('pending', 'charged', 'waived') DEFAULT 'pending',
+                chargedAt TIMESTAMP NULL,
+                waiveReason VARCHAR(255),
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_af_account (accountId),
+                INDEX idx_af_status (status)
+            )
+        `);
+
+        // Balance snapshots table
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS balance_snapshots (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                userId INT NOT NULL,
+                balance DECIMAL(15,2) NOT NULL,
+                snapshotDate DATE NOT NULL,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_bs_user (userId),
+                INDEX idx_bs_date (snapshotDate),
+                UNIQUE KEY uk_user_date (userId, snapshotDate)
+            )
+        `);
+
+        // Compliance flags table
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS compliance_flags (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                userId INT NOT NULL,
+                flagType VARCHAR(50) NOT NULL,
+                severity ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
+                description TEXT,
+                triggeredBy VARCHAR(50) DEFAULT 'system',
+                status ENUM('open', 'reviewing', 'resolved', 'dismissed') DEFAULT 'open',
+                resolvedBy INT NULL,
+                resolvedAt TIMESTAMP NULL,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_cf_user (userId),
+                INDEX idx_cf_status (status),
+                INDEX idx_cf_severity (severity)
+            )
+        `);
+
+        // Regulatory reports table
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS regulatory_reports (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                reportType VARCHAR(50) NOT NULL,
+                reportData JSON,
+                generatedBy INT NULL,
+                periodStart DATE,
+                periodEnd DATE,
+                status ENUM('draft', 'final', 'submitted') DEFAULT 'draft',
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_rr_type (reportType)
+            )
+        `);
+
+        // Transfer logs table
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS transfer_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                sender_account_id INT NOT NULL,
+                receiver_account_id INT NOT NULL,
+                amount DECIMAL(15,2) NOT NULL,
+                reference_id VARCHAR(50),
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_tl_sender (sender_account_id),
+                INDEX idx_tl_receiver (receiver_account_id)
+            )
+        `);
+
         connection.release();
         DB_READY = true;
     } catch (error) {
@@ -4733,6 +4844,16 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             return res.status(403).json({ success: false, message: `Account is ${sender.accountStatus}. Transfers not allowed.` });
         }
 
+        // Enforce transaction limits
+        const limitCheck = await checkTransactionLimits(sender.id, amountValue, 'transfer');
+        if (!limitCheck.allowed) {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: limitCheck.reason });
+        }
+
+        // Check for suspicious activity
+        const suspiciousFlags = await checkSuspiciousActivity(sender.id, amountValue, 'transfer');
+
         const senderBalance = parseFloat(sender.balance);
         const totalWithFee = amountValue + transferFee;
         if (senderBalance < totalWithFee) {
@@ -4803,6 +4924,20 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
 
             // Sync bank_accounts
             await syncBankAccountBalance(sender.id);
+
+            // Update spent limits
+            try { await updateSpentLimits(sender.id, amountValue); } catch (e) {}
+
+            // Create compliance flags if suspicious
+            for (const flag of suspiciousFlags) {
+                try {
+                    await pool.execute(
+                        `INSERT INTO compliance_flags (userId, flagType, severity, description, triggeredBy)
+                         VALUES (?, ?, 'medium', ?, 'system')`,
+                        [sender.id, flag.type === 'ctr_threshold' ? 'aml_review' : 'unusual_activity', flag.description]
+                    );
+                } catch (e) {}
+            }
 
             return res.json({
                 success: true,
@@ -4920,6 +5055,27 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
         // Sync bank_accounts for both sender and recipient
         await syncBankAccountBalance(sender.id);
         await syncBankAccountBalance(recipientUser.id);
+
+        // Update spent limits
+        try { await updateSpentLimits(sender.id, amountValue); } catch (e) {}
+
+        // Create compliance flags if suspicious
+        for (const flag of suspiciousFlags) {
+            try {
+                await pool.execute(
+                    `INSERT INTO compliance_flags (userId, flagType, severity, description, triggeredBy)
+                     VALUES (?, ?, 'medium', ?, 'system')`,
+                    [sender.id, flag.type === 'ctr_threshold' ? 'aml_review' : 'unusual_activity', flag.description]
+                );
+            } catch (e) {}
+        }
+
+        // Notify recipient of incoming transfer
+        try {
+            await createNotification(recipientUser.id, 'transfer', 'Transfer Received',
+                `You received $${amountValue.toLocaleString()} from ${sender.firstName} ${sender.lastName}.`,
+                { transactionId, amount: amountValue });
+        } catch (e) {}
 
         res.json({
             success: true,
@@ -5322,10 +5478,19 @@ app.post('/api/bills/pay', requireAuth, async (req, res) => {
         
         const { billerId, accountNumber, amount, cardId } = req.body;
         
+        const amtValue = parseFloat(amount);
+        if (!Number.isFinite(amtValue) || amtValue <= 0) {
+            return res.status(400).json({ success: false, message: 'Valid amount is required' });
+        }
+
         const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [req.auth.id]);
         const user = users[0];
+
+        if (user.accountStatus && user.accountStatus !== 'active') {
+            return res.status(403).json({ success: false, message: `Account is ${user.accountStatus}. Bill payments not allowed.` });
+        }
         
-        if (parseFloat(user.balance) < parseFloat(amount)) {
+        if (parseFloat(user.balance) < amtValue) {
             return res.status(400).json({ success: false, message: 'Insufficient funds' });
         }
 
@@ -5353,7 +5518,7 @@ app.post('/api/bills/pay', requireAuth, async (req, res) => {
         // Use account number as final fallback
         const fromAcctNum = cardLastFour || (user.accountNumber ? String(user.accountNumber).slice(-4) : null);
 
-        await pool.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amount, user.id]);
+        await pool.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amtValue, user.id]);
 
         // Sync bank_accounts
         await syncBankAccountBalance(user.id);
@@ -7735,8 +7900,8 @@ app.post('/api/user/documents/upload', requireAuth, async (req, res) => {
 
         // In production, upload to S3. For demo, we'll just track in DB
         const [result] = await pool.execute(
-            'INSERT INTO user_documents (userId, documentType, fileName, verificationStatus, uploadedAt) VALUES (?, ?, ?, ?, NOW())',
-            [req.auth.id, documentType || 'ID', fileName || 'document', 'pending']
+            'INSERT INTO documents (userId, documentType, fileName, filePath, status, uploadedAt) VALUES (?, ?, ?, ?, ?, NOW())',
+            [req.auth.id, documentType || 'other', fileName || 'document', '', 'pending']
         );
 
         res.json({ success: true, message: 'Document uploaded', documentId: result.insertId });
@@ -7749,7 +7914,7 @@ app.post('/api/user/documents/upload', requireAuth, async (req, res) => {
 app.get('/api/user/documents', requireAuth, async (req, res) => {
     try {
         const [documents] = await pool.execute(
-            'SELECT id, documentType, fileName, verificationStatus as verified, uploadedAt FROM user_documents WHERE userId = ? ORDER BY uploadedAt DESC',
+            'SELECT id, documentType, fileName, status as verified, uploadedAt FROM documents WHERE userId = ? ORDER BY uploadedAt DESC',
             [req.auth.id]
         );
 
@@ -7765,7 +7930,7 @@ app.delete('/api/user/documents/:id', requireAuth, async (req, res) => {
         const { id } = req.params;
 
         await pool.execute(
-            'DELETE FROM user_documents WHERE id = ? AND userId = ?',
+            'DELETE FROM documents WHERE id = ? AND userId = ?',
             [id, req.auth.id]
         );
 
@@ -8035,9 +8200,9 @@ app.get('/api/user/privacy/export-data', requireAuth, async (req, res) => {
 
         // Get all user data
         const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [req.auth.id]);
-        const [transactions] = await pool.execute('SELECT * FROM transactions WHERE userId = ? ORDER BY createdAt DESC', [req.auth.id]);
+        const [transactions] = await pool.execute('SELECT * FROM transactions WHERE fromUserId = ? OR toUserId = ? ORDER BY createdAt DESC', [req.auth.id, req.auth.id]);
         const [beneficiaries] = await pool.execute('SELECT * FROM beneficiaries WHERE userId = ?', [req.auth.id]);
-        const [documents] = await pool.execute('SELECT * FROM user_documents WHERE userId = ?', [req.auth.id]);
+        const [documents] = await pool.execute('SELECT id, documentType, fileName, status, uploadedAt FROM documents WHERE userId = ?', [req.auth.id]);
         const [logins] = await pool.execute('SELECT * FROM login_history WHERE userId = ? LIMIT 100', [req.auth.id]);
 
         // Remove sensitive fields before export
@@ -8456,7 +8621,7 @@ app.get('/api/user/privacy/export-data', requireAuth, async (req, res) => {
 
         // Get all user data
         const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [req.auth.id]);
-        const [transactions] = await pool.execute('SELECT * FROM transactions WHERE userId = ?', [req.auth.id]);
+        const [transactions] = await pool.execute('SELECT * FROM transactions WHERE fromUserId = ? OR toUserId = ? ORDER BY createdAt DESC', [req.auth.id, req.auth.id]);
         const [beneficiaries] = await pool.execute('SELECT * FROM beneficiaries WHERE userId = ?', [req.auth.id]);
         const [loginHistory] = await pool.execute('SELECT * FROM login_history WHERE userId = ? ORDER BY loginAt DESC LIMIT 100', [req.auth.id]);
         const [documents] = await pool.execute('SELECT id, documentType, fileName, status, uploadedAt FROM documents WHERE userId = ?', [req.auth.id]);
@@ -8859,8 +9024,8 @@ app.get('/api/admin/impersonate/dashboard', requireAuth, async (req, res) => {
 
         // Get recent transactions
         const [transactions] = await pool.execute(
-            `SELECT * FROM transactions WHERE userId = ? ORDER BY createdAt DESC LIMIT 20`,
-            [req.auth.id]
+            `SELECT * FROM transactions WHERE fromUserId = ? OR toUserId = ? ORDER BY createdAt DESC LIMIT 20`,
+            [req.auth.id, req.auth.id]
         );
 
         // Get beneficiaries
@@ -9509,7 +9674,7 @@ app.get('/api/user/verification-status', requireAuth, async (req, res) => {
         let documents = [];
         try {
             const [docs] = await pool.execute(
-                'SELECT id, documentType, verified, createdAt as uploadedAt FROM user_documents WHERE userId = ? ORDER BY createdAt DESC',
+                'SELECT id, documentType, status as verified, uploadedAt FROM documents WHERE userId = ? ORDER BY uploadedAt DESC',
                 [req.auth.id]
             );
             documents = docs;
