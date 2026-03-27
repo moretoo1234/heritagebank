@@ -120,6 +120,10 @@
         .app-footer-links a { color: #8899aa; text-decoration: none; margin: 0 10px; font-size: 0.8rem; }
         .app-footer-links a:hover { color: #aabbcc; }
         .app-footer-copy { color: #556677; font-size: 0.75rem; margin: 0; }
+        .toast-notification { position: fixed; top: 20px; right: 20px; padding: 16px 24px; border-radius: 12px; color: white; font-weight: 500; z-index: 20000; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); animation: toastSlideIn 0.3s ease, toastFadeOut 0.3s ease 3.7s forwards; max-width: 400px; }
+        .toast-notification.error { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        @keyframes toastSlideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes toastFadeOut { from { opacity: 1; } to { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -153,6 +157,16 @@
 
         let userId = null;
         let allTx = [];
+
+        function showToast(message) {
+            const existing = document.querySelectorAll('.toast-notification');
+            existing.forEach(t => t.remove());
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification error';
+            toast.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
 
         function formatMoney(amount) {
             const v = Number(amount || 0);
@@ -369,7 +383,7 @@
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_URL}/api/transactions/${id}/receipt`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!response.ok) {
-                alert('Error downloading receipt');
+                showToast('Error downloading receipt');
                 return;
             }
             const blob = await response.blob();
@@ -573,8 +587,8 @@
 
         init().catch(err => {
             console.error(err);
-            alert('Failed to load transactions. Please sign in again.');
-            location.href = 'signin.html';
+            showToast('Failed to load transactions. Please sign in again.');
+            setTimeout(() => { location.href = 'signin.html'; }, 2000);
         });
     </script>
 

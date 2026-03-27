@@ -314,6 +314,12 @@
         .app-footer-links a { color: #8899aa; text-decoration: none; margin: 0 10px; font-size: 0.8rem; }
         .app-footer-links a:hover { color: #aabbcc; }
         .app-footer-copy { color: #556677; font-size: 0.75rem; margin: 0; }
+        .toast-notification { position: fixed; top: 20px; right: 20px; padding: 16px 24px; border-radius: 12px; color: white; font-weight: 500; z-index: 2000; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); animation: toastSlideIn 0.3s ease, toastFadeOut 0.3s ease 3.7s forwards; max-width: 400px; }
+        .toast-notification.error { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .toast-notification.warning { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .toast-notification.success { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        @keyframes toastSlideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes toastFadeOut { from { opacity: 1; } to { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -433,6 +439,17 @@
         
         let goals = [];
         let selectedCategory = 'vacation';
+
+        function showToast(message, type = 'error') {
+            const existing = document.querySelectorAll('.toast-notification');
+            existing.forEach(t => t.remove());
+            const icons = { error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', success: 'fa-check-circle' };
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            toast.innerHTML = `<i class="fas ${icons[type] || icons.error}"></i> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
         
         // Check dark mode
         if (localStorage.getItem('darkMode') === 'true') {
@@ -626,11 +643,12 @@
                 if (data.success) {
                     hideModal();
                     loadGoals();
+                    showToast('Goal saved successfully!', 'success');
                 } else {
-                    alert(data.message || 'Failed to save goal');
+                    showToast(data.message || 'Failed to save goal');
                 }
             } catch (e) {
-                alert('Error saving goal');
+                showToast('Error saving goal. Please try again.');
             }
         }
         
@@ -647,11 +665,12 @@
                 const data = await res.json();
                 if (data.success) {
                     loadGoals();
+                    showToast('Goal deleted.', 'success');
                 } else {
-                    alert(data.message || 'Failed to delete goal');
+                    showToast(data.message || 'Failed to delete goal');
                 }
             } catch (e) {
-                alert('Error deleting goal');
+                showToast('Error deleting goal. Please try again.');
             }
         }
         
@@ -659,7 +678,7 @@
             const input = document.getElementById(`addAmount${id}`);
             const amount = parseFloat(input.value);
             if (!amount || amount <= 0) {
-                alert('Please enter a valid amount');
+                showToast('Please enter a valid amount', 'warning');
                 return;
             }
             
@@ -684,11 +703,12 @@
                 if (data.success) {
                     input.value = '';
                     loadGoals();
+                    showToast('Amount added successfully!', 'success');
                 } else {
-                    alert(data.message || 'Failed to add amount');
+                    showToast(data.message || 'Failed to add amount');
                 }
             } catch (e) {
-                alert('Error adding amount');
+                showToast('Error adding amount. Please try again.');
             }
         }
         

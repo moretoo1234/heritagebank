@@ -10836,6 +10836,104 @@ app.put('/api/admin/loans/:id/status', requireAuth, requireAdmin, async (req, re
     }
 });
 
+// Admin: Get pending loan applications (convenience alias)
+app.get('/api/admin/loans/pending', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const [applications] = await pool.execute(`
+            SELECT la.*, CONCAT(u.firstName, ' ', u.lastName) AS userName, u.email AS userEmail
+            FROM loan_applications la
+            LEFT JOIN users u ON la.user_id = u.id
+            ORDER BY la.created_at DESC
+        `);
+        res.json({ success: true, applications });
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({ success: false, message: 'Error fetching loan applications' });
+    }
+});
+
+// Admin: Approve loan application
+app.put('/api/admin/loans/:id/approve', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { interestRate } = req.body;
+
+        const [apps] = await pool.execute('SELECT * FROM loan_applications WHERE id = ?', [id]);
+        if (!apps.length) return res.status(404).json({ success: false, message: 'Loan application not found' });
+
+        const app = apps[0];
+        const rate = parseFloat(interestRate) || parseFloat(app.interest_rate);
+
+        // Recalculate monthly payment with new rate if provided
+        const monthlyRate = rate / 100 / 12;
+        const loanAmount = parseFloat(app.loan_amount);
+        const duration = app.loan_duration_months;
+        const monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, duration)) /
+                              (Math.pow(1 + monthlyRate, duration) - 1);
+
+        await pool.execute(`
+            UPDATE loan_applications 
+            SET status = 'approved', interest_rate = ?, monthly_payment = ?, admin_notes = ?, reviewed_by = ?, reviewed_at = NOW()
+            WHERE id = ?
+        `, [rate, monthlyPayment.toFixed(2), `Approved at ${rate}% APR`, req.auth.id, id]);
+
+        // Notify user
+        try {
+            await pool.execute(
+                'INSERT INTO notifications (userId, type, title, message) VALUES (?, ?, ?, ?)',
+                [app.user_id, 'loan', 'Loan Approved!',
+                 `Your ${app.loan_type} loan application for $${loanAmount.toLocaleString()} has been approved at ${rate}% APR.`]
+            );
+        } catch (e) {}
+
+        // Log activity
+        try {
+            await pool.execute(
+                'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
+                [app.user_id, 'LOAN_APPROVED', `${app.loan_type} loan of $${loanAmount.toLocaleString()} approved at ${rate}% APR`, req.ip]
+            );
+        } catch (e) {}
+
+        res.json({ success: true, message: 'Loan application approved' });
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({ success: false, message: 'Error approving loan' });
+    }
+});
+
+// Admin: Reject loan application
+app.put('/api/admin/loans/:id/reject', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rejectionReason } = req.body;
+
+        const [apps] = await pool.execute('SELECT * FROM loan_applications WHERE id = ?', [id]);
+        if (!apps.length) return res.status(404).json({ success: false, message: 'Loan application not found' });
+
+        const app = apps[0];
+
+        await pool.execute(`
+            UPDATE loan_applications 
+            SET status = 'rejected', admin_notes = ?, reviewed_by = ?, reviewed_at = NOW()
+            WHERE id = ?
+        `, [rejectionReason || 'Application rejected', req.auth.id, id]);
+
+        // Notify user
+        try {
+            await pool.execute(
+                'INSERT INTO notifications (userId, type, title, message) VALUES (?, ?, ?, ?)',
+                [app.user_id, 'loan', 'Loan Application Update',
+                 `Your ${app.loan_type} loan application for $${parseFloat(app.loan_amount).toLocaleString()} was not approved.${rejectionReason ? ' Reason: ' + rejectionReason : ''}`]
+            );
+        } catch (e) {}
+
+        res.json({ success: true, message: 'Loan application rejected' });
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({ success: false, message: 'Error rejecting loan' });
+    }
+});
+
 // ==================== INVESTMENT ENDPOINTS ====================
 
 // Create/submit investment
