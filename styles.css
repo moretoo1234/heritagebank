@@ -1352,6 +1352,49 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 .testimonials {
     padding: 100px 0 110px;
     background: var(--light-bg);
+    overflow: hidden;
+}
+
+/* Marquee scrolling container */
+.testimonials-marquee {
+    width: 100%;
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    margin-bottom: 20px;
+}
+
+.testimonials-marquee:last-of-type {
+    margin-bottom: 0;
+}
+
+.marquee-track {
+    display: flex;
+    gap: 20px;
+    width: max-content;
+    will-change: transform;
+}
+
+.marquee-left {
+    animation: marquee-scroll-left 60s linear infinite;
+}
+
+.marquee-right {
+    animation: marquee-scroll-right 60s linear infinite;
+}
+
+@keyframes marquee-scroll-left {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+@keyframes marquee-scroll-right {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
+}
+
+.testimonials-marquee:hover .marquee-track {
+    animation-play-state: paused;
 }
 
 .testimonials-grid {
@@ -1363,15 +1406,18 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 
 .testimonial-card {
     background: var(--card-bg);
-    padding: 36px 30px;
+    padding: 32px 26px;
     border-radius: 20px;
     border: 1px solid var(--card-border);
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    min-width: 340px;
+    max-width: 340px;
+    flex-shrink: 0;
 }
 
 /* Testimonial card shine effect */
@@ -4363,17 +4409,13 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
         grid-column: span 2;
     }
 
-    .why-us-grid,
-    .testimonials-grid {
+    .why-us-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .testimonial-featured {
-        transform: none;
-    }
-
-    .testimonial-featured:hover {
-        transform: translateY(-4px);
+    .testimonial-card {
+        min-width: 300px;
+        max-width: 300px;
     }
 
     .cta-inner {
@@ -4632,9 +4674,13 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
         border-radius: 0 0 18px 18px;
     }
 
-    .why-us-grid,
-    .testimonials-grid {
+    .why-us-grid {
         grid-template-columns: 1fr;
+    }
+
+    .testimonial-card {
+        min-width: 280px;
+        max-width: 280px;
     }
 
     .bento-card,
