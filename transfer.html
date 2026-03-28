@@ -106,10 +106,10 @@
         /* UK Bank selector */
         .bank-selector {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
             gap: 8px;
             margin-bottom: 15px;
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
             padding: 4px;
         }
@@ -137,11 +137,40 @@
         }
         .bank-option .bank-logo {
             display: block;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             object-fit: contain;
-            margin: 0 auto 4px;
-            border-radius: 4px;
+            margin: 0 auto 6px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            padding: 2px;
+        }
+        .bank-logo-fallback {
+            display: flex;
+            width: 36px;
+            height: 36px;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 6px;
+            border-radius: 6px;
+            background: #1a472a;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .bank-logo-icon {
+            display: block;
+            font-size: 1.8rem;
+            margin: 0 auto 6px;
+            color: #1a472a;
+        }
+        .bank-option.selected .bank-logo-icon,
+        .bank-option.selected .bank-logo-fallback {
+            color: #d4af37;
+            background: transparent;
+        }
+        .other-bank-option {
+            border-style: dashed;
         }
         .sort-code-display {
             display: flex;
@@ -758,6 +787,17 @@
                         <i class="fas fa-building-columns"></i>
                         <span>Routing Number: <strong id="selectedRouting">-</strong></span>
                     </div>
+                    <div id="customBankFields" style="display:none">
+                        <div class="form-group">
+                            <label>Bank Name</label>
+                            <input type="text" id="customBankName" placeholder="e.g., First National Bank" maxlength="60">
+                        </div>
+                        <div class="form-group">
+                            <label>Routing Number (9 digits)</label>
+                            <input type="text" id="customRoutingNumber" placeholder="e.g., 021000021" maxlength="9" inputmode="numeric" pattern="[0-9]{9}">
+                            <small>Enter the bank's 9-digit ABA routing number</small>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label>Transfer Type</label>
                         <select id="usTransferMethod" class="form-select-styled" title="Transfer Type">
@@ -1086,6 +1126,7 @@
             { name: 'Netspend', routing: '073972181', logo: 'https://www.google.com/s2/favicons?domain=netspend.com&sz=64' },
             { name: 'Apple Cash', routing: '021214891', logo: 'https://www.google.com/s2/favicons?domain=apple.com&sz=64' },
             { name: 'Google Pay', routing: '021214891', logo: 'https://www.google.com/s2/favicons?domain=pay.google.com&sz=64' },
+            { name: 'Other Bank', routing: '', logo: '', isCustom: true },
         ];
 
         function renderBankSelector() {
@@ -1109,20 +1150,35 @@
 
         function renderUsBankSelector() {
             const container = document.getElementById('usBankSelector');
-            container.innerHTML = US_BANKS.map((bank, i) => `
-                <div class="bank-option" data-usbank-index="${i}" onclick="selectUsBank(${i})">
-                    <img class="bank-logo" src="${bank.logo}" alt="${bank.name}" onerror="this.style.display='none'">
+            container.innerHTML = US_BANKS.map((bank, i) => {
+                if (bank.isCustom) {
+                    return `<div class="bank-option other-bank-option" data-usbank-index="${i}" onclick="selectUsBank(${i})">
+                        <i class="fas fa-plus-circle bank-logo-icon"></i>
+                        ${bank.name}
+                    </div>`;
+                }
+                const initial = bank.name.charAt(0).toUpperCase();
+                return `<div class="bank-option" data-usbank-index="${i}" onclick="selectUsBank(${i})">
+                    <img class="bank-logo" src="${bank.logo}" alt="${bank.name}" onerror="this.nextElementSibling.style.display='flex';this.style.display='none'">
+                    <span class="bank-logo-fallback" style="display:none">${initial}</span>
                     ${bank.name}
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         }
 
         function selectUsBank(index) {
             selectedUsBank = US_BANKS[index];
             document.querySelectorAll('#usBankSelector .bank-option').forEach(el => el.classList.remove('selected'));
             document.querySelector(`#usBankSelector [data-usbank-index="${index}"]`).classList.add('selected');
-            document.getElementById('routingDisplay').style.display = 'flex';
-            document.getElementById('selectedRouting').textContent = selectedUsBank.routing;
+            const customFields = document.getElementById('customBankFields');
+            if (selectedUsBank.isCustom) {
+                customFields.style.display = 'block';
+                document.getElementById('routingDisplay').style.display = 'none';
+            } else {
+                customFields.style.display = 'none';
+                document.getElementById('routingDisplay').style.display = 'flex';
+                document.getElementById('selectedRouting').textContent = selectedUsBank.routing;
+            }
         }
         
         // Check authentication and load user data
@@ -1385,6 +1441,19 @@
                 if (!selectedUsBank) {
                     showAlert('Please select a US bank', 'danger');
                     return;
+                }
+                if (selectedUsBank.isCustom) {
+                    const cName = document.getElementById('customBankName').value.trim();
+                    const cRouting = document.getElementById('customRoutingNumber').value.trim();
+                    if (!cName) {
+                        showAlert('Please enter the bank name', 'danger');
+                        return;
+                    }
+                    if (!/^\d{9}$/.test(cRouting)) {
+                        showAlert('Please enter a valid 9-digit routing number', 'danger');
+                        return;
+                    }
+                    selectedUsBank = { name: cName, routing: cRouting, logo: '', isCustom: true };
                 }
                 const usAcc = document.getElementById('usAccountNumber').value;
                 if (!usAcc || usAcc.length < 4) {
