@@ -50,92 +50,246 @@
 
     <section class="page-content">
         <div class="container">
-            <div class="page-card">
-                <div class="last-updated">
-                    <i class="fas fa-calendar-alt"></i> Last Updated: January 15, 2025
-                </div>
-
-                <h2>Our Commitment</h2>
-                <p>Heritage Bank is committed to ensuring that our website and digital banking services are accessible to all individuals, including those with disabilities. We strive to conform to the Web Content Accessibility Guidelines (WCAG) 2.1 Level AA standards and continually work to improve the digital experience for all users.</p>
-                <p>We believe that banking should be accessible to everyone, regardless of ability. Our accessibility efforts are guided by the Americans with Disabilities Act (ADA), Section 508 of the Rehabilitation Act, and international accessibility best practices.</p>
-
-                <h2>Accessibility Features</h2>
-                <p>Our website and online banking platform include the following accessibility features:</p>
-                <div class="features-grid">
-                    <div class="feature-item">
-                        <i class="fas fa-check-circle"></i>
-                        <span><strong>Keyboard Navigation:</strong> Full site navigation available via keyboard for users who cannot use a mouse.</span>
+            <div class="legal-layout">
+                <!-- Sidebar Navigation -->
+                <aside class="legal-sidebar">
+                    <div class="legal-sidebar-inner">
+                        <div class="legal-sidebar-header">
+                            <i class="fas fa-list-ul"></i> Quick Navigation
+                        </div>
+                        <nav class="legal-nav">
+                            <a href="#commitment" class="legal-nav-link active"><span class="legal-nav-num">01</span> Our Commitment</a>
+                            <a href="#features" class="legal-nav-link"><span class="legal-nav-num">02</span> Accessibility Features</a>
+                            <a href="#conformance" class="legal-nav-link"><span class="legal-nav-num">03</span> Conformance Status</a>
+                            <a href="#channels" class="legal-nav-link"><span class="legal-nav-num">04</span> Alternative Channels</a>
+                            <a href="#assistive" class="legal-nav-link"><span class="legal-nav-num">05</span> Assistive Technology</a>
+                            <a href="#efforts" class="legal-nav-link"><span class="legal-nav-num">06</span> Ongoing Efforts</a>
+                            <a href="#feedback" class="legal-nav-link"><span class="legal-nav-num">07</span> Feedback & Assistance</a>
+                        </nav>
+                        <div class="legal-sidebar-cta">
+                            <p>Need help?</p>
+                            <a href="contact.html">Contact Us <i class="fas fa-arrow-right"></i></a>
+                        </div>
                     </div>
-                    <div class="feature-item">
-                        <i class="fas fa-check-circle"></i>
-                        <span><strong>Screen Reader Support:</strong> Semantic HTML, ARIA labels, and alt text for images to support screen readers.</span>
+                </aside>
+
+                <!-- Main Content -->
+                <div class="legal-main">
+                    <div class="page-card">
+                        <div class="legal-meta-bar">
+                            <div class="last-updated">
+                                <i class="fas fa-calendar-alt"></i> Last Updated: March 5, 2026
+                            </div>
+                            <div class="legal-version">Version 2.1</div>
+                        </div>
+
+                        <div class="legal-intro-box">
+                            <div class="legal-intro-icon"><i class="fas fa-universal-access"></i></div>
+                            <div>
+                                <strong>About This Statement</strong>
+                                <p>Heritage Bank is committed to ensuring that our digital services are accessible to everyone, including individuals with disabilities. This statement outlines our accessibility standards, features, and ongoing efforts.</p>
+                            </div>
+                        </div>
+
+                        <!-- Section 1 -->
+                        <div class="legal-section" id="commitment">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#e8f5e9;color:#2e7d32"><i class="fas fa-heart"></i></span>
+                                    <h2>1. Our Commitment</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>Heritage Bank is committed to ensuring that our website and digital banking services are accessible to all individuals, including those with disabilities. We strive to conform to the Web Content Accessibility Guidelines (WCAG) 2.1 Level AA standards and continually work to improve the digital experience for all users.</p>
+                                <p>We believe that banking should be accessible to everyone, regardless of ability. Our accessibility efforts are guided by the Americans with Disabilities Act (ADA), Section 508 of the Rehabilitation Act, and international accessibility best practices.</p>
+                                <div class="highlight-box">
+                                    <strong><i class="fas fa-gavel"></i> Regulatory Compliance:</strong> Heritage Bank complies with the Americans with Disabilities Act (ADA), Section 508 of the Rehabilitation Act, and applicable state accessibility laws. We are committed to providing equal access to all of our banking services.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2 -->
+                        <div class="legal-section" id="features">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#e3f2fd;color:#1565c0"><i class="fas fa-check-double"></i></span>
+                                    <h2>2. Accessibility Features</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>Our website and online banking platform include the following accessibility features:</p>
+                                <div class="features-grid">
+                                    <div class="feature-item">
+                                        <i class="fas fa-keyboard"></i>
+                                        <span><strong>Keyboard Navigation:</strong> Full site navigation available via keyboard for users who cannot use a mouse.</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-assistive-listening-systems"></i>
+                                        <span><strong>Screen Reader Support:</strong> Semantic HTML, ARIA labels, and alt text for images to support screen readers.</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-adjust"></i>
+                                        <span><strong>Color Contrast:</strong> Text and interactive elements meet WCAG AA contrast ratio requirements.</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-search-plus"></i>
+                                        <span><strong>Resizable Text:</strong> Content can be resized up to 200% without loss of functionality or readability.</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-tags"></i>
+                                        <span><strong>Form Labels:</strong> All form fields include descriptive labels and error messages for assisted input.</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-mobile-alt"></i>
+                                        <span><strong>Responsive Design:</strong> The site adapts to all screen sizes and orientations, including mobile devices.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 3 -->
+                        <div class="legal-section" id="conformance">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#fff3e0;color:#e65100"><i class="fas fa-clipboard-check"></i></span>
+                                    <h2>3. Conformance Status</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>Heritage Bank's website aims to conform to WCAG 2.1 Level AA. We regularly audit our site and correct identified issues. While we strive for full conformance, some areas may be undergoing remediation as we continuously improve our accessibility.</p>
+                                <div class="legal-list-grid">
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> WCAG 2.1 Level AA target conformance</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Regular third-party accessibility audits</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Automated and manual testing processes</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Continuous remediation of identified issues</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 4 -->
+                        <div class="legal-section" id="channels">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#f3e5f5;color:#7b1fa2"><i class="fas fa-headset"></i></span>
+                                    <h2>4. Alternative Banking Channels</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>If you experience any difficulty accessing our website or digital services, we offer alternative ways to bank with us:</p>
+                                <div class="legal-contact-grid">
+                                    <div class="legal-contact-card">
+                                        <i class="fas fa-phone-alt"></i>
+                                        <strong>Phone Banking</strong>
+                                        <span>1-800-HERITAGE (1-800-437-4824)<br>Available 24/7 with TTY/TDD support</span>
+                                    </div>
+                                    <div class="legal-contact-card">
+                                        <i class="fas fa-building"></i>
+                                        <strong>Branch Banking</strong>
+                                        <span>ADA-compliant facilities with wheelchair access and trained staff</span>
+                                    </div>
+                                    <div class="legal-contact-card">
+                                        <i class="fas fa-tty"></i>
+                                        <strong>TTY/TDD Service</strong>
+                                        <span>1-800-437-4825 or use your preferred relay service</span>
+                                    </div>
+                                </div>
+                                <div class="info-box">
+                                    <strong><i class="fas fa-phone"></i> TTY/TDD Service:</strong> Hearing-impaired customers can reach us via TTY at <strong>1-800-437-4825</strong> or through your preferred relay service.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 5 -->
+                        <div class="legal-section" id="assistive">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#e0f2f1;color:#00695c"><i class="fas fa-laptop-code"></i></span>
+                                    <h2>5. Assistive Technology Compatibility</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>Our website is designed to be compatible with the following assistive technologies:</p>
+                                <div class="legal-list-grid">
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> JAWS (Job Access With Speech) for Windows</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> NVDA (NonVisual Desktop Access) for Windows</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> VoiceOver for macOS and iOS</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> TalkBack for Android</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Dragon NaturallySpeaking voice recognition</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Standard screen magnification tools</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 6 -->
+                        <div class="legal-section" id="efforts">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#fce4ec;color:#c62828"><i class="fas fa-sync-alt"></i></span>
+                                    <h2>6. Ongoing Efforts</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>Heritage Bank is dedicated to maintaining and improving accessibility. Our ongoing efforts include:</p>
+                                <div class="legal-list-grid">
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Regular accessibility audits of our website and mobile applications</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Staff training on accessibility awareness and inclusive customer service</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Incorporating accessibility requirements into our development process</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Testing with assistive technologies as part of our quality assurance</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Engaging with disability advocacy organizations for feedback</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Annual compliance reviews with third-party auditors</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 7 -->
+                        <div class="legal-section" id="feedback">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#e8eaf6;color:#283593"><i class="fas fa-comments"></i></span>
+                                    <h2>7. Feedback & Assistance</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>We welcome your feedback on the accessibility of Heritage Bank's digital services. If you encounter any accessibility barriers or have suggestions for improvement, please contact us:</p>
+                                <div class="legal-contact-grid">
+                                    <div class="legal-contact-card">
+                                        <i class="fas fa-envelope"></i>
+                                        <strong>Email</strong>
+                                        <span>accessibility@heritagebank.com</span>
+                                    </div>
+                                    <div class="legal-contact-card">
+                                        <i class="fas fa-phone-alt"></i>
+                                        <strong>Phone</strong>
+                                        <span>1-800-HERITAGE (1-800-437-4824)</span>
+                                    </div>
+                                    <div class="legal-contact-card">
+                                        <i class="fas fa-tty"></i>
+                                        <strong>TTY</strong>
+                                        <span>1-800-437-4825</span>
+                                    </div>
+                                </div>
+                                <p>We will make reasonable efforts to respond to feedback within 5 business days and to address accessibility concerns promptly.</p>
+                            </div>
+                        </div>
+
+                        <!-- Related Pages -->
+                        <div class="legal-related">
+                            <h3>Related Documents</h3>
+                            <div class="legal-related-grid">
+                                <a href="terms.html" class="legal-related-card"><i class="fas fa-file-contract"></i> Terms of Service</a>
+                                <a href="privacy.html" class="legal-related-card"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                                <a href="cookie-policy.html" class="legal-related-card"><i class="fas fa-cookie-bite"></i> Cookie Policy</a>
+                                <a href="disclosures.html" class="legal-related-card"><i class="fas fa-balance-scale"></i> Disclosures</a>
+                            </div>
+                        </div>
                     </div>
-                    <div class="feature-item">
-                        <i class="fas fa-check-circle"></i>
-                        <span><strong>Color Contrast:</strong> Text and interactive elements meet WCAG AA contrast ratio requirements.</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-check-circle"></i>
-                        <span><strong>Resizable Text:</strong> Content can be resized up to 200% without loss of functionality or readability.</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-check-circle"></i>
-                        <span><strong>Form Labels:</strong> All form fields include descriptive labels and error messages for assisted input.</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-check-circle"></i>
-                        <span><strong>Responsive Design:</strong> The site adapts to all screen sizes and orientations, including mobile devices.</span>
-                    </div>
-                </div>
-
-                <h2>Conformance Status</h2>
-                <p>Heritage Bank's website aims to conform to WCAG 2.1 Level AA. We regularly audit our site and correct identified issues. While we strive for full conformance, some areas may be undergoing remediation as we continuously improve our accessibility.</p>
-
-                <h2>Alternative Banking Channels</h2>
-                <p>If you experience any difficulty accessing our website or digital services, we offer alternative ways to bank with us:</p>
-                <ul>
-                    <li><strong>Phone Banking:</strong> Call us at 1-800-HERITAGE (1-800-437-4824). Our representatives are available 24/7 and TTY/TDD services are available for hearing-impaired customers.</li>
-                    <li><strong>Branch Banking:</strong> Visit any Heritage Bank branch. Our facilities are ADA-compliant with wheelchair accessibility, service counters at accessible heights, and staff trained to assist customers with disabilities.</li>
-                    <li><strong>Mail:</strong> Write to Heritage Bank, 350 Fifth Avenue, New York, NY 10118.</li>
-                </ul>
-
-                <div class="info-box">
-                    <strong><i class="fas fa-phone"></i> TTY/TDD Service:</strong> Hearing-impaired customers can reach us via TTY at <strong>1-800-437-4825</strong> or through your preferred relay service.
-                </div>
-
-                <h2>Assistive Technology Compatibility</h2>
-                <p>Our website is designed to be compatible with the following assistive technologies:</p>
-                <ul>
-                    <li>JAWS (Job Access With Speech) for Windows</li>
-                    <li>NVDA (NonVisual Desktop Access) for Windows</li>
-                    <li>VoiceOver for macOS and iOS</li>
-                    <li>TalkBack for Android</li>
-                    <li>Dragon NaturallySpeaking voice recognition software</li>
-                    <li>Standard screen magnification tools</li>
-                </ul>
-
-                <h2>Ongoing Efforts</h2>
-                <p>Heritage Bank is dedicated to maintaining and improving accessibility. Our ongoing efforts include:</p>
-                <ul>
-                    <li>Regular accessibility audits of our website and mobile applications</li>
-                    <li>Staff training on accessibility awareness and inclusive customer service</li>
-                    <li>Incorporating accessibility requirements into our development process</li>
-                    <li>Testing with assistive technologies as part of our quality assurance</li>
-                    <li>Engaging with disability advocacy organizations for feedback</li>
-                </ul>
-
-                <h2>Feedback & Assistance</h2>
-                <p>We welcome your feedback on the accessibility of Heritage Bank's digital services. If you encounter any accessibility barriers or have suggestions for improvement, please contact us:</p>
-                <ul>
-                    <li><strong>Email:</strong> accessibility@heritagebank.com</li>
-                    <li><strong>Phone:</strong> 1-800-HERITAGE (1-800-437-4824)</li>
-                    <li><strong>TTY:</strong> 1-800-437-4825</li>
-                    <li><strong>Mail:</strong> Heritage Bank, Accessibility Team, 350 Fifth Avenue, New York, NY 10118</li>
-                </ul>
-                <p>We will make reasonable efforts to respond to feedback within 5 business days and to address accessibility concerns promptly.</p>
-
-                <div class="highlight-box">
-                    <strong><i class="fas fa-gavel"></i> Regulatory Compliance:</strong> Heritage Bank complies with the Americans with Disabilities Act (ADA), Section 508 of the Rehabilitation Act, and applicable state accessibility laws. We are committed to providing equal access to all of our banking services.
                 </div>
             </div>
         </div>
@@ -191,6 +345,24 @@
     <script src="script.js"></script>
     <script src="cookie-consent.js"></script>
     <script>
+        function toggleLegalSection(header) {
+            const body = header.nextElementSibling;
+            const chevron = header.querySelector('.legal-chevron');
+            body.classList.toggle('open');
+            chevron.classList.toggle('rotated');
+        }
+        // Sidebar active link on scroll
+        const sections = document.querySelectorAll('.legal-section');
+        const navLinks = document.querySelectorAll('.legal-nav-link');
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(s => { if (window.scrollY >= s.offsetTop - 200) current = s.id; });
+            navLinks.forEach(l => {
+                l.classList.remove('active');
+                if (l.getAttribute('href') === '#' + current) l.classList.add('active');
+            });
+        });
+        // Back to top
         const backBtn = document.getElementById('backToTop');
         window.addEventListener('scroll', () => { backBtn.classList.toggle('visible', window.scrollY > 400); });
         backBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });

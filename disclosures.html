@@ -50,175 +50,308 @@
 
     <section class="page-content">
         <div class="container">
-            <div class="page-card">
-                <div class="last-updated">
-                    <i class="fas fa-calendar-alt"></i> Last Updated: January 15, 2025
-                </div>
+            <div class="legal-layout">
+                <!-- Sidebar Navigation -->
+                <aside class="legal-sidebar">
+                    <div class="legal-sidebar-inner">
+                        <div class="legal-sidebar-header">
+                            <i class="fas fa-list-ul"></i> Quick Navigation
+                        </div>
+                        <nav class="legal-nav">
+                            <a href="#fdic" class="legal-nav-link active"><span class="legal-nav-num">01</span> FDIC Insurance</a>
+                            <a href="#ehl" class="legal-nav-link"><span class="legal-nav-num">02</span> Equal Housing Lender</a>
+                            <a href="#fees" class="legal-nav-link"><span class="legal-nav-num">03</span> Fee Schedule</a>
+                            <a href="#rates" class="legal-nav-link"><span class="legal-nav-num">04</span> Interest Rates</a>
+                            <a href="#electronic" class="legal-nav-link"><span class="legal-nav-num">05</span> E-SIGN Disclosure</a>
+                            <a href="#overdraft" class="legal-nav-link"><span class="legal-nav-num">06</span> Overdraft Policy</a>
+                            <a href="#wire" class="legal-nav-link"><span class="legal-nav-num">07</span> Wire Transfers</a>
+                            <a href="#complaint" class="legal-nav-link"><span class="legal-nav-num">08</span> Complaints</a>
+                            <a href="#regulatory" class="legal-nav-link"><span class="legal-nav-num">09</span> Regulatory Info</a>
+                        </nav>
+                        <div class="legal-sidebar-cta">
+                            <p>Have questions?</p>
+                            <a href="contact.html">Contact Us <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </div>
+                </aside>
 
-                <div class="toc">
-                    <h3>Contents</h3>
-                    <ul>
-                        <li><a href="#fdic">1. FDIC Insurance</a></li>
-                        <li><a href="#ehl">2. Equal Housing Lender</a></li>
-                        <li><a href="#fees">3. Fee Schedule</a></li>
-                        <li><a href="#rates">4. Interest Rate Disclosures</a></li>
-                        <li><a href="#electronic">5. Electronic Communications</a></li>
-                        <li><a href="#overdraft">6. Overdraft Policy</a></li>
-                        <li><a href="#wire">7. Wire Transfer Disclosures</a></li>
-                        <li><a href="#complaint">8. Complaint Resolution</a></li>
-                        <li><a href="#regulatory">9. Regulatory Information</a></li>
-                    </ul>
-                </div>
+                <!-- Main Content -->
+                <div class="legal-main">
+                    <div class="page-card">
+                        <div class="legal-meta-bar">
+                            <div class="last-updated">
+                                <i class="fas fa-calendar-alt"></i> Last Updated: March 20, 2026
+                            </div>
+                            <div class="legal-version">Version 5.0</div>
+                        </div>
 
-                <h2 id="fdic">1. FDIC Insurance</h2>
-                <div class="success-box">
-                    <strong><i class="fas fa-shield-alt"></i> Your Deposits Are Insured</strong>
-                    <p class="fdic-note">Heritage Bank is a member of the Federal Deposit Insurance Corporation (FDIC). Your deposits are insured up to $250,000 per depositor, per insured bank, for each account ownership category.</p>
-                </div>
-                <p>The FDIC insures the following types of accounts at Heritage Bank:</p>
-                <ul>
-                    <li>Checking accounts</li>
-                    <li>Savings accounts</li>
-                    <li>Money market deposit accounts</li>
-                    <li>Certificates of deposit (CDs)</li>
-                </ul>
-                <p>For more information about FDIC insurance coverage, visit <strong>fdic.gov</strong> or call 1-877-ASK-FDIC (1-877-275-3342).</p>
+                        <div class="legal-intro-box">
+                            <div class="legal-intro-icon"><i class="fas fa-balance-scale"></i></div>
+                            <div>
+                                <strong>About These Disclosures</strong>
+                                <p>This document contains important regulatory and financial disclosures required by federal and state law. Please review them carefully to understand your rights and our obligations.</p>
+                            </div>
+                        </div>
 
-                <h2 id="ehl">2. Equal Housing Lender</h2>
-                <p>Heritage Bank is an Equal Housing Lender. We comply with the Fair Housing Act and the Equal Credit Opportunity Act. We do not discriminate in lending on the basis of race, color, religion, national origin, sex, marital status, age, disability, familial status, or any other protected class under federal, state, or local law.</p>
-                <p>If you believe you have been discriminated against, you may file a complaint with:</p>
-                <ul>
-                    <li>Heritage Bank's Compliance Department: compliance@heritagebank.com</li>
-                    <li>U.S. Department of Housing and Urban Development (HUD): 1-800-669-9777</li>
-                    <li>Consumer Financial Protection Bureau (CFPB): consumerfinance.gov</li>
-                </ul>
+                        <!-- Section 1: FDIC -->
+                        <div class="legal-section" id="fdic">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#e8f5e9;color:#2e7d32"><i class="fas fa-shield-alt"></i></span>
+                                    <h2>1. FDIC Insurance</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <div class="success-box">
+                                    <strong><i class="fas fa-shield-alt"></i> Your Deposits Are Insured</strong>
+                                    <p class="fdic-note">Heritage Bank is a member of the Federal Deposit Insurance Corporation (FDIC). Your deposits are insured up to $250,000 per depositor, per insured bank, for each account ownership category.</p>
+                                </div>
+                                <p>The FDIC insures the following types of accounts at Heritage Bank:</p>
+                                <div class="legal-list-grid">
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Checking accounts</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Savings accounts</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Money market deposit accounts</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Certificates of deposit (CDs)</div>
+                                </div>
+                                <p>For more information about FDIC insurance coverage, visit <strong>fdic.gov</strong> or call 1-877-ASK-FDIC (1-877-275-3342).</p>
+                            </div>
+                        </div>
 
-                <h2 id="fees">3. Fee Schedule</h2>
-                <h3>Account Fees</h3>
-                <table class="fee-table">
-                    <thead>
-                        <tr><th>Service</th><th>Fee</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>Monthly Checking Account Maintenance</td><td>$0 (no monthly fees)</td></tr>
-                        <tr><td>Monthly Savings Account Maintenance</td><td>$0</td></tr>
-                        <tr><td>Paper Statement Fee</td><td>$2.00 per statement</td></tr>
-                        <tr><td>Account Closure (within 90 days of opening)</td><td>$25.00</td></tr>
-                        <tr><td>Returned Deposit Item</td><td>$12.00</td></tr>
-                        <tr><td>Stop Payment Order</td><td>$30.00</td></tr>
-                        <tr><td>Cashier's Check</td><td>$8.00</td></tr>
-                        <tr><td>Account Research (per hour)</td><td>$25.00</td></tr>
-                    </tbody>
-                </table>
+                        <!-- Section 2: Equal Housing -->
+                        <div class="legal-section" id="ehl">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#e3f2fd;color:#1565c0"><i class="fas fa-home"></i></span>
+                                    <h2>2. Equal Housing Lender</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>Heritage Bank is an Equal Housing Lender. We comply with the Fair Housing Act and the Equal Credit Opportunity Act. We do not discriminate in lending on the basis of race, color, religion, national origin, sex, marital status, age, disability, familial status, or any other protected class under federal, state, or local law.</p>
+                                <p>If you believe you have been discriminated against, you may file a complaint with:</p>
+                                <div class="legal-list-grid">
+                                    <div class="legal-list-item"><i class="fas fa-envelope"></i> Heritage Bank Compliance: compliance@heritagebank.com</div>
+                                    <div class="legal-list-item"><i class="fas fa-phone"></i> HUD: 1-800-669-9777</div>
+                                    <div class="legal-list-item"><i class="fas fa-globe"></i> CFPB: consumerfinance.gov</div>
+                                </div>
+                            </div>
+                        </div>
 
-                <h3>Transfer Fees</h3>
-                <table class="fee-table">
-                    <thead>
-                        <tr><th>Transfer Type</th><th>Fee</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>Internal Transfer (Heritage to Heritage)</td><td>$0</td></tr>
-                        <tr><td>ACH Transfer (Domestic)</td><td>$0</td></tr>
-                        <tr><td>Domestic Wire Transfer (Outgoing)</td><td>$25.00</td></tr>
-                        <tr><td>Domestic Wire Transfer (Incoming)</td><td>$0</td></tr>
-                        <tr><td>International Wire Transfer (Outgoing)</td><td>$45.00</td></tr>
-                        <tr><td>International Wire Transfer (Incoming)</td><td>$15.00</td></tr>
-                        <tr><td>UK Bank Transfer</td><td>$15.00</td></tr>
-                    </tbody>
-                </table>
+                        <!-- Section 3: Fee Schedule -->
+                        <div class="legal-section" id="fees">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#fff3e0;color:#e65100"><i class="fas fa-receipt"></i></span>
+                                    <h2>3. Fee Schedule</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <h3>Account Fees</h3>
+                                <table class="fee-table">
+                                    <thead>
+                                        <tr><th>Service</th><th>Fee</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>Monthly Checking Account Maintenance</td><td>$0 (no monthly fees)</td></tr>
+                                        <tr><td>Monthly Savings Account Maintenance</td><td>$0</td></tr>
+                                        <tr><td>Paper Statement Fee</td><td>$2.00 per statement</td></tr>
+                                        <tr><td>Account Closure (within 90 days of opening)</td><td>$25.00</td></tr>
+                                        <tr><td>Returned Deposit Item</td><td>$12.00</td></tr>
+                                        <tr><td>Stop Payment Order</td><td>$30.00</td></tr>
+                                        <tr><td>Cashier's Check</td><td>$8.00</td></tr>
+                                        <tr><td>Account Research (per hour)</td><td>$25.00</td></tr>
+                                    </tbody>
+                                </table>
 
-                <h3>Card Fees</h3>
-                <table class="fee-table">
-                    <thead>
-                        <tr><th>Service</th><th>Fee</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>Debit Card Issuance</td><td>$0</td></tr>
-                        <tr><td>Debit Card Replacement</td><td>$5.00</td></tr>
-                        <tr><td>Virtual Card</td><td>$0</td></tr>
-                        <tr><td>Rush Card Delivery</td><td>$25.00</td></tr>
-                        <tr><td>Foreign ATM Usage</td><td>$2.50 per transaction</td></tr>
-                        <tr><td>Foreign Transaction Fee</td><td>1% of transaction amount</td></tr>
-                    </tbody>
-                </table>
+                                <h3>Transfer Fees</h3>
+                                <table class="fee-table">
+                                    <thead>
+                                        <tr><th>Transfer Type</th><th>Fee</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>Internal Transfer (Heritage to Heritage)</td><td>$0</td></tr>
+                                        <tr><td>ACH Transfer (Domestic)</td><td>$0</td></tr>
+                                        <tr><td>Domestic Wire Transfer (Outgoing)</td><td>$25.00</td></tr>
+                                        <tr><td>Domestic Wire Transfer (Incoming)</td><td>$0</td></tr>
+                                        <tr><td>International Wire Transfer (Outgoing)</td><td>$45.00</td></tr>
+                                        <tr><td>International Wire Transfer (Incoming)</td><td>$15.00</td></tr>
+                                        <tr><td>UK Bank Transfer</td><td>$15.00</td></tr>
+                                    </tbody>
+                                </table>
 
-                <h2 id="rates">4. Interest Rate Disclosures</h2>
-                <p>Interest rates are subject to change without notice. Current rates as of the last update:</p>
-                <table class="fee-table">
-                    <thead>
-                        <tr><th>Product</th><th>APY</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>Checking Account</td><td>0.01%</td></tr>
-                        <tr><td>Savings Account</td><td>0.50%</td></tr>
-                        <tr><td>High-Yield Savings</td><td>4.25%</td></tr>
-                        <tr><td>12-Month CD</td><td>4.50%</td></tr>
-                        <tr><td>24-Month CD</td><td>4.00%</td></tr>
-                        <tr><td>Money Market Account</td><td>3.75%</td></tr>
-                    </tbody>
-                </table>
-                <p><em>APY = Annual Percentage Yield. Fees may reduce earnings. Minimum balance requirements may apply. Rates are variable and subject to change.</em></p>
+                                <h3>Card Fees</h3>
+                                <table class="fee-table">
+                                    <thead>
+                                        <tr><th>Service</th><th>Fee</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>Debit Card Issuance</td><td>$0</td></tr>
+                                        <tr><td>Debit Card Replacement</td><td>$5.00</td></tr>
+                                        <tr><td>Virtual Card</td><td>$0</td></tr>
+                                        <tr><td>Rush Card Delivery</td><td>$25.00</td></tr>
+                                        <tr><td>Foreign ATM Usage</td><td>$2.50 per transaction</td></tr>
+                                        <tr><td>Foreign Transaction Fee</td><td>1% of transaction amount</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
 
-                <h2 id="electronic">5. Electronic Communications Disclosure (E-SIGN)</h2>
-                <p>By opening an account or using Heritage Bank's online banking services, you consent to receive electronic communications including:</p>
-                <ul>
-                    <li>Account statements and notices</li>
-                    <li>Transaction confirmations and receipts</li>
-                    <li>Privacy notices and policy updates</li>
-                    <li>Tax documents (1099s, etc.)</li>
-                    <li>Regulatory disclosures and legal notices</li>
-                </ul>
-                <p>You may withdraw your consent to electronic delivery at any time by contacting us. Withdrawing consent may result in paper statement fees and may affect your ability to use certain online services.</p>
-                <p><strong>Hardware/Software Requirements:</strong> To access electronic communications, you need a device with internet access, a current web browser (Chrome, Firefox, Safari, or Edge), and the ability to view PDF documents.</p>
+                        <!-- Section 4: Interest Rates -->
+                        <div class="legal-section" id="rates">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#f3e5f5;color:#7b1fa2"><i class="fas fa-percentage"></i></span>
+                                    <h2>4. Interest Rate Disclosures</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>Interest rates are subject to change without notice. Current rates as of the last update:</p>
+                                <table class="fee-table">
+                                    <thead>
+                                        <tr><th>Product</th><th>APY</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>Checking Account</td><td>0.01%</td></tr>
+                                        <tr><td>Savings Account</td><td>0.50%</td></tr>
+                                        <tr><td>High-Yield Savings</td><td>4.25%</td></tr>
+                                        <tr><td>12-Month CD</td><td>4.50%</td></tr>
+                                        <tr><td>24-Month CD</td><td>4.00%</td></tr>
+                                        <tr><td>Money Market Account</td><td>3.75%</td></tr>
+                                    </tbody>
+                                </table>
+                                <p><em>APY = Annual Percentage Yield. Fees may reduce earnings. Minimum balance requirements may apply. Rates are variable and subject to change.</em></p>
+                            </div>
+                        </div>
 
-                <h2 id="overdraft">6. Overdraft Policy</h2>
-                <p>Heritage Bank offers overdraft protection services. If your account has insufficient funds for a transaction:</p>
-                <ul>
-                    <li><strong>Standard Overdraft Coverage:</strong> Available for checks and ACH transactions. A fee of $35.00 per overdraft item applies, up to a maximum of 3 overdraft fees per day.</li>
-                    <li><strong>Overdraft Protection Transfer:</strong> Links your savings account to your checking account. When an overdraft occurs, funds are automatically transferred from savings. A fee of $10.00 per transfer applies.</li>
-                    <li><strong>Opt-Out:</strong> You may opt out of overdraft coverage at any time. Transactions that would overdraw your account will simply be declined with no fee.</li>
-                </ul>
+                        <!-- Section 5: Electronic Communications -->
+                        <div class="legal-section" id="electronic">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#e0f2f1;color:#00695c"><i class="fas fa-laptop"></i></span>
+                                    <h2>5. Electronic Communications (E-SIGN)</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>By opening an account or using Heritage Bank's online banking services, you consent to receive electronic communications including:</p>
+                                <div class="legal-list-grid">
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Account statements and notices</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Transaction confirmations and receipts</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Privacy notices and policy updates</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Tax documents (1099s, etc.)</div>
+                                    <div class="legal-list-item"><i class="fas fa-check"></i> Regulatory disclosures and legal notices</div>
+                                </div>
+                                <p>You may withdraw your consent to electronic delivery at any time by contacting us. Withdrawing consent may result in paper statement fees and may affect your ability to use certain online services.</p>
+                                <p><strong>Hardware/Software Requirements:</strong> To access electronic communications, you need a device with internet access, a current web browser (Chrome, Firefox, Safari, or Edge), and the ability to view PDF documents.</p>
+                            </div>
+                        </div>
 
-                <div class="highlight-box">
-                    <strong><i class="fas fa-info-circle"></i> Overdraft Grace Period:</strong> Heritage Bank provides a grace period until 11:59 PM EST the next business day. If you deposit funds to bring your account balance positive before the grace period ends, the overdraft fee will be waived.
-                </div>
+                        <!-- Section 6: Overdraft -->
+                        <div class="legal-section" id="overdraft">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#fce4ec;color:#c62828"><i class="fas fa-exclamation-triangle"></i></span>
+                                    <h2>6. Overdraft Policy</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>Heritage Bank offers overdraft protection services. If your account has insufficient funds for a transaction:</p>
+                                <ul>
+                                    <li><strong>Standard Overdraft Coverage:</strong> Available for checks and ACH transactions. A fee of $35.00 per overdraft item applies, up to a maximum of 3 overdraft fees per day.</li>
+                                    <li><strong>Overdraft Protection Transfer:</strong> Links your savings account to your checking account. When an overdraft occurs, funds are automatically transferred from savings. A fee of $10.00 per transfer applies.</li>
+                                    <li><strong>Opt-Out:</strong> You may opt out of overdraft coverage at any time. Transactions that would overdraw your account will simply be declined with no fee.</li>
+                                </ul>
+                                <div class="highlight-box">
+                                    <strong><i class="fas fa-info-circle"></i> Overdraft Grace Period:</strong> Heritage Bank provides a grace period until 11:59 PM EST the next business day. If you deposit funds to bring your account balance positive before the grace period ends, the overdraft fee will be waived.
+                                </div>
+                            </div>
+                        </div>
 
-                <h2 id="wire">7. Wire Transfer Disclosures</h2>
-                <p>Wire transfers are governed by Regulation E (Electronic Fund Transfers) for domestic transfers and the Remittance Transfer Rule for international transfers. Key disclosures:</p>
-                <ul>
-                    <li>Domestic wire transfers are typically completed within the same business day if initiated before 4:00 PM EST.</li>
-                    <li>International wire transfers may take 1-5 business days depending on the destination country and intermediary banks.</li>
-                    <li>Exchange rates for international transfers are determined at the time of processing and may differ from quoted rates.</li>
-                    <li>You have 30 minutes to cancel a wire transfer after submission, provided it has not yet been processed.</li>
-                    <li>For international remittance transfers over $15, you have the right to a receipt, error resolution, and cancellation within 30 minutes.</li>
-                </ul>
+                        <!-- Section 7: Wire Transfers -->
+                        <div class="legal-section" id="wire">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#e8eaf6;color:#283593"><i class="fas fa-exchange-alt"></i></span>
+                                    <h2>7. Wire Transfer Disclosures</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>Wire transfers are governed by Regulation E (Electronic Fund Transfers) for domestic transfers and the Remittance Transfer Rule for international transfers. Key disclosures:</p>
+                                <div class="legal-list-grid">
+                                    <div class="legal-list-item"><i class="fas fa-clock"></i> Domestic wires completed same day if initiated before 4:00 PM EST</div>
+                                    <div class="legal-list-item"><i class="fas fa-globe"></i> International wires may take 1-5 business days</div>
+                                    <div class="legal-list-item"><i class="fas fa-dollar-sign"></i> Exchange rates determined at time of processing</div>
+                                    <div class="legal-list-item"><i class="fas fa-undo"></i> 30-minute cancellation window after submission</div>
+                                    <div class="legal-list-item"><i class="fas fa-file-invoice"></i> International remittances over $15 include receipt and error resolution rights</div>
+                                </div>
+                            </div>
+                        </div>
 
-                <h2 id="complaint">8. Complaint Resolution</h2>
-                <p>Heritage Bank is committed to resolving customer complaints promptly and fairly. If you have a complaint:</p>
-                <ul>
-                    <li><strong>Step 1:</strong> Contact our Customer Service team at 1-800-HERITAGE or support@heritagebank.com. Most issues can be resolved within 1-2 business days.</li>
-                    <li><strong>Step 2:</strong> If unresolved, request to speak with a supervisor or submit a formal complaint in writing to: Heritage Bank, Complaints Department, 350 Fifth Avenue, New York, NY 10118.</li>
-                    <li><strong>Step 3:</strong> If you are not satisfied with our response, you may file a complaint with:
-                        <ul>
-                            <li>Consumer Financial Protection Bureau (CFPB): consumerfinance.gov/complaint</li>
-                            <li>Office of the Comptroller of the Currency (OCC): helpwithmybank.gov</li>
-                            <li>Federal Deposit Insurance Corporation (FDIC): fdic.gov/consumers</li>
-                        </ul>
-                    </li>
-                </ul>
+                        <!-- Section 8: Complaints -->
+                        <div class="legal-section" id="complaint">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#fff8e1;color:#f57f17"><i class="fas fa-comment-dots"></i></span>
+                                    <h2>8. Complaint Resolution</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>Heritage Bank is committed to resolving customer complaints promptly and fairly:</p>
+                                <ul>
+                                    <li><strong>Step 1:</strong> Contact our Customer Service team at 1-800-HERITAGE or support@heritagebank.com. Most issues can be resolved within 1-2 business days.</li>
+                                    <li><strong>Step 2:</strong> If unresolved, request to speak with a supervisor or submit a formal written complaint to Heritage Bank, Complaints Department.</li>
+                                    <li><strong>Step 3:</strong> If you are not satisfied with our response, you may file a complaint with:
+                                        <ul>
+                                            <li>Consumer Financial Protection Bureau (CFPB): consumerfinance.gov/complaint</li>
+                                            <li>Office of the Comptroller of the Currency (OCC): helpwithmybank.gov</li>
+                                            <li>Federal Deposit Insurance Corporation (FDIC): fdic.gov/consumers</li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
 
-                <h2 id="regulatory">9. Regulatory Information</h2>
-                <p>Heritage Bank is chartered under the laws of the State of New York and is regulated by:</p>
-                <ul>
-                    <li><strong>Federal Deposit Insurance Corporation (FDIC)</strong> — Deposit insurance and federal oversight</li>
-                    <li><strong>Office of the Comptroller of the Currency (OCC)</strong> — National bank supervision</li>
-                    <li><strong>Consumer Financial Protection Bureau (CFPB)</strong> — Consumer protection</li>
-                    <li><strong>New York State Department of Financial Services (NYDFS)</strong> — State banking regulation</li>
-                </ul>
-                <p>Heritage Bank NMLS ID: #123456 | FDIC Certificate Number: #12345</p>
+                        <!-- Section 9: Regulatory -->
+                        <div class="legal-section" id="regulatory">
+                            <div class="legal-section-header" onclick="toggleLegalSection(this)">
+                                <div class="legal-section-title">
+                                    <span class="legal-section-icon" style="background:#efebe9;color:#4e342e"><i class="fas fa-university"></i></span>
+                                    <h2>9. Regulatory Information</h2>
+                                </div>
+                                <i class="fas fa-chevron-down legal-chevron rotated"></i>
+                            </div>
+                            <div class="legal-section-body open">
+                                <p>Heritage Bank is chartered under the laws of the State of New York and is regulated by:</p>
+                                <div class="legal-list-grid">
+                                    <div class="legal-list-item"><i class="fas fa-shield-alt"></i> <strong>FDIC</strong> — Deposit insurance and federal oversight</div>
+                                    <div class="legal-list-item"><i class="fas fa-landmark"></i> <strong>OCC</strong> — National bank supervision</div>
+                                    <div class="legal-list-item"><i class="fas fa-user-shield"></i> <strong>CFPB</strong> — Consumer protection</div>
+                                    <div class="legal-list-item"><i class="fas fa-map-marked-alt"></i> <strong>NYDFS</strong> — State banking regulation</div>
+                                </div>
+                                <p>Heritage Bank NMLS ID: #123456 | FDIC Certificate Number: #12345</p>
+                                <div class="info-box">
+                                    <strong><i class="fas fa-balance-scale"></i> USA PATRIOT Act Notice:</strong> To help the government fight the funding of terrorism and money laundering activities, federal law requires all financial institutions to obtain, verify, and record information that identifies each person who opens an account. When you open an account, we will ask for your name, address, date of birth, and other identifying information.
+                                </div>
+                            </div>
+                        </div>
 
-                <div class="info-box">
-                    <strong><i class="fas fa-balance-scale"></i> USA PATRIOT Act Notice:</strong> To help the government fight the funding of terrorism and money laundering activities, federal law requires all financial institutions to obtain, verify, and record information that identifies each person who opens an account. When you open an account, we will ask for your name, address, date of birth, and other identifying information.
+                        <!-- Related Pages -->
+                        <div class="legal-related">
+                            <h3>Related Documents</h3>
+                            <div class="legal-related-grid">
+                                <a href="terms.html" class="legal-related-card"><i class="fas fa-file-contract"></i> Terms of Service</a>
+                                <a href="privacy.html" class="legal-related-card"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                                <a href="cookie-policy.html" class="legal-related-card"><i class="fas fa-cookie-bite"></i> Cookie Policy</a>
+                                <a href="accessibility.html" class="legal-related-card"><i class="fas fa-universal-access"></i> Accessibility</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -274,6 +407,24 @@
     <script src="script.js"></script>
     <script src="cookie-consent.js"></script>
     <script>
+        function toggleLegalSection(header) {
+            const body = header.nextElementSibling;
+            const chevron = header.querySelector('.legal-chevron');
+            body.classList.toggle('open');
+            chevron.classList.toggle('rotated');
+        }
+        // Sidebar active link on scroll
+        const sections = document.querySelectorAll('.legal-section');
+        const navLinks = document.querySelectorAll('.legal-nav-link');
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(s => { if (window.scrollY >= s.offsetTop - 200) current = s.id; });
+            navLinks.forEach(l => {
+                l.classList.remove('active');
+                if (l.getAttribute('href') === '#' + current) l.classList.add('active');
+            });
+        });
+        // Back to top
         const backBtn = document.getElementById('backToTop');
         window.addEventListener('scroll', () => { backBtn.classList.toggle('visible', window.scrollY > 400); });
         backBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
