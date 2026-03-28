@@ -37,26 +37,33 @@
 
         .balance-card {
             background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%);
-            color: white; padding: 25px; border-radius: 12px; margin-bottom: 25px;
+            color: white; padding: 25px; border-radius: 16px; margin-bottom: 25px;
+            position: relative; overflow: hidden;
         }
-        .balance-card p { opacity: 0.9; font-size: 0.9rem; }
-        .balance-card h2 { font-size: 2rem; margin-top: 10px; }
+        .balance-card::before { content: ''; position: absolute; top: -40%; right: -15%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%); border-radius: 50%; pointer-events: none; }
+        .balance-card p { opacity: 0.9; font-size: 0.9rem; position: relative; }
+        .balance-card h2 { font-size: 2rem; margin-top: 10px; color: #d4af37; position: relative; }
 
         .card {
-            background: white; border-radius: 16px; padding: 30px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 25px;
+            background: white; border-radius: 18px; padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 25px;
+            position: relative; overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #1a472a, #d4af37); }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(26,71,42,0.1); }
         .card h2 {
             color: #1a472a; margin-bottom: 20px; font-size: 1.3rem;
             display: flex; align-items: center; gap: 10px;
         }
 
         .info-banner {
-            background: #e8f5e9; border-left: 4px solid #1a472a;
-            padding: 14px 18px; border-radius: 0 10px 10px 0;
+            background: linear-gradient(135deg, rgba(26,71,42,0.06), rgba(212,175,55,0.06));
+            border-left: 4px solid #d4af37;
+            padding: 14px 18px; border-radius: 0 12px 12px 0;
             margin-bottom: 25px; font-size: 0.92rem; color: #1a472a;
         }
-        .info-banner i { margin-right: 8px; }
+        .info-banner i { margin-right: 8px; color: #d4af37; }
 
         .steps-indicator {
             display: flex; gap: 8px; margin-bottom: 25px;
@@ -65,22 +72,22 @@
             flex: 1; height: 6px; border-radius: 3px; background: #e0e0e0;
             transition: background 0.3s;
         }
-        .step-dot.active { background: #1a472a; }
-        .step-dot.done { background: #27ae60; }
+        .step-dot.active { background: linear-gradient(90deg, #1a472a, #d4af37); }
+        .step-dot.done { background: #d4af37; }
 
         .deposit-step { display: none; }
         .deposit-step.active { display: block; }
 
         /* Check capture area */
         .check-capture-area {
-            border: 2px dashed #ccc; border-radius: 12px;
+            border: 2px dashed #d4af37; border-radius: 14px;
             padding: 30px; text-align: center; cursor: pointer;
             transition: all 0.3s; margin-bottom: 18px;
-            background: #fafafa; position: relative;
+            background: rgba(212,175,55,0.03); position: relative;
         }
-        .check-capture-area:hover { border-color: #1a472a; background: #f0f7f2; }
-        .check-capture-area.has-image { border-color: #27ae60; border-style: solid; background: white; padding: 10px; }
-        .check-capture-area i { font-size: 2.5rem; color: #aaa; margin-bottom: 10px; }
+        .check-capture-area:hover { border-color: #1a472a; background: rgba(26,71,42,0.03); }
+        .check-capture-area.has-image { border-color: #1a472a; border-style: solid; background: white; padding: 10px; }
+        .check-capture-area i { font-size: 2.5rem; color: #d4af37; margin-bottom: 10px; }
         .check-capture-area p { color: #94a3b8; font-size: 0.95rem; }
         .check-capture-area small { color: #aaa; font-size: 0.82rem; }
         .check-capture-area img {
@@ -137,7 +144,8 @@
             border-radius: 8px; font-size: 1rem; outline: none;
         }
         .form-group select:focus, .form-group input:focus {
-            border-color: #1a472a;
+            border-color: #d4af37;
+            box-shadow: 0 0 0 3px rgba(212,175,55,0.12);
         }
 
         .btn {
@@ -146,8 +154,8 @@
             transition: all 0.3s; display: flex; align-items: center;
             justify-content: center; gap: 8px;
         }
-        .btn-primary { background: #1a472a; color: white; }
-        .btn-primary:hover { background: #2d5f3f; }
+        .btn-primary { background: linear-gradient(135deg, #1a472a, #2d5f3f); color: white; }
+        .btn-primary:hover { background: linear-gradient(135deg, #2d5f3f, #1a472a); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(26,71,42,0.25); }
         .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
         .btn-secondary { background: #e0e0e0; color: #333; margin-top: 10px; }
         .btn-secondary:hover { background: #d0d0d0; }
@@ -192,10 +200,11 @@
         }
         .success-icon {
             width: 80px; height: 80px; border-radius: 50%;
-            background: #d4edda; display: flex; align-items: center;
+            background: linear-gradient(135deg, #1a472a, #2d5f3f); display: flex; align-items: center;
             justify-content: center; margin: 0 auto 20px;
+            box-shadow: 0 8px 20px rgba(26,71,42,0.3);
         }
-        .success-icon i { font-size: 2.5rem; color: #27ae60; }
+        .success-icon i { font-size: 2.5rem; color: #d4af37; }
         .success-card h3 { color: #1a472a; font-size: 1.4rem; margin-bottom: 10px; }
         .success-card p { color: #64748b; line-height: 1.7; }
         .success-details {
@@ -210,7 +219,7 @@
         }
         .deposit-item:last-child { border-bottom: none; }
         .deposit-item .dep-icon {
-            width: 42px; height: 42px; border-radius: 10px;
+            width: 42px; height: 42px; border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             font-size: 1.1rem;
         }

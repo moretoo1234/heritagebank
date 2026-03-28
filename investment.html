@@ -30,11 +30,13 @@
             background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 50%, #1a472a 100%);
             color: white;
             padding: 28px 32px;
-            border-radius: 16px;
+            border-radius: 18px;
             margin-bottom: 28px;
             position: relative;
             overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
+        .portfolio-banner:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(26,71,42,0.25); }
         .portfolio-banner::before {
             content: '';
             position: absolute;
@@ -75,16 +77,18 @@
         }
         .product-card {
             background: white;
-            border-radius: 14px;
+            border-radius: 18px;
             padding: 24px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
             cursor: pointer;
-            transition: all 0.25s;
+            transition: all 0.35s cubic-bezier(.4,0,.2,1);
             border: 2px solid transparent;
             position: relative;
             overflow: hidden;
         }
-        .product-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); border-color: #d4af37; }
+        .product-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #1a472a, #d4af37); opacity: 0; transition: opacity 0.3s; }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(26,71,42,0.12); border-color: #d4af37; }
+        .product-card:hover::before { opacity: 1; }
         .product-card .risk-badge {
             position: absolute;
             top: 14px;
@@ -119,26 +123,31 @@
             width: 100%;
             margin-top: 16px;
             padding: 10px;
-            background: #1a472a;
+            background: linear-gradient(135deg, #1a472a, #2d5f3f);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-weight: 600;
             font-size: 0.85rem;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.3s;
             font-family: inherit;
         }
-        .product-card .invest-action:hover { background: #245a36; }
+        .product-card .invest-action:hover { background: linear-gradient(135deg, #2d5f3f, #1a472a); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,71,42,0.25); }
 
         /* Investment Form Card */
         .invest-form-card {
             background: white;
-            border-radius: 16px;
+            border-radius: 18px;
             padding: 28px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
             margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
+        .invest-form-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #1a472a, #d4af37, #1a472a); }
+        .invest-form-card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(26,71,42,0.1); }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .form-group { margin-bottom: 18px; }
         .form-group label { display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 600; color: #374151; }
@@ -152,7 +161,7 @@
             background: #f8fafc;
             transition: all 0.2s;
         }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #1a472a; background: white; box-shadow: 0 0 0 3px rgba(26,71,42,0.08); }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #d4af37; background: white; box-shadow: 0 0 0 3px rgba(212,175,55,0.12); }
         .estimate-preview {
             background: #f0fdf4;
             border: 1px solid #bbf7d0;
@@ -267,12 +276,13 @@
         .modal-overlay.active { opacity: 1; visibility: visible; }
         .modal-box {
             background: white;
-            border-radius: 16px;
+            border-radius: 18px;
             max-width: 440px;
             width: 92%;
             overflow: hidden;
             transform: scale(0.95) translateY(10px);
             transition: transform 0.25s;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.2);
         }
         .modal-overlay.active .modal-box { transform: scale(1) translateY(0); }
         .modal-icon-area {

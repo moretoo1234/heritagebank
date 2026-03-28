@@ -45,19 +45,27 @@
             background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%);
             color: white;
             padding: 25px;
-            border-radius: 12px;
+            border-radius: 16px;
             margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
         }
-        .balance-card p { opacity: 0.9; font-size: 0.9rem; }
-        .balance-card h2 { font-size: 2rem; margin-top: 10px; }
+        .balance-card::before { content: ''; position: absolute; top: -40%; right: -15%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%); border-radius: 50%; pointer-events: none; }
+        .balance-card p { opacity: 0.9; font-size: 0.9rem; position: relative; }
+        .balance-card h2 { font-size: 2rem; margin-top: 10px; color: #d4af37; position: relative; }
         
         .card {
             background: white;
-            border-radius: 16px;
+            border-radius: 18px;
             padding: 30px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
             margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #1a472a, #d4af37); }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(26,71,42,0.12); }
         .card h2 {
             color: #1a472a;
             margin-bottom: 25px;
@@ -84,10 +92,12 @@
         }
         .tab-btn.active {
             border-color: #1a472a;
-            background: #f0f7f2;
-            color: #1a472a;
+            background: linear-gradient(135deg, #1a472a, #2d5f3f);
+            color: white;
             font-weight: 600;
+            box-shadow: 0 4px 12px rgba(26,71,42,0.2);
         }
+        .tab-btn:hover:not(.active) { border-color: #d4af37; background: rgba(212,175,55,0.04); }
         .tab-btn i { margin-right: 8px; }
 
         /* UK Bank selector */
@@ -434,7 +444,8 @@
         }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             outline: none;
-            border-color: #1a472a;
+            border-color: #d4af37;
+            box-shadow: 0 0 0 3px rgba(212,175,55,0.12);
         }
         .form-group small {
             color: #64748b;
@@ -481,19 +492,20 @@
         .btn-primary {
             width: 100%;
             padding: 16px;
-            background: #1a472a;
+            background: linear-gradient(135deg, #1a472a, #2d5f3f);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 1.1rem;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.35s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
+            font-weight: 600;
         }
-        .btn-primary:hover { background: #2d5f3f; }
+        .btn-primary:hover { background: linear-gradient(135deg, #2d5f3f, #1a472a); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(26,71,42,0.25); }
         .btn-primary:disabled {
             background: #ccc;
             cursor: not-allowed;
@@ -563,13 +575,13 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: #f0f7f2;
+            background: linear-gradient(135deg, rgba(26,71,42,0.1), rgba(212,175,55,0.1));
             display: flex;
             align-items: center;
             justify-content: center;
             margin-right: 12px;
         }
-        .transfer-icon i { color: #1a472a; }
+        .transfer-icon i { color: #d4af37; }
         .transfer-details { flex: 1; }
         .transfer-details h4 { font-size: 0.95rem; color: #333; }
         .transfer-details span { font-size: 0.85rem; color: #64748b; }
