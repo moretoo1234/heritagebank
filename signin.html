@@ -438,7 +438,8 @@
                 if (e.name === 'NotAllowedError') {
                     document.getElementById('alertBox').innerHTML = '<div class="alert alert-danger"><i class="fas fa-hand-paper"></i> Biometric authentication was cancelled.</div>';
                 } else {
-                    document.getElementById('alertBox').innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Biometric login error. Please try again.</div>';
+                    console.error('Passkey login error:', e);
+                    document.getElementById('alertBox').innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Biometric login error: ' + (e.message || 'Please try again.') + '</div>';
                 }
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-fingerprint"></i> Sign in with Passkey';

@@ -226,7 +226,7 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
     : (process.env.NODE_ENV === 'production'
         ? [PRODUCTION_ORIGIN]
-        : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001']);
+        : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8000', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:8000']);
 
 app.use(cors({
     origin: function (origin, callback) {
@@ -3594,7 +3594,18 @@ app.post('/api/auth/login', async (req, res) => {
 // ==================== WEBAUTHN BIOMETRIC AUTH ====================
 
 // Helper: get RP config from request
+// Uses the browser's Origin header (sent on POST/fetch) so the RP origin
+// matches what the browser puts in clientDataJSON, even when the frontend
+// is served on a different port than the API (e.g. local dev port 8000 vs 3001).
 function getWebAuthnRP(req) {
+    const browserOrigin = req.get('origin');
+    if (browserOrigin) {
+        try {
+            const url = new URL(browserOrigin);
+            return { rpName: 'Heritage Bank', rpID: url.hostname, origin: url.origin };
+        } catch (e) { /* fall through to legacy derivation */ }
+    }
+    // Fallback: derive from the incoming request itself
     const host = req.hostname || 'localhost';
     const proto = req.protocol || 'http';
     const port = req.get('host')?.split(':')[1];
@@ -3673,7 +3684,8 @@ app.post('/api/auth/webauthn/register-verify', requireAuth, async (req, res) => 
             response: attestationResponse,
             expectedChallenge: challenge,
             expectedOrigin: rp.origin,
-            expectedRPID: rp.rpID
+            expectedRPID: rp.rpID,
+            requireUserVerification: false
         });
 
         if (!verification.verified || !verification.registrationInfo) {
@@ -3772,6 +3784,7 @@ app.post('/api/auth/webauthn/login-verify', async (req, res) => {
             expectedChallenge: challenge,
             expectedOrigin: rp.origin,
             expectedRPID: rp.rpID,
+            requireUserVerification: false,
             credential: {
                 id: credIdBase64,
                 publicKey: Buffer.from(cred.publicKey, 'base64url'),
