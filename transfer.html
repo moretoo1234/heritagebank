@@ -1441,7 +1441,7 @@
                 } else if (transferType === 'usbank') {
                     const method = document.getElementById('usTransferMethod').value.toUpperCase();
                     body.toAccountNumber = document.getElementById('usAccountNumber').value;
-                    body.description = `US ${method} Transfer to ${document.getElementById('usRecipientName').value} at ${selectedUsBank.name} (Routing: ${selectedUsBank.routing}) | ${document.getElementById('usAccountType').value} account | Ref: ${document.getElementById('usReference').value || 'N/A'}`;
+                    body.description = `US ${method} Transfer to ${document.getElementById('usRecipientName').value} at ${selectedUsBank.name} (Acct: ${document.getElementById('usAccountNumber').value}) | ${document.getElementById('usAccountType').value} account | Ref: ${document.getElementById('usReference').value || 'N/A'}`;
                     body.destinationCountry = 'US';
                 }
 

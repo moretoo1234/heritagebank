@@ -5350,7 +5350,7 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             let extRecipientName = null;
             let extBankName = null;
             let extRoutingNum = null;
-            const usMatch = (description || '').match(/US (?:WIRE|ACH) Transfer to (.+?) at (.+?) \(Routing:\s*([\d]+)\)/i);
+            const usMatch = (description || '').match(/US (?:WIRE|ACH) Transfer to (.+?) at (.+?) \((?:Routing|Acct):\s*([\w]+)\)/i);
             const ukMatch2 = (description || '').match(/UK Transfer to (.+?) at (.+?) \(/i);
             if (usMatch) {
                 extRecipientName = usMatch[1].trim();
@@ -6335,7 +6335,7 @@ app.get('/api/transactions/:id/receipt', requireAuth, async (req, res) => {
         // Parse UK bank transfer details (legacy description-based) + new DB columns
         const ukBankMatch = (transaction.description || '').match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)\s*\|\s*Account:\s*(\d+)\s*\|\s*Sort Code:\s*([\d-]+)/);
         // Parse US Wire/ACH transfer details from description
-        const usWireMatch = (transaction.description || '').match(/US (?:WIRE|ACH) Transfer to ([^\s]+(?:\s+[^\s]+)*?) at ([^\s]+(?:\s+[^\s]+)*?) \(Routing:\s*([\d]+)\)/i);
+        const usWireMatch = (transaction.description || '').match(/US (?:WIRE|ACH) Transfer to ([^\s]+(?:\s+[^\s]+)*?) at ([^\s]+(?:\s+[^\s]+)*?) \((?:Routing|Acct):\s*([\w]+)\)/i);
 
         const UK_BANK_COLORS = {
             'Santander':  { primary: '#ec0000', accent: '#ffffff', text: 'Santander UK', swift: 'ABBYGB2LXXX' },
@@ -6634,7 +6634,10 @@ app.get('/api/transactions/:id/receipt', requireAuth, async (req, res) => {
             // Parse account number from description if available
             const usAcctFromDesc = (transaction.description || '').match(/\baccount\b/i) ? null : null;
             detailRow('Bank Name', (usBankStyle ? usBankStyle.text : wireBankNameRaw) || 'N/A');
-            if (usRoutingNum) detailRow('Routing Number', usRoutingNum);
+            if (usRoutingNum) {
+                const isAcctFormat = (transaction.description || '').includes('(Acct:');
+                detailRow(isAcctFormat ? 'Account Number' : 'Routing Number', usRoutingNum);
+            }
             detailRow('Bank Country', 'United States of America');
             const isWireMethod2 = (transaction.description || '').toUpperCase().includes('WIRE');
             detailRow('Payment Network', isWireMethod2 ? 'Fedwire Funds Service' : 'ACH Network');
