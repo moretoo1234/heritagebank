@@ -30,7 +30,9 @@
                 <button class="hamburger" id="hamburger" title="Toggle Navigation"><span></span><span></span><span></span></button>
                 <ul class="nav-links" id="navLinks">
                     <li><a href="index.html">Home</a></li>
+                    <li><a href="about.html">About</a></li>
                     <li><a href="index.html#services">Services</a></li>
+                    <li><a href="contact.html" class="active">Contact</a></li>
                     <li><a href="faq.html">FAQ</a></li>
                     <li><a href="blog.html">Blog</a></li>
                     <li><a href="branches.html">Branches</a></li>
@@ -198,12 +200,45 @@
 
     <script src="script.js"></script>
     <script>
-        function submitContactForm(e) {
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3001' 
+            : window.location.origin;
+
+        async function submitContactForm(e) {
             e.preventDefault();
-            document.getElementById('cfSuccess').style.display = 'block';
-            document.getElementById('cfError').style.display = 'none';
-            document.getElementById('contactForm').reset();
-            setTimeout(() => { document.getElementById('cfSuccess').style.display = 'none'; }, 5000);
+            const successEl = document.getElementById('cfSuccess');
+            const errorEl = document.getElementById('cfError');
+            successEl.style.display = 'none';
+            errorEl.style.display = 'none';
+
+            const data = {
+                firstName: document.getElementById('cfFirstName').value,
+                lastName: document.getElementById('cfLastName').value,
+                email: document.getElementById('cfEmail').value,
+                phone: document.getElementById('cfPhone').value,
+                subject: document.getElementById('cfSubject').value,
+                message: document.getElementById('cfMessage').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/api/contact`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    successEl.style.display = 'block';
+                    document.getElementById('contactForm').reset();
+                    setTimeout(() => { successEl.style.display = 'none'; }, 5000);
+                } else {
+                    errorEl.textContent = result.message || 'Something went wrong. Please try again.';
+                    errorEl.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorEl.style.display = 'block';
+            }
         }
         const backBtn = document.getElementById('backToTop');
         window.addEventListener('scroll', () => { backBtn.classList.toggle('visible', window.scrollY > 400); });

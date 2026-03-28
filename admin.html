@@ -258,6 +258,8 @@
         .stat-icon.purple { background: #faf5ff; color: #9333ea; }
         .stat-icon.gold { background: #fefce8; color: #ca8a04; }
         .stat-icon.teal { background: #f0fdfa; color: #0d9488; }
+        .stat-icon.red { background: #fef2f2; color: #dc2626; }
+        .stat-icon.cyan { background: #ecfeff; color: #0891b2; }
         .stat-card .stat-info { flex: 1; min-width: 0; }
         .stat-card .label { font-size: 0.78rem; color: #94a3b8; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
         .stat-card .value { font-size: 1.45rem; font-weight: 700; color: #1e293b; letter-spacing: -0.5px; overflow-wrap: break-word; word-break: break-word; }
@@ -581,6 +583,12 @@
             <div class="nav-item" onclick="showSection('user-messages', this)">
                 <i class="fas fa-envelope"></i> User Messages
             </div>
+            <div class="nav-item" onclick="showSection('contact-messages', this)">
+                <i class="fas fa-inbox"></i> Contact Messages
+            </div>
+            <div class="nav-item" onclick="showSection('newsletter', this)">
+                <i class="fas fa-newspaper"></i> Newsletter
+            </div>
             <div class="sidebar-nav-label">Analytics</div>
             <div class="nav-item" onclick="showSection('activity', this)">
                 <i class="fas fa-history"></i> Activity Logs
@@ -656,6 +664,20 @@
                     </div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-icon red"><i class="fas fa-camera"></i></div>
+                    <div class="stat-info">
+                        <div class="label">Pending Deposits</div>
+                        <div class="value" id="statPendingDeposits">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon cyan"><i class="fas fa-inbox"></i></div>
+                    <div class="stat-info">
+                        <div class="label">New Messages</div>
+                        <div class="value" id="statNewMessages">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
                     <div class="stat-icon gold"><i class="fas fa-chart-line"></i></div>
                     <div class="stat-info">
                         <div class="label">Monthly Volume</div>
@@ -680,6 +702,8 @@
                             <button class="btn btn-primary" onclick="showSection('create-user')"><i class="fas fa-user-plus"></i> Create User</button>
                             <button class="btn btn-success" onclick="showSection('transfers')"><i class="fas fa-paper-plane"></i> Fund Account</button>
                             <button class="btn btn-info" onclick="showSection('loans')"><i class="fas fa-hand-holding-usd"></i> Review Loans</button>
+                            <button class="btn btn-warning" onclick="showSection('check-deposits')"><i class="fas fa-camera"></i> Check Deposits</button>
+                            <button class="btn btn-secondary" onclick="showSection('contact-messages')"><i class="fas fa-inbox"></i> Contact Messages</button>
                             <button class="btn btn-primary" onclick="refreshAllData()"><i class="fas fa-sync"></i> Refresh Data</button>
                         </div>
                     </div>
@@ -1213,6 +1237,66 @@
                 </div>
 
                 <!-- Support Tickets Section -->
+
+                <!-- Contact Messages Section -->
+                <div id="contact-messages" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-inbox"></i> Contact Messages</h2>
+                        <div class="ticket-filter-bar">
+                            <button class="btn btn-info" onclick="loadContactMessages()"><i class="fas fa-sync"></i> Refresh</button>
+                            <select id="contactStatusFilter" onchange="loadContactMessages()" class="admin-select-filter">
+                                <option value="">All</option>
+                                <option value="new" selected>New</option>
+                                <option value="read">Read</option>
+                                <option value="replied">Replied</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Subject</th>
+                                        <th>Message</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="contactMessagesTableBody">
+                                    <tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Newsletter Section -->
+                <div id="newsletter" class="section">
+                    <div class="card">
+                        <h2><i class="fas fa-newspaper"></i> Newsletter Subscribers</h2>
+                        <button class="btn btn-info admin-refresh-btn" onclick="loadNewsletterSubscribers()"><i class="fas fa-sync"></i> Refresh</button>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Email</th>
+                                        <th>Status</th>
+                                        <th>Subscribed</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="newsletterTableBody">
+                                    <tr><td colspan="4" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Support Tickets Section -->
                 <div id="support-tickets" class="section">
                     <div class="card">
                         <h2><i class="fas fa-headset"></i> Support Tickets</h2>
@@ -1513,6 +1597,8 @@
             if (sectionId === 'user-messages') loadUserMessages();
             if (sectionId === 'transfer-approvals') { loadPendingTransactions(); loadPendingTransfers(); }
             if (sectionId === 'check-deposits') loadCheckDeposits('pending');
+            if (sectionId === 'contact-messages') loadContactMessages();
+            if (sectionId === 'newsletter') loadNewsletterSubscribers();
         }
 
         function fmtDate(value) {
@@ -1765,6 +1851,8 @@
                     document.getElementById('statTotalBalance').textContent = '$' + parseFloat(s.totalBalance || 0).toLocaleString();
                     document.getElementById('statTodayTxns').textContent = s.todayTransactions || 0;
                     document.getElementById('statPendingLoans').textContent = s.pendingLoans || 0;
+                    document.getElementById('statPendingDeposits').textContent = s.pendingDeposits || 0;
+                    document.getElementById('statNewMessages').textContent = s.newContactMessages || 0;
                     document.getElementById('statMonthlyVolume').textContent = '$' + parseFloat(s.monthlyVolume || 0).toLocaleString();
                     document.getElementById('statActiveUsers').textContent = s.activeUsers || 0;
                 }
@@ -2840,6 +2928,97 @@
                 }
             } catch (e) {
                 alert('Error: ' + e.message);
+            }
+        }
+
+        // Load Activity Logs
+
+        // ==================== CONTACT MESSAGES ====================
+        async function loadContactMessages() {
+            const tbody = document.getElementById('contactMessagesTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            const statusFilter = document.getElementById('contactStatusFilter');
+            const status = statusFilter ? statusFilter.value : '';
+            try {
+                const url = status
+                    ? `${API_BASE}/api/admin/contact-messages?status=${status}`
+                    : `${API_BASE}/api/admin/contact-messages`;
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.messages) {
+                    if (data.messages.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color: #94a3b8;">No contact messages</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.messages.map(msg => `
+                        <tr>
+                            <td>${msg.firstName || ''} ${msg.lastName || ''}</td>
+                            <td>${msg.email}</td>
+                            <td>${msg.subject || 'N/A'}</td>
+                            <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(msg.message || '').replace(/"/g, '&quot;')}">${msg.message || ''}</td>
+                            <td><span class="badge ${msg.status === 'new' ? 'badge-warning' : msg.status === 'replied' ? 'badge-success' : msg.status === 'read' ? 'badge-info' : 'badge-secondary'}">${msg.status}</span></td>
+                            <td>${new Date(msg.created_at).toLocaleDateString()}</td>
+                            <td>
+                                ${msg.status === 'new' ? `<button class="btn btn-sm btn-info" onclick="markContactRead(${msg.id})" title="Mark as Read"><i class="fas fa-eye"></i></button>` : ''}
+                                ${msg.status !== 'archived' ? `<button class="btn btn-sm btn-secondary" onclick="archiveContact(${msg.id})" title="Archive"><i class="fas fa-archive"></i></button>` : ''}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Error loading messages</td></tr>';
+            }
+        }
+
+        async function markContactRead(id) {
+            try {
+                await fetch(`${API_BASE}/api/admin/contact-messages/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+                    body: JSON.stringify({ status: 'read' })
+                });
+                loadContactMessages();
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        async function archiveContact(id) {
+            try {
+                await fetch(`${API_BASE}/api/admin/contact-messages/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+                    body: JSON.stringify({ status: 'archived' })
+                });
+                loadContactMessages();
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        // ==================== NEWSLETTER SUBSCRIBERS ====================
+        async function loadNewsletterSubscribers() {
+            const tbody = document.getElementById('newsletterTableBody');
+            tbody.innerHTML = '<tr><td colspan="4" class="loader"><i class="fas fa-spinner fa-spin"></i><br>Loading...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/newsletter-subscribers`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (data.success && data.subscribers) {
+                    if (data.subscribers.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color: #94a3b8;">No subscribers yet</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.subscribers.map((sub, i) => `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${sub.email}</td>
+                            <td><span class="badge ${sub.status === 'active' ? 'badge-success' : 'badge-secondary'}">${sub.status}</span></td>
+                            <td>${new Date(sub.subscribedAt).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#e74c3c;">Error loading subscribers</td></tr>';
             }
         }
 

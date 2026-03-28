@@ -84,7 +84,7 @@ app.use(
                 scriptSrcAttr: ["'unsafe-inline'"],
                 styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net", "https://ka-f.fontawesome.com"],
                 fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "https://ka-f.fontawesome.com"],
-                imgSrc: ["'self'", "data:", "https://flagcdn.com", "https://cdnjs.cloudflare.com", "https://www.google.com"],
+                imgSrc: ["'self'", "data:", "https://flagcdn.com", "https://cdnjs.cloudflare.com", "https://www.google.com", "https://images.unsplash.com"],
                 connectSrc: ["'self'"],
                 frameSrc: ["'none'"],
                 objectSrc: ["'none'"],
@@ -560,6 +560,8 @@ async function initializeDatabase() {
                 accountStatus ENUM('active', 'frozen', 'suspended', 'closed') DEFAULT 'active',
                 isAdmin BOOLEAN DEFAULT false,
                 marketingConsent BOOLEAN DEFAULT false,
+                profileImage VARCHAR(255) NULL,
+                gender VARCHAR(10) NULL,
                 lastLogin TIMESTAMP NULL,
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -599,6 +601,12 @@ async function initializeDatabase() {
         try { await connection.execute('ALTER TABLE users ADD COLUMN isVerified BOOLEAN DEFAULT false'); } catch (e) {}
         try { await connection.execute('ALTER TABLE users ADD COLUMN documentRequested BOOLEAN DEFAULT false'); } catch (e) {}
         try { await connection.execute('ALTER TABLE users ADD COLUMN documentRequestMessage VARCHAR(500) NULL'); } catch (e) {}
+
+        // Profile image column
+        try { await connection.execute('ALTER TABLE users ADD COLUMN profileImage VARCHAR(255) NULL'); } catch (e) {}
+
+        // Gender column
+        try { await connection.execute("ALTER TABLE users ADD COLUMN gender VARCHAR(10) NULL"); } catch (e) {}
 
         // Email verification columns
         try { await connection.execute('ALTER TABLE users ADD COLUMN emailVerified BOOLEAN DEFAULT false'); } catch (e) {}
@@ -3444,7 +3452,8 @@ app.post('/api/auth/register', async (req, res) => {
             accountType, 
             initialDeposit, 
             referralCode, 
-            marketingConsent 
+            marketingConsent,
+            gender 
         } = req.body;
         
         // Validate required fields
@@ -3502,19 +3511,23 @@ app.post('/api/auth/register', async (req, res) => {
         const accountNumber = generateAccountNumber();
         const emailVerifyToken = crypto.randomBytes(32).toString('hex');
 
+        // Validate gender if provided
+        const validGenders = ['male', 'female'];
+        const genderValue = (gender && validGenders.includes(String(gender).toLowerCase())) ? String(gender).toLowerCase() : null;
+
         await pool.execute(
             `INSERT INTO users (
                 firstName, lastName, email, password, phone, 
                 dateOfBirth, address, city, state, zipCode, country,
                 accountNumber, routingNumber, balance, accountType, 
-                marketingConsent, emailVerifyToken
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                marketingConsent, emailVerifyToken, gender
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 sanitize(firstName), sanitize(lastName), email.trim().toLowerCase(), hashedPassword, sanitize(phone),
                 dateOfBirth || null, sanitize(address) || null, sanitize(city) || null, 
                 sanitize(state) || null, zipCode || null, sanitize(country) || 'United States',
                 accountNumber, ROUTING_NUMBER, deposit, accountType || 'checking',
-                marketingConsent || false, emailVerifyToken
+                marketingConsent || false, emailVerifyToken, genderValue
             ]
         );
 
@@ -3618,7 +3631,9 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
                 accountNumber: user.accountNumber,
                 routingNumber: user.routingNumber,
                 balance: parseFloat(user.balance),
-                isAdmin: Boolean(user.isAdmin) || user.isAdmin === 1 || user.isAdmin === '1'
+                isAdmin: Boolean(user.isAdmin) || user.isAdmin === 1 || user.isAdmin === '1',
+                profileImage: user.profileImage || null,
+                gender: user.gender || null
             }
         });
     } catch (error) {
@@ -3645,7 +3660,9 @@ app.get('/api/auth/profile', requireAuth, async (req, res) => {
                 accountNumber: user.accountNumber,
                 routingNumber: user.routingNumber,
                 balance: parseFloat(user.balance),
-                isAdmin: Boolean(user.isAdmin) || user.isAdmin === 1 || user.isAdmin === '1'
+                isAdmin: Boolean(user.isAdmin) || user.isAdmin === 1 || user.isAdmin === '1',
+                profileImage: user.profileImage || null,
+                gender: user.gender || null
             }
         });
     } catch (error) {
@@ -7111,6 +7128,20 @@ app.get('/api/admin/dashboard-stats', requireAuth, requireAdmin, async (req, res
             WHERE loginStatus = 'failed' AND DATE(loginAt) = CURDATE()
         `);
 
+        // Pending check deposits
+        let pendingDeposits = 0;
+        try {
+            const [depResult] = await pool.execute("SELECT COUNT(*) as count FROM check_deposits WHERE status = 'pending'");
+            pendingDeposits = depResult[0].count;
+        } catch (e) {}
+
+        // New contact messages
+        let newContactMessages = 0;
+        try {
+            const [contactResult] = await pool.execute("SELECT COUNT(*) as count FROM contact_messages WHERE status = 'new'");
+            newContactMessages = contactResult[0].count;
+        } catch (e) {}
+
         res.json({ 
             success: true, 
             stats: {
@@ -7118,6 +7149,8 @@ app.get('/api/admin/dashboard-stats', requireAuth, requireAdmin, async (req, res
                 totalBalance: totalBalance[0].total || 0,
                 todayTransactions: todayTxns[0].count,
                 pendingLoans: pendingLoans[0].count,
+                pendingDeposits,
+                newContactMessages,
                 monthlyTransactions: monthlyTxns[0].count,
                 monthlyVolume: monthlyTxns[0].volume || 0,
                 activeUsers: activeUsers[0].count,
@@ -7628,6 +7661,103 @@ async function logLoginAttempt(userId, ipAddress, userAgent, status, failureReas
     }
 }
 
+// ==================== USER PROFILE PICTURE ====================
+
+// Upload profile picture
+app.post('/api/user/profile/picture', requireAuth, async (req, res) => {
+    try {
+        const { fileData, fileName } = req.body;
+
+        if (!fileData) {
+            return res.status(400).json({ success: false, message: 'No image data provided' });
+        }
+
+        // Validate base64 size (max ~5MB after encoding)
+        if (fileData.length > 7 * 1024 * 1024) {
+            return res.status(400).json({ success: false, message: 'Image too large. Maximum size is 5MB.' });
+        }
+
+        // Validate it's actually an image by checking the base64 header
+        const mimeMatch = fileData.match(/^data:(image\/(jpeg|png|gif|webp));base64,/);
+        if (!mimeMatch) {
+            return res.status(400).json({ success: false, message: 'Invalid image format. Please use JPEG, PNG, GIF, or WebP.' });
+        }
+
+        const base64Data = fileData.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+
+        const uploadsDir = path.join(__dirname, 'uploads', 'profile');
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+
+        // Delete old profile picture if exists
+        const [users] = await pool.execute('SELECT profileImage FROM users WHERE id = ?', [req.auth.id]);
+        if (users[0]?.profileImage) {
+            const oldPath = path.join(__dirname, users[0].profileImage);
+            if (fs.existsSync(oldPath)) {
+                fs.unlinkSync(oldPath);
+            }
+        }
+
+        const ext = mimeMatch[2] === 'jpeg' ? 'jpg' : mimeMatch[2];
+        const safeFileName = `profile_${req.auth.id}_${Date.now()}.${ext}`;
+        const filePath = path.join(uploadsDir, safeFileName);
+        fs.writeFileSync(filePath, buffer);
+
+        const relativePath = `uploads/profile/${safeFileName}`;
+        await pool.execute('UPDATE users SET profileImage = ? WHERE id = ?', [relativePath, req.auth.id]);
+
+        res.json({
+            success: true,
+            message: 'Profile picture updated successfully',
+            profileImage: relativePath
+        });
+    } catch (error) {
+        console.error('Profile picture upload error:', error);
+        res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
+    }
+});
+
+// Serve profile pictures
+app.get('/api/user/profile/picture/:userId', async (req, res) => {
+    try {
+        const [users] = await pool.execute('SELECT profileImage FROM users WHERE id = ?', [req.params.userId]);
+        if (!users[0]?.profileImage) {
+            return res.status(404).json({ success: false, message: 'No profile picture found' });
+        }
+
+        const filePath = path.join(__dirname, users[0].profileImage);
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ success: false, message: 'Profile picture file not found' });
+        }
+
+        res.sendFile(filePath);
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
+    }
+});
+
+// Delete profile picture
+app.delete('/api/user/profile/picture', requireAuth, async (req, res) => {
+    try {
+        const [users] = await pool.execute('SELECT profileImage FROM users WHERE id = ?', [req.auth.id]);
+        if (users[0]?.profileImage) {
+            const filePath = path.join(__dirname, users[0].profileImage);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        }
+
+        await pool.execute('UPDATE users SET profileImage = NULL WHERE id = ?', [req.auth.id]);
+        res.json({ success: true, message: 'Profile picture removed' });
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
+    }
+});
+
 // ==================== USER PROFILE (COMPLETE) ====================
 
 // Get complete user profile with all banking details
@@ -7659,6 +7789,8 @@ app.get('/api/user/profile/complete', requireAuth, async (req, res) => {
                 balance: parseFloat(user.balance),
                 createdAt: user.createdAt,
                 lastLogin: user.lastLogin,
+                profileImage: user.profileImage || null,
+                gender: user.gender || null,
                 emailVerified: user.emailVerified || false,
                 phoneVerified: user.phoneVerified || false,
                 marketingConsent: user.marketingConsent || false,
@@ -7689,8 +7821,12 @@ app.put('/api/user/profile/complete', requireAuth, async (req, res) => {
     try {
         const { 
             firstName, lastName, phone, address, city, state, zipCode, 
-            dateOfBirth, country 
+            dateOfBirth, country, gender 
         } = req.body;
+
+        // Validate gender if provided
+        const validGenders = ['male', 'female'];
+        const genderValue = (gender && validGenders.includes(String(gender).toLowerCase())) ? String(gender).toLowerCase() : undefined;
 
         await pool.execute(`
             UPDATE users SET 
@@ -7702,9 +7838,10 @@ app.put('/api/user/profile/complete', requireAuth, async (req, res) => {
                 state = COALESCE(?, state),
                 zipCode = COALESCE(?, zipCode),
                 dateOfBirth = COALESCE(?, dateOfBirth),
-                country = COALESCE(?, country)
+                country = COALESCE(?, country),
+                gender = COALESCE(?, gender)
             WHERE id = ?
-        `, [firstName, lastName, phone, address, city, state, zipCode, dateOfBirth, country, req.auth.id]);
+        `, [firstName, lastName, phone, address, city, state, zipCode, dateOfBirth, country, genderValue || null, req.auth.id]);
 
         res.json({ success: true, message: 'Profile updated successfully' });
     } catch (error) {
@@ -10609,6 +10746,40 @@ async function ensureInvestmentTables() {
 
 // Create chat_messages table for live chat
 async function ensureChatTables() {
+}
+
+// Create retirement_accounts table
+async function ensureRetirementTables() {
+    try {
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS retirement_accounts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                account_type ENUM('traditional_ira', 'roth_ira', '401k_rollover', 'sep_ira', '529_plan', 'pension') NOT NULL,
+                account_name VARCHAR(100) NOT NULL,
+                contribution DECIMAL(15,2) NOT NULL,
+                total_balance DECIMAL(15,2) NOT NULL DEFAULT 0,
+                apy DECIMAL(5,2) NOT NULL,
+                annual_limit DECIMAL(15,2) NOT NULL DEFAULT 7000,
+                contributed_this_year DECIMAL(15,2) NOT NULL DEFAULT 0,
+                beneficiary VARCHAR(200),
+                target_retirement_age INT DEFAULT 65,
+                status ENUM('active', 'closed', 'withdrawn') DEFAULT 'active',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_user_id (user_id),
+                INDEX idx_status (status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        `);
+    } catch (e) {
+        if (!e.message.includes('already exists')) {
+            console.error('Error creating retirement_accounts table:', e.message);
+        }
+    }
+}
+
+// Create chat_messages table for live chat
+async function ensureChatTables() {
     try {
         await pool.execute(`
             CREATE TABLE IF NOT EXISTS chat_messages (
@@ -10650,7 +10821,9 @@ async function ensureChatTables() {
 setTimeout(async () => {
     await ensureLoanTables();
     await ensureInvestmentTables();
+    await ensureRetirementTables();
     await ensureChatTables();
+    await ensureContactTables();
 }, 2000);
 
 // Submit loan application
@@ -10706,6 +10879,24 @@ app.post('/api/loans/apply', requireAuth, async (req, res) => {
             'INSERT INTO activity_logs (user_id, action_type, action_details) VALUES (?, ?, ?)',
             [userId, 'LOAN_APPLICATION', `Applied for ${loanType} loan of $${loanAmount.toLocaleString()}`]
         ).catch(() => {});
+
+        // Notify user
+        await createNotification(userId, 'loan', 'Loan Application Submitted',
+            `Your ${loanType} loan application for $${loanAmount.toLocaleString()} has been submitted and is under review.`
+        );
+
+        // Notify all admins
+        try {
+            const [admins] = await pool.execute("SELECT id FROM users WHERE role = 'admin'");
+            for (const admin of admins) {
+                await createNotification(
+                    admin.id, 'loan', 'New Loan Application',
+                    `New ${loanType} loan application for $${loanAmount.toLocaleString()} submitted.`,
+                    JSON.stringify({ loanId: result.insertId, loanType, amount: loanAmount }),
+                    'high'
+                );
+            }
+        } catch (e) {}
 
         res.status(201).json({
             success: true,
@@ -11005,6 +11196,23 @@ app.post('/api/investments/invest', requireAuth, async (req, res) => {
             [userId, 'INVESTMENT', `Invested $${investAmount.toLocaleString()} in ${productName}`]
         ).catch(() => {});
 
+        // Notify user
+        await createNotification(userId, 'investment', 'Investment Created',
+            `Your investment of $${investAmount.toLocaleString()} in ${productName} has been created. Estimated return: $${estimatedReturn.toFixed(2)}.`
+        );
+
+        // Notify admins
+        try {
+            const [admins] = await pool.execute("SELECT id FROM users WHERE role = 'admin'");
+            for (const admin of admins) {
+                await createNotification(
+                    admin.id, 'investment', 'New Investment',
+                    `New ${productName} investment of $${investAmount.toLocaleString()} created.`,
+                    null, 'normal'
+                );
+            }
+        } catch (e) {}
+
         res.status(201).json({
             success: true,
             message: 'Investment created successfully',
@@ -11135,6 +11343,179 @@ app.post('/api/investments/:id/withdraw', requireAuth, async (req, res) => {
         });
     } catch (error) {
         console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
+    }
+});
+
+// ==================== RETIREMENT / IRA ENDPOINTS ====================
+
+const RETIREMENT_PRODUCTS = {
+    'Traditional IRA': { type: 'traditional_ira', apy: 5.2, minContribution: 100, annualLimit: 7000, description: 'Tax-deductible contributions, taxed on withdrawal' },
+    'Roth IRA': { type: 'roth_ira', apy: 5.8, minContribution: 100, annualLimit: 7000, description: 'After-tax contributions, tax-free withdrawals' },
+    '401(k) Rollover': { type: '401k_rollover', apy: 6.0, minContribution: 500, annualLimit: 23500, description: 'Roll over existing 401(k) with no tax penalty' },
+    'SEP IRA': { type: 'sep_ira', apy: 5.5, minContribution: 250, annualLimit: 69000, description: 'Simplified Employee Pension for self-employed & small business' },
+    '529 Education Plan': { type: '529_plan', apy: 4.5, minContribution: 50, annualLimit: 18000, description: 'Tax-advantaged education savings for beneficiaries' },
+    'Pension Plan': { type: 'pension', apy: 4.0, minContribution: 200, annualLimit: 69000, description: 'Employer-sponsored defined benefit retirement plan' }
+};
+
+// Open / contribute to a retirement account
+app.post('/api/retirement/contribute', requireAuth, async (req, res) => {
+    try {
+        const userId = req.auth.id;
+        const { product, amount, beneficiary, targetAge } = req.body;
+
+        if (!product || !amount) {
+            return res.status(400).json({ success: false, message: 'Product and amount are required' });
+        }
+
+        const contribution = parseFloat(amount);
+        const productInfo = RETIREMENT_PRODUCTS[product];
+        if (!productInfo) {
+            return res.status(400).json({ success: false, message: 'Invalid retirement product' });
+        }
+
+        if (contribution < productInfo.minContribution) {
+            return res.status(400).json({ success: false, message: `Minimum contribution for ${product} is $${productInfo.minContribution}` });
+        }
+
+        // Check user balance
+        const [users] = await pool.execute('SELECT balance FROM users WHERE id = ?', [userId]);
+        if (users.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
+
+        const userBalance = parseFloat(users[0].balance) || 0;
+        if (userBalance < contribution) {
+            return res.status(400).json({ success: false, message: 'Insufficient balance' });
+        }
+
+        // Check if user already has this account type
+        const [existing] = await pool.execute(
+            'SELECT id, total_balance, contributed_this_year FROM retirement_accounts WHERE user_id = ? AND account_type = ? AND status = ?',
+            [userId, productInfo.type, 'active']
+        );
+
+        let accountId;
+        if (existing.length > 0) {
+            // Add to existing account
+            const yearContrib = parseFloat(existing[0].contributed_this_year) + contribution;
+            if (yearContrib > productInfo.annualLimit) {
+                return res.status(400).json({ success: false, message: `Annual contribution limit for ${product} is $${productInfo.annualLimit.toLocaleString()}. You've contributed $${parseFloat(existing[0].contributed_this_year).toLocaleString()} this year.` });
+            }
+            await pool.execute(
+                'UPDATE retirement_accounts SET total_balance = total_balance + ?, contributed_this_year = contributed_this_year + ?, beneficiary = COALESCE(?, beneficiary), target_retirement_age = COALESCE(?, target_retirement_age) WHERE id = ?',
+                [contribution, contribution, beneficiary || null, targetAge || null, existing[0].id]
+            );
+            accountId = existing[0].id;
+        } else {
+            // Create new retirement account
+            const [result] = await pool.execute(`
+                INSERT INTO retirement_accounts (user_id, account_type, account_name, contribution, total_balance, apy, annual_limit, contributed_this_year, beneficiary, target_retirement_age)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [userId, productInfo.type, product, contribution, contribution, productInfo.apy, productInfo.annualLimit, contribution, beneficiary || null, targetAge || 65]);
+            accountId = result.insertId;
+        }
+
+        // Deduct from balance
+        await pool.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [contribution, userId]);
+        await syncBankAccountBalance(userId);
+
+        // Transaction record
+        await pool.execute(`
+            INSERT INTO transactions (fromUserId, type, amount, description, status, reference)
+            VALUES (?, 'investment', ?, ?, 'completed', ?)
+        `, [userId, contribution, `${product} contribution`, `RET-${accountId}`]);
+
+        // Activity log
+        await pool.execute(
+            'INSERT INTO activity_logs (user_id, action_type, action_details) VALUES (?, ?, ?)',
+            [userId, 'RETIREMENT', `Contributed $${contribution.toLocaleString()} to ${product}`]
+        ).catch(() => {});
+
+        // Notify user
+        await createNotification(userId, 'retirement', existing.length > 0 ? 'Retirement Contribution' : 'Retirement Account Opened',
+            existing.length > 0
+                ? `$${contribution.toLocaleString()} added to your ${product} account.`
+                : `Your ${product} account has been opened with a $${contribution.toLocaleString()} contribution.`
+        );
+
+        // Notify admins
+        try {
+            const [admins] = await pool.execute("SELECT id FROM users WHERE role = 'admin'");
+            for (const admin of admins) {
+                await createNotification(
+                    admin.id, 'retirement', 'New Retirement Contribution',
+                    `$${contribution.toLocaleString()} contributed to ${product}.`,
+                    null, 'normal'
+                );
+            }
+        } catch (e) {}
+
+        const [balRow] = await pool.execute('SELECT balance FROM users WHERE id = ?', [userId]);
+
+        res.status(201).json({
+            success: true,
+            message: existing.length > 0 ? 'Contribution added successfully' : 'Retirement account opened successfully',
+            account: { id: accountId, product, contribution, apy: productInfo.apy },
+            newBalance: parseFloat(balRow[0].balance)
+        });
+    } catch (error) {
+        console.error('Retirement contribution error:', error);
+        res.status(500).json({ success: false, message: 'Error processing contribution' });
+    }
+});
+
+// Get all retirement accounts
+app.get('/api/retirement/accounts', requireAuth, async (req, res) => {
+    try {
+        const userId = req.auth.id;
+        const [accounts] = await pool.execute(`
+            SELECT id, account_type as type, account_name as name, contribution, total_balance as balance,
+                   apy, annual_limit as annualLimit, contributed_this_year as contributedThisYear,
+                   beneficiary, target_retirement_age as targetAge, status, created_at as openedAt
+            FROM retirement_accounts WHERE user_id = ? ORDER BY created_at DESC
+        `, [userId]);
+
+        const totalBalance = accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0);
+        const totalContributed = accounts.reduce((sum, a) => sum + parseFloat(a.contribution), 0);
+
+        res.json({ success: true, totalBalance, totalContributed, count: accounts.length, accounts });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching retirement accounts' });
+    }
+});
+
+// Withdraw from retirement account
+app.post('/api/retirement/:id/withdraw', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.auth.id;
+
+        const [rows] = await pool.execute(
+            'SELECT * FROM retirement_accounts WHERE id = ? AND user_id = ? AND status = ?',
+            [id, userId, 'active']
+        );
+        if (rows.length === 0) return res.status(404).json({ success: false, message: 'Active retirement account not found' });
+
+        const acct = rows[0];
+        const balance = parseFloat(acct.total_balance);
+
+        // Early withdrawal penalty (10%) + potential tax (simulated)
+        const penalty = Math.round(balance * 0.10 * 100) / 100;
+        const payout = balance - penalty;
+
+        await pool.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [payout, userId]);
+        await syncBankAccountBalance(userId);
+        await pool.execute('UPDATE retirement_accounts SET status = ? WHERE id = ?', ['withdrawn', id]);
+
+        await pool.execute(`
+            INSERT INTO transactions (fromUserId, toUserId, amount, type, description, status, category)
+            VALUES (NULL, ?, ?, 'credit', ?, 'completed', 'retirement')
+        `, [userId, payout, `Retirement withdrawal: ${acct.account_name} (penalty: $${penalty})`]);
+
+        const [balRow] = await pool.execute('SELECT balance FROM users WHERE id = ?', [userId]);
+
+        res.json({ success: true, message: 'Retirement account withdrawn', payout, penalty, newBalance: parseFloat(balRow[0].balance) });
+    } catch (error) {
+        console.error('Retirement withdrawal error:', error);
+        res.status(500).json({ success: false, message: 'Error processing withdrawal' });
     }
 });
 
@@ -11365,6 +11746,24 @@ app.post('/api/check-deposit', requireAuth, async (req, res) => {
             );
         } catch (e) {}
 
+        // Notify user
+        await createNotification(decoded.id, 'deposit', 'Check Deposit Submitted',
+            `Your check deposit of $${parseFloat(amount).toLocaleString()} (Ref: ${reference}) has been submitted and is pending review.`
+        );
+
+        // Notify all admins
+        try {
+            const [admins] = await pool.execute("SELECT id FROM users WHERE role = 'admin'");
+            for (const admin of admins) {
+                await createNotification(
+                    admin.id, 'deposit', 'New Check Deposit',
+                    `New check deposit of $${parseFloat(amount).toLocaleString()} submitted for review.`,
+                    JSON.stringify({ reference, amount: parseFloat(amount) }),
+                    'high'
+                );
+            }
+        } catch (e) {}
+
         res.json({ success: true, reference, message: 'Check deposit submitted for review' });
     } catch (error) {
         console.error('Check deposit error:', error);
@@ -11453,6 +11852,11 @@ app.post('/api/admin/approve-check-deposit/:depositId', requireAuth, requireAdmi
         // Sync bank_accounts
         await syncBankAccountBalance(deposit.userId);
 
+        // Notify user about approval
+        await createNotification(deposit.userId, 'deposit', 'Check Deposit Approved',
+            `Your check deposit of $${amountValue.toLocaleString()} (Ref: ${deposit.reference}) has been approved and credited to your account.`
+        );
+
         // Fetch updated user info for response
         const [users] = await pool.execute('SELECT firstName, lastName, balance FROM users WHERE id = ?', [deposit.userId]);
         const user = users[0];
@@ -11486,6 +11890,11 @@ app.post('/api/admin/reject-check-deposit/:depositId', requireAuth, requireAdmin
             ['rejected', reason || 'Rejected by admin', req.auth.id, depositId]
         );
 
+        // Notify user about rejection
+        await createNotification(rows[0].userId, 'deposit', 'Check Deposit Rejected',
+            `Your check deposit of $${parseFloat(rows[0].amount).toLocaleString()} (Ref: ${rows[0].reference}) was rejected.${reason ? ' Reason: ' + reason : ''}`
+        );
+
         // Log activity
         try {
             await pool.execute(
@@ -11497,6 +11906,202 @@ app.post('/api/admin/reject-check-deposit/:depositId', requireAuth, requireAdmin
         res.json({ success: true, message: 'Check deposit rejected' });
     } catch (error) {
         console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
+    }
+});
+
+// ==================== CONTACT & NEWSLETTER ENDPOINTS ====================
+
+async function ensureContactTables() {
+    try {
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS contact_messages (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                firstName VARCHAR(100),
+                lastName VARCHAR(100),
+                email VARCHAR(255) NOT NULL,
+                phone VARCHAR(30),
+                subject VARCHAR(100),
+                message TEXT NOT NULL,
+                status ENUM('new','read','replied','archived') DEFAULT 'new',
+                admin_notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                replied_at TIMESTAMP NULL
+            )
+        `);
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                email VARCHAR(255) NOT NULL UNIQUE,
+                status ENUM('active','unsubscribed') DEFAULT 'active',
+                subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                unsubscribed_at TIMESTAMP NULL
+            )
+        `);
+    } catch (error) {
+        console.error('Error creating contact/newsletter tables:', error.message);
+    }
+}
+
+// Contact form submission (public - no auth required)
+app.post('/api/contact', async (req, res) => {
+    try {
+        const { firstName, lastName, email, phone, subject, message } = req.body;
+
+        if (!email || !message) {
+            return res.status(400).json({ success: false, message: 'Email and message are required' });
+        }
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ success: false, message: 'Invalid email address' });
+        }
+
+        // Sanitize inputs - limit length
+        const sanitize = (str, max) => str ? String(str).slice(0, max) : null;
+
+        await pool.execute(`
+            INSERT INTO contact_messages (firstName, lastName, email, phone, subject, message)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, [
+            sanitize(firstName, 100),
+            sanitize(lastName, 100),
+            sanitize(email, 255),
+            sanitize(phone, 30),
+            sanitize(subject, 100),
+            sanitize(message, 5000)
+        ]);
+
+        // Notify all admin users
+        try {
+            const [admins] = await pool.execute("SELECT id FROM users WHERE role = 'admin'");
+            for (const admin of admins) {
+                await createNotification(
+                    admin.id, 'system', 'New Contact Message',
+                    `${firstName || ''} ${lastName || ''} (${email}) sent a message about "${subject || 'General Inquiry'}"`,
+                    null, 'high'
+                );
+            }
+        } catch (e) { console.error('Admin notification error:', e.message); }
+
+        res.json({ success: true, message: 'Your message has been sent. We will get back to you within 1-2 business days.' });
+    } catch (error) {
+        console.error('Contact form error:', error);
+        res.status(500).json({ success: false, message: 'Error sending message. Please try again.' });
+    }
+});
+
+// Newsletter subscription (public - no auth required)
+app.post('/api/newsletter', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required' });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ success: false, message: 'Invalid email address' });
+        }
+
+        // Check if already subscribed
+        const [existing] = await pool.execute(
+            'SELECT id, status FROM newsletter_subscribers WHERE email = ?',
+            [String(email).slice(0, 255)]
+        );
+
+        if (existing.length > 0) {
+            if (existing[0].status === 'active') {
+                return res.json({ success: true, message: 'You are already subscribed!' });
+            }
+            // Re-subscribe
+            await pool.execute(
+                'UPDATE newsletter_subscribers SET status = ?, subscribed_at = NOW(), unsubscribed_at = NULL WHERE id = ?',
+                ['active', existing[0].id]
+            );
+            return res.json({ success: true, message: 'Welcome back! You have been re-subscribed.' });
+        }
+
+        await pool.execute(
+            'INSERT INTO newsletter_subscribers (email) VALUES (?)',
+            [String(email).slice(0, 255)]
+        );
+
+        res.json({ success: true, message: 'Thank you for subscribing to our newsletter!' });
+    } catch (error) {
+        console.error('Newsletter subscription error:', error);
+        res.status(500).json({ success: false, message: 'Error subscribing. Please try again.' });
+    }
+});
+
+// Admin: Get all contact messages
+app.get('/api/admin/contact-messages', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { status, page = 1, limit = 20 } = req.query;
+        const offset = (page - 1) * limit;
+
+        let query = 'SELECT * FROM contact_messages';
+        const params = [];
+
+        if (status) {
+            query += ' WHERE status = ?';
+            params.push(status);
+        }
+
+        query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+        params.push(String(parseInt(limit)), String(parseInt(offset)));
+
+        const [messages] = await pool.execute(query, params);
+        const [countResult] = await pool.execute(
+            'SELECT COUNT(*) as total FROM contact_messages' + (status ? ' WHERE status = ?' : ''),
+            status ? [status] : []
+        );
+
+        res.json({ success: true, messages, total: countResult[0].total });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching contact messages' });
+    }
+});
+
+// Admin: Update contact message status
+app.put('/api/admin/contact-messages/:id', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, admin_notes } = req.body;
+
+        if (status && !['new', 'read', 'replied', 'archived'].includes(status)) {
+            return res.status(400).json({ success: false, message: 'Invalid status' });
+        }
+
+        const updates = [];
+        const params = [];
+        if (status) { updates.push('status = ?'); params.push(status); }
+        if (status === 'replied') { updates.push('replied_at = NOW()'); }
+        if (admin_notes !== undefined) { updates.push('admin_notes = ?'); params.push(admin_notes); }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ success: false, message: 'No updates provided' });
+        }
+
+        params.push(id);
+        await pool.execute(`UPDATE contact_messages SET ${updates.join(', ')} WHERE id = ?`, params);
+
+        res.json({ success: true, message: 'Contact message updated' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error updating contact message' });
+    }
+});
+
+// Admin: Get newsletter subscribers
+app.get('/api/admin/newsletter-subscribers', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const [subscribers] = await pool.execute(
+            'SELECT id, email, status, subscribed_at as subscribedAt FROM newsletter_subscribers ORDER BY subscribed_at DESC'
+        );
+        res.json({ success: true, subscribers, total: subscribers.length });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching subscribers' });
     }
 });
 

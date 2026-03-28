@@ -138,6 +138,11 @@
             font-size: 1rem;
         }
         .sidebar-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 12px 24px; }
+        .sidebar-user-avatar { display: flex; align-items: center; gap: 12px; padding: 14px 24px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .sidebar-avatar-circle { width: 52px; height: 52px; border-radius: 50%; background: rgba(212,175,55,0.2); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; border: 2px solid rgba(212,175,55,0.5); }
+        .sidebar-avatar-circle i { font-size: 18px; color: rgba(255,255,255,0.6); }
+        .sidebar-avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+        .sidebar-user-name { font-size: 0.85rem; color: rgba(255,255,255,0.85); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .sidebar-section {
             color: rgba(255,255,255,0.35);
             font-size: 0.7rem;
@@ -748,6 +753,13 @@
                 <img src="assets/logo.png" alt="Heritage Bank" onerror="this.style.display='none'">
                 <span>Heritage Bank</span>
             </div>
+            <div class="sidebar-user-avatar" id="sidebarUserAvatar">
+                <div class="sidebar-avatar-circle">
+                    <i class="fas fa-user" id="sidebarUserAvatarIcon"></i>
+                    <img id="sidebarUserAvatarImg" src="" alt="" style="display:none;">
+                </div>
+                <span class="sidebar-user-name" id="sidebarUserName"></span>
+            </div>
             <div class="sidebar-section">Main Menu</div>
             <ul class="sidebar-menu">
                 <li class="active"><i class="fas fa-th-large"></i> Dashboard</li>
@@ -1076,6 +1088,21 @@
                     document.getElementById('userName').textContent = data.user.firstName || 'User';
                     var rpn = document.getElementById('rightPanelName');
                     if (rpn) rpn.textContent = data.user.firstName || 'User';
+
+                    // Sidebar avatar
+                    var sNameEl = document.getElementById('sidebarUserName');
+                    if (sNameEl) sNameEl.textContent = (data.user.firstName || '') + ' ' + (data.user.lastName || '');
+                    var sAvatarImg = document.getElementById('sidebarUserAvatarImg');
+                    var sAvatarIcon = document.getElementById('sidebarUserAvatarIcon');
+                    if (data.user.profileImage) {
+                        if (sAvatarImg) { sAvatarImg.src = API_URL + '/backend/' + data.user.profileImage; sAvatarImg.style.display = 'block'; }
+                        if (sAvatarIcon) sAvatarIcon.style.display = 'none';
+                    } else {
+                        var defAvatar = (data.user.gender === 'female') ? 'assets/avatar-female.jpg' : 'assets/avatar-male.jpg';
+                        if (sAvatarImg) { sAvatarImg.src = defAvatar; sAvatarImg.style.display = 'block'; }
+                        if (sAvatarIcon) sAvatarIcon.style.display = 'none';
+                    }
+
                     document.getElementById('balance').textContent = '$' + (data.user.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
                     document.getElementById('accountNumber').textContent = data.user.accountNumber ? ('****' + data.user.accountNumber.slice(-4)) : '-';
                     document.getElementById('accountNumber').dataset.full = data.user.accountNumber || '';

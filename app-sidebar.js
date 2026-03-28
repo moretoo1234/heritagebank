@@ -9,6 +9,7 @@
         'transactions.html': { label: 'Transactions',   icon: 'fa-exchange-alt',      section: 'main' },
         'cards.html':        { label: 'Cards',          icon: 'fa-credit-card',       section: 'products' },
         'investment.html':   { label: 'Investments',    icon: 'fa-chart-line',        section: 'products' },
+        'retirement.html':   { label: 'Retirement',     icon: 'fa-umbrella-beach',    section: 'products' },
         'request-loan.html': { label: 'Loans',          icon: 'fa-hand-holding-usd',  section: 'products' },
         'savings-goals.html':{ label: 'Savings Goals',  icon: 'fa-piggy-bank',        section: 'products' },
         'analytics.html':    { label: 'Analytics',      icon: 'fa-chart-pie',         section: 'others' },
@@ -40,6 +41,13 @@
                 '<img src="assets/logo.png" alt="Heritage Bank" onerror="this.style.display=\'none\'">' +
                 '<span>Heritage Bank</span>' +
             '</a>' +
+            '<div class="sidebar-user-avatar" id="sidebarUserAvatar">' +
+                '<div class="sidebar-avatar-circle">' +
+                    '<i class="fas fa-user" id="sidebarUserAvatarIcon"></i>' +
+                    '<img id="sidebarUserAvatarImg" src="" alt="" style="display:none;">' +
+                '</div>' +
+                '<span class="sidebar-user-name" id="sidebarUserName"></span>' +
+            '</div>' +
             '<div class="sidebar-section">Main Menu</div>' +
             '<ul class="sidebar-menu">' + buildMenu('main') + '</ul>' +
             '<div class="sidebar-divider"></div>' +
@@ -135,6 +143,38 @@
                 if (sidebar) sidebar.classList.remove('open');
                 overlay.classList.remove('active');
             });
+        }
+
+        // Load user avatar into sidebar
+        var token = localStorage.getItem('token');
+        if (token) {
+            var sidebarApiUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'http://localhost:3001' : window.location.origin;
+            fetch(sidebarApiUrl + '/api/user/profile', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.success && data.user) {
+                    var nameEl = document.getElementById('sidebarUserName');
+                    if (nameEl) nameEl.textContent = (data.user.firstName || '') + ' ' + (data.user.lastName || '');
+                    var avatarImg = document.getElementById('sidebarUserAvatarImg');
+                    var avatarIcon = document.getElementById('sidebarUserAvatarIcon');
+                    if (data.user.profileImage) {
+                        if (avatarImg) {
+                            avatarImg.src = sidebarApiUrl + '/backend/' + data.user.profileImage;
+                            avatarImg.style.display = 'block';
+                        }
+                        if (avatarIcon) avatarIcon.style.display = 'none';
+                    } else {
+                        // Use gender-based default avatar
+                        var defaultAvatar = (data.user.gender === 'female') ? 'assets/avatar-female.jpg' : 'assets/avatar-male.jpg';
+                        if (avatarImg) {
+                            avatarImg.src = defaultAvatar;
+                            avatarImg.style.display = 'block';
+                        }
+                        if (avatarIcon) avatarIcon.style.display = 'none';
+                    }
+                }
+            }).catch(function() {});
         }
     }, 0);
 

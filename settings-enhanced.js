@@ -93,6 +93,9 @@ async function populateAllSections(user) {
 // ============================================================================
 
 function populateProfileForm(user) {
+    // Profile picture
+    loadProfilePicture(user);
+    
     // Basic fields
     document.getElementById('firstName').value = user.firstName || '';
     document.getElementById('lastName').value = user.lastName || '';
@@ -114,6 +117,9 @@ function populateProfileForm(user) {
     }
     if (document.getElementById('zipCode')) {
         document.getElementById('zipCode').value = user.zipCode || '';
+    }
+    if (document.getElementById('gender')) {
+        document.getElementById('gender').value = user.gender || '';
     }
     
     // Populate verification badges
@@ -275,6 +281,168 @@ function updateLimitDisplay(period, data) {
 // PROFILE UPDATE
 // ============================================================================
 
+// ============================================================================
+// PROFILE PICTURE
+// ============================================================================
+
+function getDefaultAvatar(gender) {
+    if (gender === 'female') return 'assets/avatar-female.jpg';
+    return 'assets/avatar-male.jpg';
+}
+
+function loadProfilePicture(user) {
+    const img = document.getElementById('profilePictureImg');
+    const icon = document.getElementById('profilePictureIcon');
+    const removeBtn = document.getElementById('removeProfilePicBtn');
+    const nameEl = document.getElementById('profilePictureName');
+
+    if (nameEl && user.firstName) {
+        nameEl.textContent = `${user.firstName} ${user.lastName || ''}`.trim();
+    }
+
+    // Store gender for avatar fallback
+    window._userGender = user.gender || null;
+
+    if (user.profileImage) {
+        img.src = `${API_URL}/backend/${user.profileImage}`;
+        img.style.display = 'block';
+        if (icon) icon.style.display = 'none';
+        if (removeBtn) removeBtn.style.display = '';
+    } else {
+        // Use gender-based default avatar
+        img.src = getDefaultAvatar(user.gender);
+        img.style.display = 'block';
+        if (icon) icon.style.display = 'none';
+        if (removeBtn) removeBtn.style.display = 'none';
+    }
+
+    // Also update sidebar avatar if present
+    updateSidebarAvatar(user.profileImage, user.gender);
+}
+
+function updateSidebarAvatar(profileImage, gender) {
+    const avatar = document.getElementById('sidebarUserAvatar');
+    const avatarIcon = document.getElementById('sidebarUserAvatarIcon');
+    const avatarImg = document.getElementById('sidebarUserAvatarImg');
+    if (!avatar) return;
+
+    if (profileImage) {
+        if (avatarImg) {
+            avatarImg.src = `${API_URL}/backend/${profileImage}`;
+            avatarImg.style.display = 'block';
+        }
+        if (avatarIcon) avatarIcon.style.display = 'none';
+    } else {
+        // Use gender-based default avatar
+        if (avatarImg) {
+            avatarImg.src = getDefaultAvatar(gender);
+            avatarImg.style.display = 'block';
+        }
+        if (avatarIcon) avatarIcon.style.display = 'none';
+    }
+}
+
+// File input change handler
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('profilePictureInput');
+    if (input) {
+        input.addEventListener('change', handleProfilePictureSelect);
+    }
+});
+
+function handleProfilePictureSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+        showAlert('Invalid image format. Please use JPEG, PNG, GIF, or WebP.', 'error');
+        return;
+    }
+
+    // Validate size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        showAlert('Image too large. Maximum size is 5MB.', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(ev) {
+        await uploadProfilePicture(ev.target.result, file.name);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input so same file can be re-selected
+    e.target.value = '';
+}
+
+async function uploadProfilePicture(fileData, fileName) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_URL}/api/user/profile/picture`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ fileData, fileName })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            showAlert('Profile picture updated!', 'success');
+            // Update UI
+            const img = document.getElementById('profilePictureImg');
+            const icon = document.getElementById('profilePictureIcon');
+            const removeBtn = document.getElementById('removeProfilePicBtn');
+            img.src = `${API_URL}/backend/${data.profileImage}`;
+            img.style.display = 'block';
+            if (icon) icon.style.display = 'none';
+            if (removeBtn) removeBtn.style.display = '';
+            updateSidebarAvatar(data.profileImage, window._userGender);
+        } else {
+            showAlert(data.message || 'Upload failed', 'error');
+        }
+    } catch (e) {
+        showAlert('Error uploading picture: ' + e.message, 'error');
+    }
+}
+
+async function removeProfilePicture() {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_URL}/api/user/profile/picture`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            showAlert('Profile picture removed', 'success');
+            const img = document.getElementById('profilePictureImg');
+            const icon = document.getElementById('profilePictureIcon');
+            const removeBtn = document.getElementById('removeProfilePicBtn');
+            img.src = getDefaultAvatar(window._userGender);
+            img.style.display = 'block';
+            if (icon) icon.style.display = 'none';
+            if (removeBtn) removeBtn.style.display = 'none';
+            updateSidebarAvatar(null, window._userGender);
+        } else {
+            showAlert(data.message || 'Remove failed', 'error');
+        }
+    } catch (e) {
+        showAlert('Error removing picture: ' + e.message, 'error');
+    }
+}
+
+// Make removeProfilePicture available globally
+window.removeProfilePicture = removeProfilePicture;
+
+// ============================================================================
+// PROFILE UPDATE
+// ============================================================================
+
 async function updateProfile(e) {
     e?.preventDefault();
     const token = localStorage.getItem('token');
@@ -288,7 +456,8 @@ async function updateProfile(e) {
         state: document.getElementById('state')?.value,
         zipCode: document.getElementById('zipCode')?.value,
         dateOfBirth: document.getElementById('dateOfBirth')?.value,
-        country: document.getElementById('country').value
+        country: document.getElementById('country').value,
+        gender: document.getElementById('gender')?.value || null
     };
     
     try {

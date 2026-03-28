@@ -8,9 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <meta name="description" content="Manage your Heritage Bank account settings, profile information, and security preferences.">
     <title>Settings - Heritage Bank</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -349,6 +346,108 @@
         .app-footer-links a { color: #8899aa; text-decoration: none; margin: 0 10px; font-size: 0.8rem; }
         .app-footer-links a:hover { color: #aabbcc; }
         .app-footer-copy { color: #556677; font-size: 0.75rem; margin: 0; }
+
+        /* Profile Picture Section */
+        .profile-picture-section {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding: 20px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .profile-picture-wrapper {
+            position: relative;
+            flex-shrink: 0;
+        }
+        .profile-picture-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1a472a, #2d6a3f);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 3px solid #d4af37;
+        }
+        .profile-picture-avatar i {
+            font-size: 48px;
+            color: rgba(255,255,255,0.7);
+        }
+        .profile-picture-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .profile-picture-overlay {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #d4af37;
+            color: #1a472a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid #fff;
+            font-size: 14px;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .profile-picture-overlay:hover {
+            transform: scale(1.1);
+            background: #c49b2f;
+        }
+        .profile-picture-info h3 {
+            font-size: 1.1rem;
+            color: #1a472a;
+            margin-bottom: 4px;
+        }
+        .profile-picture-info p {
+            font-size: 0.82rem;
+            color: #888;
+            margin-bottom: 12px;
+        }
+        .profile-picture-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #dc3545;
+            color: #dc3545;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-outline:hover {
+            background: rgba(220,53,69,0.08);
+        }
+        body.dark-mode .profile-picture-section {
+            border-bottom-color: #333;
+        }
+        body.dark-mode .profile-picture-info h3 {
+            color: #d4af37;
+        }
+        body.dark-mode .profile-picture-info p {
+            color: #aaa;
+        }
+        @media (max-width: 500px) {
+            .profile-picture-section {
+                flex-direction: column;
+                text-align: center;
+            }
+            .profile-picture-actions {
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -412,6 +511,29 @@
             <!-- Profile Settings -->
             <div class="settings-card">
                 <h2><i class="fas fa-user"></i> Personal Information</h2>
+                
+                <!-- Profile Picture Upload -->
+                <div class="profile-picture-section">
+                    <div class="profile-picture-wrapper">
+                        <div class="profile-picture-avatar" id="profilePictureAvatar">
+                            <i class="fas fa-user" id="profilePictureIcon"></i>
+                            <img id="profilePictureImg" src="" alt="Profile" style="display:none;">
+                        </div>
+                        <label class="profile-picture-overlay" for="profilePictureInput">
+                            <i class="fas fa-camera"></i>
+                        </label>
+                        <input type="file" id="profilePictureInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+                    </div>
+                    <div class="profile-picture-info">
+                        <h3 id="profilePictureName">Your Photo</h3>
+                        <p>Upload a profile picture (JPEG, PNG, GIF, WebP &bull; max 5MB)</p>
+                        <div class="profile-picture-actions">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('profilePictureInput').click()"><i class="fas fa-upload"></i> Upload</button>
+                            <button type="button" class="btn btn-sm btn-outline" id="removeProfilePicBtn" style="display:none;" onclick="removeProfilePicture()"><i class="fas fa-trash"></i> Remove</button>
+                        </div>
+                    </div>
+                </div>
+
                 <form id="profileForm">
                     <div class="form-row">
                         <div class="form-group">
@@ -427,6 +549,14 @@
                         <div class="form-group">
                             <label>Date of Birth <span class="required-mark">*</span></label>
                             <input type="date" id="dateOfBirth" required title="Date of Birth">
+                        </div>
+                        <div class="form-group">
+                            <label>Gender</label>
+                            <select id="gender" title="Gender">
+                                <option value="" disabled selected>Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-group">
