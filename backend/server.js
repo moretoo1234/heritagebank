@@ -10,6 +10,8 @@ const crypto = require('crypto');
 const path = require('path');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
+const https = require('https');
+const http = require('http');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 let nodemailer = null;
 
@@ -6251,6 +6253,30 @@ app.get('/api/statements/download', requireAuth, async (req, res) => {
 });
 
 // ==================== TRANSACTION RECEIPTS ====================
+
+// Helper: fetch remote image as buffer (with timeout, follows redirects)
+function fetchImageBuffer(url, timeout = 5000) {
+    return new Promise((resolve) => {
+        if (!url || typeof url !== 'string') return resolve(null);
+        const lib = url.startsWith('https') ? https : http;
+        const req = lib.get(url, { timeout }, (res) => {
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                // Follow redirect
+                fetchImageBuffer(res.headers.location, timeout).then(resolve);
+                res.resume();
+                return;
+            }
+            if (res.statusCode !== 200) { res.resume(); return resolve(null); }
+            const chunks = [];
+            res.on('data', (chunk) => chunks.push(chunk));
+            res.on('end', () => resolve(Buffer.concat(chunks)));
+            res.on('error', () => resolve(null));
+        });
+        req.on('error', () => resolve(null));
+        req.on('timeout', () => { req.destroy(); resolve(null); });
+    });
+}
+
 app.get('/api/transactions/:id/receipt', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -6338,61 +6364,61 @@ app.get('/api/transactions/:id/receipt', requireAuth, async (req, res) => {
         const usWireMatch = (transaction.description || '').match(/US (?:WIRE|ACH) Transfer to ([^\s]+(?:\s+[^\s]+)*?) at ([^\s]+(?:\s+[^\s]+)*?) \((?:Routing|Acct):\s*([\w]+)\)/i);
 
         const UK_BANK_COLORS = {
-            'Santander':  { primary: '#ec0000', accent: '#ffffff', text: 'Santander UK', swift: 'ABBYGB2LXXX' },
-            'SANTANDER':  { primary: '#ec0000', accent: '#ffffff', text: 'Santander UK', swift: 'ABBYGB2LXXX' },
-            'Barclays':   { primary: '#00aeef', accent: '#ffffff', text: 'Barclays Bank', swift: 'BARCGB22XXX' },
-            'HSBC':       { primary: '#db0011', accent: '#ffffff', text: 'HSBC UK', swift: 'HBUKGB4BXXX' },
-            'Lloyds':     { primary: '#006a4d', accent: '#ffffff', text: 'Lloyds Banking Group', swift: 'LOYDGB2LXXX' },
-            'NatWest':    { primary: '#42145f', accent: '#ffffff', text: 'NatWest Bank', swift: 'NWBKGB2LXXX' },
-            'Halifax':    { primary: '#004b8d', accent: '#ffffff', text: 'Halifax', swift: 'HLFXGB21XXX' },
-            'Nationwide': { primary: '#004f9f', accent: '#ffffff', text: 'Nationwide Building Society', swift: 'NAIAGB21XXX' },
-            'TSB':        { primary: '#003d6a', accent: '#58b5e0', text: 'TSB Bank', swift: 'ABORTSB1XXX' },
-            'Monzo':      { primary: '#ff5a5f', accent: '#ffffff', text: 'Monzo Bank', swift: 'MONZGB2LXXX' },
-            'Starling':   { primary: '#6935D3', accent: '#ffffff', text: 'Starling Bank', swift: 'SRLGGB2LXXX' },
-            'Revolut':    { primary: '#0075eb', accent: '#ffffff', text: 'Revolut', swift: 'REVOGB21XXX' },
+            'Santander':  { primary: '#ec0000', accent: '#ffffff', text: 'Santander UK', swift: 'ABBYGB2LXXX', logo: 'https://logo.clearbit.com/santander.co.uk' },
+            'SANTANDER':  { primary: '#ec0000', accent: '#ffffff', text: 'Santander UK', swift: 'ABBYGB2LXXX', logo: 'https://logo.clearbit.com/santander.co.uk' },
+            'Barclays':   { primary: '#00aeef', accent: '#ffffff', text: 'Barclays Bank', swift: 'BARCGB22XXX', logo: 'https://logo.clearbit.com/barclays.co.uk' },
+            'HSBC':       { primary: '#db0011', accent: '#ffffff', text: 'HSBC UK', swift: 'HBUKGB4BXXX', logo: 'https://logo.clearbit.com/hsbc.co.uk' },
+            'Lloyds':     { primary: '#006a4d', accent: '#ffffff', text: 'Lloyds Banking Group', swift: 'LOYDGB2LXXX', logo: 'https://logo.clearbit.com/lloydsbank.com' },
+            'NatWest':    { primary: '#42145f', accent: '#ffffff', text: 'NatWest Bank', swift: 'NWBKGB2LXXX', logo: 'https://logo.clearbit.com/natwest.com' },
+            'Halifax':    { primary: '#004b8d', accent: '#ffffff', text: 'Halifax', swift: 'HLFXGB21XXX', logo: 'https://logo.clearbit.com/halifax.co.uk' },
+            'Nationwide': { primary: '#004f9f', accent: '#ffffff', text: 'Nationwide Building Society', swift: 'NAIAGB21XXX', logo: 'https://logo.clearbit.com/nationwide.co.uk' },
+            'TSB':        { primary: '#003d6a', accent: '#58b5e0', text: 'TSB Bank', swift: 'ABORTSB1XXX', logo: 'https://logo.clearbit.com/tsb.co.uk' },
+            'Monzo':      { primary: '#ff5a5f', accent: '#ffffff', text: 'Monzo Bank', swift: 'MONZGB2LXXX', logo: 'https://logo.clearbit.com/monzo.com' },
+            'Starling':   { primary: '#6935D3', accent: '#ffffff', text: 'Starling Bank', swift: 'SRLGGB2LXXX', logo: 'https://logo.clearbit.com/starlingbank.com' },
+            'Revolut':    { primary: '#0075eb', accent: '#ffffff', text: 'Revolut', swift: 'REVOGB21XXX', logo: 'https://logo.clearbit.com/revolut.com' },
         };
 
         const US_BANK_COLORS = {
-            'Chase':          { primary: '#117ACA', accent: '#ffffff', text: 'JPMorgan Chase', logo: 'https://www.google.com/s2/favicons?domain=chase.com&sz=64' },
-            'Bank of America':{ primary: '#012169', accent: '#ffffff', text: 'Bank of America', logo: 'https://www.google.com/s2/favicons?domain=bankofamerica.com&sz=64' },
-            'Wells Fargo':    { primary: '#D71E28', accent: '#ffffff', text: 'Wells Fargo', logo: 'https://www.google.com/s2/favicons?domain=wellsfargo.com&sz=64' },
-            'Citibank':       { primary: '#003B70', accent: '#ffffff', text: 'Citibank', logo: 'https://www.google.com/s2/favicons?domain=citibank.com&sz=64' },
-            'Capital One':    { primary: '#004977', accent: '#ffffff', text: 'Capital One', logo: 'https://www.google.com/s2/favicons?domain=capitalone.com&sz=64' },
-            'PNC Bank':       { primary: '#F58025', accent: '#ffffff', text: 'PNC Bank', logo: 'https://www.google.com/s2/favicons?domain=pnc.com&sz=64' },
-            'US Bank':        { primary: '#D52B1E', accent: '#ffffff', text: 'US Bank', logo: 'https://www.google.com/s2/favicons?domain=usbank.com&sz=64' },
-            'TD Bank':        { primary: '#34A853', accent: '#ffffff', text: 'TD Bank', logo: 'https://www.google.com/s2/favicons?domain=td.com&sz=64' },
-            'Truist':         { primary: '#510C76', accent: '#ffffff', text: 'Truist Financial', logo: 'https://www.google.com/s2/favicons?domain=truist.com&sz=64' },
-            'Goldman Sachs':  { primary: '#7399C6', accent: '#ffffff', text: 'Goldman Sachs', logo: 'https://www.google.com/s2/favicons?domain=goldmansachs.com&sz=64' },
-            'Morgan Stanley': { primary: '#002B59', accent: '#ffffff', text: 'Morgan Stanley', logo: 'https://www.google.com/s2/favicons?domain=morganstanley.com&sz=64' },
-            'Ally Bank':      { primary: '#6C2D82', accent: '#ffffff', text: 'Ally Bank', logo: 'https://www.google.com/s2/favicons?domain=ally.com&sz=64' },
-            'Discover':       { primary: '#FF6600', accent: '#ffffff', text: 'Discover Bank', logo: 'https://www.google.com/s2/favicons?domain=discover.com&sz=64' },
-            'Charles Schwab': { primary: '#00A0DF', accent: '#ffffff', text: 'Charles Schwab', logo: 'https://www.google.com/s2/favicons?domain=schwab.com&sz=64' },
-            'SoFi':           { primary: '#00B4D8', accent: '#ffffff', text: 'SoFi', logo: 'https://www.google.com/s2/favicons?domain=sofi.com&sz=64' },
-            'Chime':          { primary: '#1EC677', accent: '#ffffff', text: 'Chime', logo: 'https://www.google.com/s2/favicons?domain=chime.com&sz=64' },
-            'Venmo':          { primary: '#3D95CE', accent: '#ffffff', text: 'Venmo', logo: 'https://www.google.com/s2/favicons?domain=venmo.com&sz=64' },
-            'PayPal':         { primary: '#003087', accent: '#ffffff', text: 'PayPal', logo: 'https://www.google.com/s2/favicons?domain=paypal.com&sz=64' },
-            'Cash App':       { primary: '#00C244', accent: '#ffffff', text: 'Cash App', logo: 'https://www.google.com/s2/favicons?domain=cash.app&sz=64' },
-            'Zelle':          { primary: '#6D1ED4', accent: '#ffffff', text: 'Zelle', logo: 'https://www.google.com/s2/favicons?domain=zellepay.com&sz=64' },
-            'Varo':           { primary: '#1A1A2E', accent: '#ffffff', text: 'Varo Bank', logo: 'https://www.google.com/s2/favicons?domain=varomoney.com&sz=64' },
-            'Current':        { primary: '#6C5CE7', accent: '#ffffff', text: 'Current', logo: 'https://www.google.com/s2/favicons?domain=current.com&sz=64' },
-            'Revolut':        { primary: '#0075EB', accent: '#ffffff', text: 'Revolut US', logo: 'https://www.google.com/s2/favicons?domain=revolut.com&sz=64' },
-            'Wise':           { primary: '#9FE870', accent: '#163300', text: 'Wise', logo: 'https://www.google.com/s2/favicons?domain=wise.com&sz=64' },
-            'Mercury':        { primary: '#1C1C1C', accent: '#ffffff', text: 'Mercury', logo: 'https://www.google.com/s2/favicons?domain=mercury.com&sz=64' },
-            'N26':            { primary: '#36A18B', accent: '#ffffff', text: 'N26', logo: 'https://www.google.com/s2/favicons?domain=n26.com&sz=64' },
-            'Apple Cash':     { primary: '#000000', accent: '#ffffff', text: 'Apple Cash', logo: 'https://www.google.com/s2/favicons?domain=apple.com&sz=64' },
-            'Google Pay':     { primary: '#4285F4', accent: '#ffffff', text: 'Google Pay', logo: 'https://www.google.com/s2/favicons?domain=pay.google.com&sz=64' },
-            'Navy Federal':   { primary: '#003366', accent: '#ffffff', text: 'Navy Federal Credit Union', logo: 'https://www.google.com/s2/favicons?domain=navyfederal.org&sz=64' },
-            'USAA':           { primary: '#1B3A5C', accent: '#ffffff', text: 'USAA', logo: 'https://www.google.com/s2/favicons?domain=usaa.com&sz=64' },
-            'Regions':        { primary: '#007A3E', accent: '#ffffff', text: 'Regions Bank', logo: 'https://www.google.com/s2/favicons?domain=regions.com&sz=64' },
-            'KeyBank':        { primary: '#D52B1E', accent: '#ffffff', text: 'KeyBank', logo: 'https://www.google.com/s2/favicons?domain=key.com&sz=64' },
-            'Huntington':     { primary: '#007A33', accent: '#ffffff', text: 'Huntington Bank', logo: 'https://www.google.com/s2/favicons?domain=huntington.com&sz=64' },
-            'BMO':            { primary: '#0079C1', accent: '#ffffff', text: 'BMO Harris', logo: 'https://www.google.com/s2/favicons?domain=bmo.com&sz=64' },
-            'Dave':           { primary: '#00D632', accent: '#ffffff', text: 'Dave', logo: 'https://www.google.com/s2/favicons?domain=dave.com&sz=64' },
-            'MoneyLion':      { primary: '#FF5722', accent: '#ffffff', text: 'MoneyLion', logo: 'https://www.google.com/s2/favicons?domain=moneylion.com&sz=64' },
-            'Aspiration':     { primary: '#5FC25F', accent: '#ffffff', text: 'Aspiration', logo: 'https://www.google.com/s2/favicons?domain=aspiration.com&sz=64' },
-            'GO2bank':        { primary: '#00A651', accent: '#ffffff', text: 'GO2bank', logo: 'https://www.google.com/s2/favicons?domain=go2bank.com&sz=64' },
-            'Netspend':       { primary: '#FF6600', accent: '#ffffff', text: 'Netspend', logo: 'https://www.google.com/s2/favicons?domain=netspend.com&sz=64' },
-            'Greenlight':     { primary: '#00C853', accent: '#ffffff', text: 'Greenlight', logo: 'https://www.google.com/s2/favicons?domain=greenlight.com&sz=64' },
+            'Chase':          { primary: '#117ACA', accent: '#ffffff', text: 'JPMorgan Chase', logo: 'https://logo.clearbit.com/chase.com' },
+            'Bank of America':{ primary: '#012169', accent: '#ffffff', text: 'Bank of America', logo: 'https://logo.clearbit.com/bankofamerica.com' },
+            'Wells Fargo':    { primary: '#D71E28', accent: '#ffffff', text: 'Wells Fargo', logo: 'https://logo.clearbit.com/wellsfargo.com' },
+            'Citibank':       { primary: '#003B70', accent: '#ffffff', text: 'Citibank', logo: 'https://logo.clearbit.com/citibank.com' },
+            'Capital One':    { primary: '#004977', accent: '#ffffff', text: 'Capital One', logo: 'https://logo.clearbit.com/capitalone.com' },
+            'PNC Bank':       { primary: '#F58025', accent: '#ffffff', text: 'PNC Bank', logo: 'https://logo.clearbit.com/pnc.com' },
+            'US Bank':        { primary: '#D52B1E', accent: '#ffffff', text: 'US Bank', logo: 'https://logo.clearbit.com/usbank.com' },
+            'TD Bank':        { primary: '#34A853', accent: '#ffffff', text: 'TD Bank', logo: 'https://logo.clearbit.com/td.com' },
+            'Truist':         { primary: '#510C76', accent: '#ffffff', text: 'Truist Financial', logo: 'https://logo.clearbit.com/truist.com' },
+            'Goldman Sachs':  { primary: '#7399C6', accent: '#ffffff', text: 'Goldman Sachs', logo: 'https://logo.clearbit.com/goldmansachs.com' },
+            'Morgan Stanley': { primary: '#002B59', accent: '#ffffff', text: 'Morgan Stanley', logo: 'https://logo.clearbit.com/morganstanley.com' },
+            'Ally Bank':      { primary: '#6C2D82', accent: '#ffffff', text: 'Ally Bank', logo: 'https://logo.clearbit.com/ally.com' },
+            'Discover':       { primary: '#FF6600', accent: '#ffffff', text: 'Discover Bank', logo: 'https://logo.clearbit.com/discover.com' },
+            'Charles Schwab': { primary: '#00A0DF', accent: '#ffffff', text: 'Charles Schwab', logo: 'https://logo.clearbit.com/schwab.com' },
+            'SoFi':           { primary: '#00B4D8', accent: '#ffffff', text: 'SoFi', logo: 'https://logo.clearbit.com/sofi.com' },
+            'Chime':          { primary: '#1EC677', accent: '#ffffff', text: 'Chime', logo: 'https://logo.clearbit.com/chime.com' },
+            'Venmo':          { primary: '#3D95CE', accent: '#ffffff', text: 'Venmo', logo: 'https://logo.clearbit.com/venmo.com' },
+            'PayPal':         { primary: '#003087', accent: '#ffffff', text: 'PayPal', logo: 'https://logo.clearbit.com/paypal.com' },
+            'Cash App':       { primary: '#00C244', accent: '#ffffff', text: 'Cash App', logo: 'https://logo.clearbit.com/cash.app' },
+            'Zelle':          { primary: '#6D1ED4', accent: '#ffffff', text: 'Zelle', logo: 'https://logo.clearbit.com/zellepay.com' },
+            'Varo':           { primary: '#1A1A2E', accent: '#ffffff', text: 'Varo Bank', logo: 'https://logo.clearbit.com/varomoney.com' },
+            'Current':        { primary: '#6C5CE7', accent: '#ffffff', text: 'Current', logo: 'https://logo.clearbit.com/current.com' },
+            'Revolut':        { primary: '#0075EB', accent: '#ffffff', text: 'Revolut US', logo: 'https://logo.clearbit.com/revolut.com' },
+            'Wise':           { primary: '#9FE870', accent: '#163300', text: 'Wise', logo: 'https://logo.clearbit.com/wise.com' },
+            'Mercury':        { primary: '#1C1C1C', accent: '#ffffff', text: 'Mercury', logo: 'https://logo.clearbit.com/mercury.com' },
+            'N26':            { primary: '#36A18B', accent: '#ffffff', text: 'N26', logo: 'https://logo.clearbit.com/n26.com' },
+            'Apple Cash':     { primary: '#000000', accent: '#ffffff', text: 'Apple Cash', logo: 'https://logo.clearbit.com/apple.com' },
+            'Google Pay':     { primary: '#4285F4', accent: '#ffffff', text: 'Google Pay', logo: 'https://logo.clearbit.com/pay.google.com' },
+            'Navy Federal':   { primary: '#003366', accent: '#ffffff', text: 'Navy Federal Credit Union', logo: 'https://logo.clearbit.com/navyfederal.org' },
+            'USAA':           { primary: '#1B3A5C', accent: '#ffffff', text: 'USAA', logo: 'https://logo.clearbit.com/usaa.com' },
+            'Regions':        { primary: '#007A3E', accent: '#ffffff', text: 'Regions Bank', logo: 'https://logo.clearbit.com/regions.com' },
+            'KeyBank':        { primary: '#D52B1E', accent: '#ffffff', text: 'KeyBank', logo: 'https://logo.clearbit.com/key.com' },
+            'Huntington':     { primary: '#007A33', accent: '#ffffff', text: 'Huntington Bank', logo: 'https://logo.clearbit.com/huntington.com' },
+            'BMO':            { primary: '#0079C1', accent: '#ffffff', text: 'BMO Harris', logo: 'https://logo.clearbit.com/bmo.com' },
+            'Dave':           { primary: '#00D632', accent: '#ffffff', text: 'Dave', logo: 'https://logo.clearbit.com/dave.com' },
+            'MoneyLion':      { primary: '#FF5722', accent: '#ffffff', text: 'MoneyLion', logo: 'https://logo.clearbit.com/moneylion.com' },
+            'Aspiration':     { primary: '#5FC25F', accent: '#ffffff', text: 'Aspiration', logo: 'https://logo.clearbit.com/aspiration.com' },
+            'GO2bank':        { primary: '#00A651', accent: '#ffffff', text: 'GO2bank', logo: 'https://logo.clearbit.com/go2bank.com' },
+            'Netspend':       { primary: '#FF6600', accent: '#ffffff', text: 'Netspend', logo: 'https://logo.clearbit.com/netspend.com' },
+            'Greenlight':     { primary: '#00C853', accent: '#ffffff', text: 'Greenlight', logo: 'https://logo.clearbit.com/greenlight.com' },
         };
 
         // Determine bill payment
@@ -6599,11 +6625,25 @@ app.get('/api/transactions/:id/receipt', requireAuth, async (req, res) => {
 
             // Recipient bank branded header
             const brandStyle = ukBankStyle || { primary: '#333333', accent: '#ffffff', text: wireBankNameRaw || 'International Bank' };
-            doc.roundedRect(marginL, curY, contentW, 28, 4).fill(brandStyle.primary);
-            doc.fontSize(10).fillColor(brandStyle.accent).text('Recipient Details', marginL + 12, curY + 4);
+
+            // Try to fetch UK bank logo for the PDF
+            let ukLogoBuffer = null;
+            if (brandStyle.logo) {
+                try { ukLogoBuffer = await fetchImageBuffer(brandStyle.logo); } catch (e) { /* skip logo */ }
+            }
+
+            const ukHeaderH = ukLogoBuffer ? 36 : 28;
+            doc.roundedRect(marginL, curY, contentW, ukHeaderH, 4).fill(brandStyle.primary);
+            if (ukLogoBuffer) {
+                try {
+                    doc.image(ukLogoBuffer, marginL + 10, curY + 6, { height: 24, fit: [24, 24] });
+                } catch (e) { ukLogoBuffer = null; }
+            }
+            const ukTextOffX = ukLogoBuffer ? marginL + 40 : marginL + 12;
+            doc.fontSize(10).fillColor(brandStyle.accent).text('Recipient Details', ukTextOffX, curY + 4);
             doc.fontSize(8).fillColor(brandStyle.accent).text(brandStyle.text, pageW - marginR - 180, curY + 5, { width: 165, align: 'right' });
-            doc.fontSize(7).fillColor(brandStyle.accent).text(`External ${destCountryName} Bank Account`, marginL + 12, curY + 17);
-            curY += 32;
+            doc.fontSize(7).fillColor(brandStyle.accent).text(`External ${destCountryName} Bank Account`, ukTextOffX, curY + 17);
+            curY += ukHeaderH + 4;
 
             detailRow('Recipient Name', recipientName);
             if (wireRecipientAddress) detailRow('Recipient Address', wireRecipientAddress);
@@ -6623,11 +6663,25 @@ app.get('/api/transactions/:id/receipt', requireAuth, async (req, res) => {
 
             // Recipient bank branded header for US wire
             const brandStyle = usBankStyle || { primary: '#333333', accent: '#ffffff', text: wireBankNameRaw || 'External US Bank', logo: null };
-            doc.roundedRect(marginL, curY, contentW, 28, 4).fill(brandStyle.primary);
-            doc.fontSize(10).fillColor(brandStyle.accent).text('Recipient Details', marginL + 12, curY + 4);
+
+            // Try to fetch bank logo for the PDF
+            let bankLogoBuffer = null;
+            if (brandStyle.logo) {
+                try { bankLogoBuffer = await fetchImageBuffer(brandStyle.logo); } catch (e) { /* skip logo */ }
+            }
+
+            const headerH = bankLogoBuffer ? 36 : 28;
+            doc.roundedRect(marginL, curY, contentW, headerH, 4).fill(brandStyle.primary);
+            if (bankLogoBuffer) {
+                try {
+                    doc.image(bankLogoBuffer, marginL + 10, curY + 6, { height: 24, fit: [24, 24] });
+                } catch (e) { bankLogoBuffer = null; }
+            }
+            const textOffsetX = bankLogoBuffer ? marginL + 40 : marginL + 12;
+            doc.fontSize(10).fillColor(brandStyle.accent).text('Recipient Details', textOffsetX, curY + 4);
             doc.fontSize(8).fillColor(brandStyle.accent).text(brandStyle.text, pageW - marginR - 180, curY + 5, { width: 165, align: 'right' });
-            doc.fontSize(7).fillColor(brandStyle.accent).text('US Domestic Bank Account', marginL + 12, curY + 17);
-            curY += 32;
+            doc.fontSize(7).fillColor(brandStyle.accent).text('US Domestic Bank Account', textOffsetX, curY + 17);
+            curY += headerH + 4;
 
             detailRow('Recipient Name', wireRecipientName);
             if (wireRecipientAddress) detailRow('Recipient Address', wireRecipientAddress);
