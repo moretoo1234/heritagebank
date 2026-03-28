@@ -904,10 +904,10 @@
                         </div>
                     </div>
                     <div class="info-item">
-                        <label>Routing Number</label>
+                        <label>SWIFT Code</label>
                         <div class="info-value-row">
-                            <strong>091238946</strong>
-                            <button class="icon-btn" onclick="copyText('091238946')" title="Copy routing number"><i class="fas fa-copy"></i></button>
+                            <strong id="swiftCode">HERBANKUS</strong>
+                            <button class="icon-btn" onclick="copyToClipboard('swiftCode')" title="Copy SWIFT code"><i class="fas fa-copy"></i></button>
                         </div>
                     </div>
                     <div class="info-item">
@@ -1018,8 +1018,8 @@
                     <span class="summary-stat-value">USD ($)</span>
                 </div>
                 <div class="summary-stat">
-                    <span class="summary-stat-label">Routing</span>
-                    <span class="summary-stat-value summary-mono">091238946</span>
+                    <span class="summary-stat-label">Account #</span>
+                    <span class="summary-stat-value summary-mono" id="summaryAcctNum">****</span>
                 </div>
                 <div class="summary-stat">
                     <span class="summary-stat-label">Status</span>
@@ -1150,6 +1150,10 @@
                     document.getElementById('accountNumber').textContent = data.user.accountNumber ? ('****' + data.user.accountNumber.slice(-4)) : '-';
                     document.getElementById('accountNumber').dataset.full = data.user.accountNumber || '';
                     document.getElementById('accountNumber').dataset.masked = 'true';
+                    var summaryAcctNum = document.getElementById('summaryAcctNum');
+                    if (summaryAcctNum) summaryAcctNum.textContent = data.user.accountNumber ? ('****' + data.user.accountNumber.slice(-4)) : '-';
+                    var swiftEl = document.getElementById('swiftCode');
+                    if (swiftEl && data.user.swiftCode) swiftEl.textContent = data.user.swiftCode;
                     document.getElementById('accountType').textContent = (data.user.accountType || 'Savings') + ' Account';
                     document.getElementById('accType').textContent = data.user.accountType || 'Savings';
                     var sat = document.getElementById('summaryAcctType');
