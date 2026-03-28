@@ -34,6 +34,19 @@ try {
 // - For local development, explicitly load `backend/.env` even if the process is started from repo root.
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
+// ── Configurable constants (override via environment variables) ──
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@heritagebank.com';
+const SUPPORT_PHONE = process.env.SUPPORT_PHONE || '1-800-HERITAGE';
+const BANK_WEBSITE = process.env.BANK_WEBSITE || 'www.heritagebank.com';
+const ADMIN_INITIAL_BALANCE = parseFloat(process.env.ADMIN_INITIAL_BALANCE || '1000000');
+const SAVINGS_APY = parseFloat(process.env.SAVINGS_APY || '0.0425');
+const CHECKING_APY_PCT = process.env.CHECKING_APY_PCT || '0.01';
+const CTR_THRESHOLD = parseFloat(process.env.CTR_THRESHOLD || '10000');
+const MAX_TXN_PER_HOUR = parseInt(process.env.MAX_TXN_PER_HOUR || '10', 10);
+const FEE_WAIVER_MIN_BALANCE = parseFloat(process.env.FEE_WAIVER_MIN_BALANCE || '1500');
+const DORMANT_DAYS = parseInt(process.env.DORMANT_DAYS || '365', 10);
+const PRODUCTION_ORIGIN = process.env.PRODUCTION_ORIGIN || 'https://heritagebank-ku1y.onrender.com';
+
 // Process-level diagnostics to help catch unexpected exits during local/dev runs.
 // (Useful when the server starts and immediately quits due to missing env, port binding errors, etc.)
 process.on('unhandledRejection', (reason) => {
@@ -159,7 +172,7 @@ app.use('/api/auth/reset-password', resetPasswordLimiter);
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
     : (process.env.NODE_ENV === 'production'
-        ? ['https://heritagebank-ku1y.onrender.com']
+        ? [PRODUCTION_ORIGIN]
         : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001']);
 
 app.use(cors({
@@ -1099,11 +1112,11 @@ async function initializeDatabase() {
             ('bank_name', 'Heritage Bank', 'string', 'Bank display name', TRUE),
             ('bank_logo', '/assets/logo.png', 'image', 'Bank logo URL', TRUE),
             ('homepage_image', '/assets/family.jpg', 'image', 'Homepage hero image', TRUE),
-            ('support_email', 'support@heritagebank.com', 'string', 'Support email address', TRUE),
-            ('support_phone', '1-800-HERITAGE', 'string', 'Support phone number', TRUE),
-            ('routing_number', '091238946', 'string', 'Bank routing number', TRUE),
-            ('savings_apy', '4.25', 'number', 'Current savings APY percentage', TRUE),
-            ('checking_apy', '0.01', 'number', 'Current checking APY percentage', TRUE)
+            ('support_email', '${SUPPORT_EMAIL}', 'string', 'Support email address', TRUE),
+            ('support_phone', '${SUPPORT_PHONE}', 'string', 'Support phone number', TRUE),
+            ('routing_number', '${ROUTING_NUMBER}', 'string', 'Bank routing number', TRUE),
+            ('savings_apy', '${(SAVINGS_APY * 100).toFixed(2)}', 'number', 'Current savings APY percentage', TRUE),
+            ('checking_apy', '${CHECKING_APY_PCT}', 'number', 'Current checking APY percentage', TRUE)
         `);
 
         // Scheduled jobs table (required by the scheduled jobs runner)
@@ -1235,7 +1248,7 @@ async function initializeDatabase() {
             await connection.execute(
                 `INSERT INTO users (firstName, lastName, email, password, phone, accountNumber, routingNumber, balance, accountStatus, isAdmin) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
-                ['Admin', 'User', process.env.ADMIN_EMAIL || 'admin@heritagebank.com', hashedPassword, '1-800-BANK', generateAccountNumber(), ROUTING_NUMBER, 100000000, true]
+                ['Admin', 'User', process.env.ADMIN_EMAIL || 'admin@heritagebank.com', hashedPassword, '1-800-BANK', generateAccountNumber(), ROUTING_NUMBER, ADMIN_INITIAL_BALANCE, true]
             );
         }
 
@@ -1791,7 +1804,7 @@ async function updateSpentLimits(userId, amount) {
 }
 
 // Calculate daily interest for savings accounts
-function calculateDailyInterest(balance, apy = 0.0425) {
+function calculateDailyInterest(balance, apy = SAVINGS_APY) {
     return (parseFloat(balance) * apy) / 365;
 }
 
@@ -1800,8 +1813,8 @@ async function checkSuspiciousActivity(userId, amount, type) {
     const flags = [];
     
     // Check for large transaction (potential CTR)
-    if (parseFloat(amount) >= 10000) {
-        flags.push({ type: 'ctr_threshold', description: 'Transaction meets CTR reporting threshold ($10,000+)' });
+    if (parseFloat(amount) >= CTR_THRESHOLD) {
+        flags.push({ type: 'ctr_threshold', description: `Transaction meets CTR reporting threshold ($${CTR_THRESHOLD.toLocaleString()}+)` });
     }
     
     // Check for rapid transactions (potential structuring)
@@ -1811,7 +1824,7 @@ async function checkSuspiciousActivity(userId, amount, type) {
         [userId]
     );
     
-    if (recentTxns[0].count > 10) {
+    if (recentTxns[0].count > MAX_TXN_PER_HOUR) {
         flags.push({ type: 'velocity', description: 'High transaction velocity detected' });
     }
     
@@ -1928,7 +1941,7 @@ async function runScheduledJobs() {
 
 // Interest Calculation Job
 async function runInterestCalculation() {
-    const APY = 0.0425; // 4.25% APY for savings
+    const APY = SAVINGS_APY;
     let accountsProcessed = 0;
     let totalInterest = 0;
     
@@ -2032,7 +2045,7 @@ async function runFeeAssessment() {
         const balance = parseFloat(account.balance);
         
         // Check waiver conditions (e.g., minimum balance)
-        if (account.accountType === 'checking' && balance >= 1500) continue; // Waive if balance >= $1500
+        if (account.accountType === 'checking' && balance >= FEE_WAIVER_MIN_BALANCE) continue; // Waive if balance >= minimum
         if (account.accountType === 'premium') continue; // Premium accounts have no fee
         
         // Record the fee
@@ -2139,7 +2152,6 @@ async function runBalanceSnapshot() {
 
 // Dormant Account Check Job
 async function runDormantAccountCheck() {
-    const DORMANT_DAYS = 365;
     
     // Find accounts with no transactions in X days
     const [dormantAccounts] = await pool.execute(
@@ -6049,7 +6061,7 @@ app.get('/api/statements/download', requireAuth, async (req, res) => {
             doc.fontSize(8).fillColor(GOLD).text('Heritage Bank', mL, footerTop + 10, { width: cW, align: 'center' });
             doc.fontSize(7).fillColor(WHITE);
             doc.text('FDIC Insured | Equal Housing Lender | NMLS #091238946', mL, footerTop + 22, { width: cW, align: 'center' });
-            doc.text('1-800-HERITAGE | support@heritagebank.com | www.heritagebank.com', mL, footerTop + 34, { width: cW, align: 'center' });
+            doc.text(`${SUPPORT_PHONE} | ${SUPPORT_EMAIL} | ${BANK_WEBSITE}`, mL, footerTop + 34, { width: cW, align: 'center' });
             doc.text('Regulated by the Office of the Comptroller of the Currency (OCC)', mL, footerTop + 46, { width: cW, align: 'center' });
             doc.fontSize(7).fillColor(GOLD).text('This is a computer-generated statement and does not require a physical signature.', mL, footerTop + 60, { width: cW, align: 'center' });
 
@@ -6502,7 +6514,7 @@ app.get('/api/transactions/:id/receipt', requireAuth, async (req, res) => {
         doc.fontSize(6.5).fillColor(WHITE);
         doc.text('FDIC Insured | Equal Housing Lender | NMLS #091238946', marginL, footerTop + 18, { width: contentW, align: 'center' });
         doc.text('Member FDIC | Routing Number: 091238946', marginL, footerTop + 28, { width: contentW, align: 'center' });
-        doc.text('1-800-HERITAGE | support@heritagebank.com | www.heritagebank.com', marginL, footerTop + 38, { width: contentW, align: 'center' });
+        doc.text(`${SUPPORT_PHONE} | ${SUPPORT_EMAIL} | ${BANK_WEBSITE}`, marginL, footerTop + 38, { width: contentW, align: 'center' });
         doc.text('Regulated by the Office of the Comptroller of the Currency (OCC) | SWIFT: HRTGUSBKXXX', marginL, footerTop + 48, { width: contentW, align: 'center' });
         doc.fontSize(6.5).fillColor(GOLD).text('This is a computer-generated receipt and does not require a physical signature.', marginL, footerTop + 56, { width: contentW, align: 'center' });
 
@@ -8767,7 +8779,7 @@ app.get('/api/user/statements/current', requireAuth, async (req, res) => {
         doc.fontSize(8).fillColor(GOLD).text('Heritage Bank', mL, footerTop + 10, { width: cW, align: 'center' });
         doc.fontSize(7).fillColor(WHITE);
         doc.text('FDIC Insured | Equal Housing Lender | NMLS #091238946', mL, footerTop + 22, { width: cW, align: 'center' });
-        doc.text('1-800-HERITAGE | support@heritagebank.com | www.heritagebank.com', mL, footerTop + 34, { width: cW, align: 'center' });
+        doc.text(`${SUPPORT_PHONE} | ${SUPPORT_EMAIL} | ${BANK_WEBSITE}`, mL, footerTop + 34, { width: cW, align: 'center' });
         doc.text('Regulated by the Office of the Comptroller of the Currency (OCC)', mL, footerTop + 46, { width: cW, align: 'center' });
         doc.fontSize(7).fillColor(GOLD).text('This is a computer-generated statement and does not require a physical signature.', mL, footerTop + 60, { width: cW, align: 'center' });
 

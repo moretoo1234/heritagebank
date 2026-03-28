@@ -193,9 +193,10 @@ if (!JWT_SECRET) {
 }
 
 // Banking Details
-const ROUTING_NUMBER = '091238946';
-const BANK_NAME = 'Heritage Bank';
-const BANK_CODE = 'HERBUS33';
+const ROUTING_NUMBER = process.env.ROUTING_NUMBER || '091238946';
+const BANK_NAME = process.env.BANK_NAME || 'Heritage Bank';
+const BANK_CODE = process.env.BANK_CODE || 'HERBUS33';
+const ADMIN_INITIAL_BALANCE = parseFloat(process.env.ADMIN_INITIAL_BALANCE || '1000000');
 
 // ============================================
 // ACCOUNT NUMBER GENERATOR (RANDOM)
@@ -276,7 +277,7 @@ async function initializeDatabase() {
             await connection.execute(
                 `INSERT INTO users (firstName, lastName, email, password, phone, dob, country, accountType, address, city, state, zip, accountNumber, routingNumber, balance, isAdmin) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                ['Admin', 'User', adminEmail, hashedPassword, '1-800-BANK-001', '1980-01-01', 'United States', 'admin', 'Heritage Bank HQ', 'New York', 'NY', '10001', adminAccountNumber, ROUTING_NUMBER, 100000000, true]
+                ['Admin', 'User', adminEmail, hashedPassword, '1-800-BANK-001', '1980-01-01', 'United States', 'admin', 'Heritage Bank HQ', 'New York', 'NY', '10001', adminAccountNumber, ROUTING_NUMBER, ADMIN_INITIAL_BALANCE, true]
             );
 
             console.log('✅ Admin account created');
