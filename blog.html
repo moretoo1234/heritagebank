@@ -54,157 +54,485 @@
     <!-- Blog Section -->
     <section class="page-content">
         <div class="container">
+            <!-- Filter Tabs -->
+            <div class="blog-filters">
+                <button class="blog-filter-btn active" onclick="filterPosts('all', this)">All Posts</button>
+                <button class="blog-filter-btn" onclick="filterPosts('savings', this)">Savings</button>
+                <button class="blog-filter-btn" onclick="filterPosts('investing', this)">Investing</button>
+                <button class="blog-filter-btn" onclick="filterPosts('security', this)">Security</button>
+                <button class="blog-filter-btn" onclick="filterPosts('homebuying', this)">Home Buying</button>
+                <button class="blog-filter-btn" onclick="filterPosts('business', this)">Business</button>
+                <button class="blog-filter-btn" onclick="filterPosts('fintech', this)">Fintech</button>
+                <button class="blog-filter-btn" onclick="filterPosts('retirement', this)">Retirement</button>
+            </div>
+
             <div class="blog-layout">
                 <div>
                     <div class="blog-grid">
                         <!-- Featured Post -->
-                        <div class="blog-card featured-post">
-                            <div class="blog-image"><i class="fas fa-chart-line"></i></div>
+                        <div class="blog-card featured-post" data-category="investing">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=900&q=80')">
+                                <span class="blog-badge">Featured</span>
+                            </div>
                             <div class="blog-content">
-                                <span class="blog-category">Featured</span>
-                                <h3><a href="#">2024 Investment Outlook: What to Expect in the Coming Year</a></h3>
-                                <p class="blog-excerpt">As we enter 2024, market analysts are predicting significant shifts in investment trends. From emerging technologies to sustainable investing, here's what savvy investors should watch for in the months ahead...</p>
+                                <span class="blog-category cat-investing">Investing</span>
+                                <h3><a href="#">AI-Powered Portfolios: How Machine Learning Is Reshaping Wealth Management in 2026</a></h3>
+                                <p class="blog-excerpt">From robo-advisors to predictive analytics, artificial intelligence is transforming how everyday investors build and manage their portfolios. Here's what Heritage Bank clients should know about the AI revolution in finance.</p>
                                 <div class="blog-full">
-                                    <p>The global investment landscape is evolving rapidly. Artificial intelligence and machine learning are transforming how portfolios are managed, while ESG (Environmental, Social, and Governance) investing continues to gain mainstream adoption. Interest rates have stabilized, creating new opportunities in both bond and equity markets.</p>
-                                    <p>Key trends to watch include the continued growth of renewable energy investments, the expansion of digital assets into traditional portfolios, and emerging market opportunities in Southeast Asia and Africa. Diversification remains the cornerstone of any sound investment strategy — speak with a Heritage Bank advisor to review your portfolio today.</p>
+                                    <p>The integration of AI into wealth management has accelerated dramatically. Modern robo-advisors now analyze thousands of data points — from macroeconomic indicators to real-time sentiment analysis — to rebalance portfolios in milliseconds. Heritage Bank's Smart Portfolio service leverages these capabilities while maintaining the human oversight our clients expect.</p>
+                                    <p>Key developments in 2026 include natural language portfolio queries ("How would my portfolio perform if interest rates rise 0.5%?"), automated tax-loss harvesting that adapts to regulatory changes in real time, and predictive risk modeling that can flag potential downturns weeks before traditional indicators. Our advisors recommend using AI tools as a complement to — not a replacement for — personalized financial planning.</p>
+                                    <p>The bottom line: AI is making sophisticated investment strategies accessible to everyone, not just high-net-worth individuals. If you haven't explored Heritage Bank's AI-enhanced investment options, schedule a free consultation with one of our wealth advisors today.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">DR</div>
+                                        <div>
+                                            <span class="blog-author-name">David Rodriguez</span>
+                                            <span class="blog-author-title">Chief Investment Strategist</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Mar 25, 2026</span>
+                                        <span><i class="far fa-clock"></i> 7 min read</span>
+                                    </div>
                                 </div>
                                 <div class="blog-meta">
-                                    <span><i class="far fa-calendar"></i> Dec 20, 2024</span>
-                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Blog Post 1 -->
-                        <div class="blog-card">
-                            <div class="blog-image"><i class="fas fa-piggy-bank"></i></div>
+                        <!-- Post 1 -->
+                        <div class="blog-card" data-category="savings">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=600&q=80')">
+                            </div>
                             <div class="blog-content">
-                                <span class="blog-category">Savings Tips</span>
-                                <h3><a href="#">10 Simple Ways to Build Your Emergency Fund</a></h3>
-                                <p class="blog-excerpt">Financial experts recommend having 3-6 months of expenses saved. Here are practical strategies to build your safety net faster...</p>
+                                <span class="blog-category cat-savings">Savings</span>
+                                <h3><a href="#">High-Yield Savings in 2026: How to Earn 5%+ APY on Your Emergency Fund</a></h3>
+                                <p class="blog-excerpt">Interest rates remain elevated, and savers are benefiting. We break down where to park your cash for maximum returns without sacrificing liquidity.</p>
                                 <div class="blog-full">
-                                    <p>Building an emergency fund is one of the most important steps toward financial security. Start by setting a realistic monthly savings goal — even $50 per paycheck adds up. Automate your savings through Heritage Bank's automatic transfer feature so the money moves before you can spend it.</p>
-                                    <p>Other proven strategies include reducing discretionary spending, selling unused items, picking up a side income, and directing any windfalls (tax refunds, bonuses) straight into your fund. Heritage Bank's High-Yield Savings Account offers competitive rates to help your emergency fund grow faster.</p>
+                                    <p>With the Federal Reserve holding rates steady, high-yield savings accounts are offering some of the best returns in over a decade. Heritage Bank's Premium Savings account currently offers a competitive APY that far outpaces the national average of 0.45%.</p>
+                                    <p>The key is understanding the difference between promotional rates and sustained yields. Look for accounts with no minimum balance requirements, no hidden fees, and consistent rate history. Heritage Bank has maintained top-tier rates since 2024 without teaser rate gimmicks.</p>
+                                    <p>Pro tip: Use Heritage Bank's automatic savings rules to sweep excess checking funds into your high-yield account every week. Even an extra $100/month at current rates compounds into meaningful income over time.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">LN</div>
+                                        <div>
+                                            <span class="blog-author-name">Lisa Nguyen</span>
+                                            <span class="blog-author-title">Personal Finance Editor</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Mar 22, 2026</span>
+                                        <span><i class="far fa-clock"></i> 5 min read</span>
+                                    </div>
                                 </div>
                                 <div class="blog-meta">
-                                    <span><i class="far fa-calendar"></i> Dec 18, 2024</span>
-                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Blog Post 2 -->
-                        <div class="blog-card">
-                            <div class="blog-image"><i class="fas fa-home"></i></div>
+                        <!-- Post 2 -->
+                        <div class="blog-card" data-category="security">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=600&q=80')">
+                            </div>
                             <div class="blog-content">
-                                <span class="blog-category">Home Buying</span>
-                                <h3><a href="#">First-Time Homebuyer's Guide: Navigating the Mortgage Process</a></h3>
-                                <p class="blog-excerpt">Buying your first home is exciting but can be overwhelming. Our comprehensive guide breaks down every step of the mortgage process...</p>
+                                <span class="blog-category cat-security">Security</span>
+                                <h3><a href="#">Deepfake Voice Scams Are Targeting Bank Customers — Here's How to Stay Safe</a></h3>
+                                <p class="blog-excerpt">Criminals are using AI-generated voice clones to impersonate family members and bank staff. Learn the red flags and how Heritage Bank protects you.</p>
                                 <div class="blog-full">
-                                    <p>The mortgage process begins long before you start house hunting. First, check your credit score and address any issues. Next, get pre-approved — this tells sellers you're a serious buyer and sets your budget. Heritage Bank offers competitive fixed and adjustable-rate mortgages with personalized guidance every step of the way.</p>
-                                    <p>When comparing loans, look beyond the interest rate. Consider closing costs, PMI requirements, and whether points make sense for your situation. A Heritage Bank mortgage specialist can walk you through all your options and help you find the best fit for your financial goals.</p>
+                                    <p>The FBI reported a 300% increase in AI voice scams in 2025, with losses exceeding $2.7 billion nationwide. Scammers use publicly available audio — from social media videos and voicemail greetings — to create convincing voice clones in seconds.</p>
+                                    <p>Heritage Bank will <strong>never</strong> call you to request passwords, PINs, or one-time codes. If you receive a suspicious call claiming to be from us, hang up and call our verified number directly. We've implemented voice biometric verification on our end to ensure our agents are who they say they are.</p>
+                                    <p>Additional safeguards: Set up a family "safe word" for emergency calls, enable Heritage Bank's transaction alerts for real-time notifications, and never authorize wire transfers based solely on a phone call — always verify through a second channel.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">MK</div>
+                                        <div>
+                                            <span class="blog-author-name">Michael Kim</span>
+                                            <span class="blog-author-title">Cybersecurity Lead</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Mar 18, 2026</span>
+                                        <span><i class="far fa-clock"></i> 6 min read</span>
+                                    </div>
                                 </div>
                                 <div class="blog-meta">
-                                    <span><i class="far fa-calendar"></i> Dec 15, 2024</span>
-                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Blog Post 3 -->
-                        <div class="blog-card">
-                            <div class="blog-image"><i class="fas fa-shield-alt"></i></div>
+                        <!-- Post 3 -->
+                        <div class="blog-card" data-category="homebuying">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&q=80')">
+                            </div>
                             <div class="blog-content">
-                                <span class="blog-category">Security</span>
-                                <h3><a href="#">Protecting Yourself from Financial Fraud in the Digital Age</a></h3>
-                                <p class="blog-excerpt">Cybercriminals are becoming more sophisticated. Learn how to recognize and protect yourself from common financial scams...</p>
+                                <span class="blog-category cat-homebuying">Home Buying</span>
+                                <h3><a href="#">Mortgage Rate Forecast: Is 2026 the Year to Buy?</a></h3>
+                                <p class="blog-excerpt">With rates dipping below recent highs, potential homebuyers are asking whether now is the right time to lock in. Our mortgage team weighs in.</p>
                                 <div class="blog-full">
-                                    <p>Phishing emails, fake banking apps, and social engineering calls are on the rise. Never share your password, PIN, or one-time codes with anyone — Heritage Bank will never ask for these via email or phone. Always verify the sender before clicking links, and use unique, strong passwords for every account.</p>
-                                    <p>Enable two-factor authentication on your Heritage Bank account, monitor your statements regularly, and set up transaction alerts so you're notified of any activity immediately. If you suspect fraud, contact Heritage Bank's 24/7 fraud hotline right away — early reporting drastically reduces losses.</p>
+                                    <p>After peaking in late 2024, 30-year fixed mortgage rates have gradually moderated. While we're unlikely to return to the sub-3% rates of 2021, current levels represent a significant improvement for buyers who've been waiting on the sidelines.</p>
+                                    <p>Heritage Bank's mortgage specialists recommend focusing on affordability rather than trying to time the market perfectly. A rate lock with a float-down option can protect you if rates drop further after you apply. Our First-Time Homebuyer Program also offers reduced closing costs and down payment assistance for qualified applicants.</p>
+                                    <p>Key action items: Get pre-approved now to strengthen your negotiating position, explore both fixed and adjustable-rate options, and remember that you can always refinance later if rates continue to fall.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">AW</div>
+                                        <div>
+                                            <span class="blog-author-name">Angela Washington</span>
+                                            <span class="blog-author-title">Mortgage Division Director</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Mar 14, 2026</span>
+                                        <span><i class="far fa-clock"></i> 5 min read</span>
+                                    </div>
                                 </div>
                                 <div class="blog-meta">
-                                    <span><i class="far fa-calendar"></i> Dec 12, 2024</span>
-                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Blog Post 4 -->
-                        <div class="blog-card">
-                            <div class="blog-image"><i class="fas fa-graduation-cap"></i></div>
+                        <!-- Post 4 -->
+                        <div class="blog-card" data-category="fintech">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&q=80')">
+                            </div>
                             <div class="blog-content">
-                                <span class="blog-category">Education</span>
-                                <h3><a href="#">Understanding Credit Scores: A Complete Guide</a></h3>
-                                <p class="blog-excerpt">Your credit score affects everything from loan rates to job applications. Learn what factors impact your score and how to improve it...</p>
+                                <span class="blog-category cat-fintech">Fintech</span>
+                                <h3><a href="#">Open Banking Is Here: What It Means for Your Heritage Bank Account</a></h3>
+                                <p class="blog-excerpt">New regulations are giving you more control over your financial data. Learn how open banking lets you connect your accounts securely to budgeting apps and more.</p>
                                 <div class="blog-full">
-                                    <p>Your credit score is calculated from five main factors: payment history (35%), amounts owed (30%), length of credit history (15%), new credit (10%), and credit mix (10%). The single most impactful thing you can do is pay every bill on time — even one missed payment can drop your score significantly.</p>
-                                    <p>Keep credit card balances below 30% of your limit, avoid opening too many new accounts at once, and don't close old cards (they help your average age of credit). Heritage Bank customers can check their credit score for free through their online banking dashboard.</p>
+                                    <p>Open banking allows you to securely share your account data with authorized third-party apps — like budgeting tools, investment platforms, and tax software — without giving them your login credentials. Heritage Bank now supports the latest open banking standards through secure API connections.</p>
+                                    <p>This means you can connect apps like Mint, YNAB, or Personal Capital to your Heritage Bank accounts with bank-level encryption and granular permission controls. You choose exactly what data to share and can revoke access at any time through your Heritage Bank settings.</p>
+                                    <p>What this doesn't mean: no third party can move money from your account without your explicit authorization. Open banking is read-only by default, and Heritage Bank's fraud monitoring applies to all connected services.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">JP</div>
+                                        <div>
+                                            <span class="blog-author-name">James Park</span>
+                                            <span class="blog-author-title">Digital Banking Director</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Mar 10, 2026</span>
+                                        <span><i class="far fa-clock"></i> 4 min read</span>
+                                    </div>
                                 </div>
                                 <div class="blog-meta">
-                                    <span><i class="far fa-calendar"></i> Dec 10, 2024</span>
-                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Blog Post 5 -->
-                        <div class="blog-card">
-                            <div class="blog-image"><i class="fas fa-briefcase"></i></div>
+                        <!-- Post 5 -->
+                        <div class="blog-card" data-category="retirement">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1473186505569-9c61870c11f9?w=600&q=80')">
+                            </div>
                             <div class="blog-content">
-                                <span class="blog-category">Business</span>
-                                <h3><a href="#">Small Business Banking: Essential Tools for Growth</a></h3>
-                                <p class="blog-excerpt">Running a small business requires the right financial foundation. Discover the banking tools that can help your business thrive...</p>
+                                <span class="blog-category cat-retirement">Retirement</span>
+                                <h3><a href="#">The New 401(k) Limits for 2026: Maximize Your Retirement Contributions</a></h3>
+                                <p class="blog-excerpt">The IRS has raised contribution limits again. Here's how much more you can save this year and strategies to take full advantage.</p>
                                 <div class="blog-full">
-                                    <p>A dedicated business checking account separates personal and business finances — essential for tax purposes and liability protection. Heritage Bank's Business Checking offers low fees, free online bill pay, and integration with popular accounting software like QuickBooks and Xero.</p>
-                                    <p>Beyond checking, consider a business line of credit for managing cash flow gaps, merchant services for accepting payments, and payroll solutions to simplify employee management. Heritage Bank's business advisors can create a customized banking package tailored to your industry and growth stage.</p>
+                                    <p>For 2026, the IRS has raised the 401(k) contribution limit, allowing workers to shelter even more income from taxes. If your employer offers a match, contribute at least enough to capture the full match — that's an immediate 100% return on your money.</p>
+                                    <p>Workers over 50 can contribute additional catch-up amounts, and a new "super catch-up" provision for those aged 60-63 allows even higher contributions. Heritage Bank's retirement planning calculator can show you exactly how much these increases could mean for your nest egg over time.</p>
+                                    <p>Don't forget about backdoor Roth strategies if you're above the income limit for direct Roth IRA contributions. Heritage Bank's retirement advisors can walk you through the steps to ensure compliance with IRS rules while maximizing your tax-advantaged savings.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">SC</div>
+                                        <div>
+                                            <span class="blog-author-name">Sandra Chen</span>
+                                            <span class="blog-author-title">Retirement Planning Advisor</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Mar 5, 2026</span>
+                                        <span><i class="far fa-clock"></i> 6 min read</span>
+                                    </div>
                                 </div>
                                 <div class="blog-meta">
-                                    <span><i class="far fa-calendar"></i> Dec 8, 2024</span>
-                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Blog Post 6 -->
-                        <div class="blog-card">
-                            <div class="blog-image"><i class="fas fa-coins"></i></div>
+                        <!-- Post 6 -->
+                        <div class="blog-card" data-category="business">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80')">
+                            </div>
                             <div class="blog-content">
-                                <span class="blog-category">Retirement</span>
-                                <h3><a href="#">Retirement Planning at Every Age: Your Decade-by-Decade Guide</a></h3>
-                                <p class="blog-excerpt">It's never too early or too late to plan for retirement. Here's what you should be doing in your 20s, 30s, 40s, and beyond...</p>
+                                <span class="blog-category cat-business">Business</span>
+                                <h3><a href="#">SBA Loans Explained: How to Fund Your Small Business in 2026</a></h3>
+                                <p class="blog-excerpt">From startup costs to expansion capital, SBA loans offer favorable terms for small businesses. Here's the application process and what you need to qualify.</p>
                                 <div class="blog-full">
-                                    <p>In your 20s, start contributing to a 401(k) or IRA — even small amounts benefit enormously from compound interest. In your 30s, aim to save at least 15% of income and begin diversifying investments. By your 40s, maximize retirement contributions and pay down high-interest debt.</p>
-                                    <p>In your 50s, take advantage of catch-up contributions and start modeling your retirement income needs. Heritage Bank's retirement planning tools and advisors can help you at every stage — whether you're just starting out or fine-tuning your strategy for the final stretch.</p>
+                                    <p>SBA 7(a) loans remain one of the most popular financing options for small businesses, offering competitive rates, longer repayment terms, and lower down payments than conventional business loans. Heritage Bank is an SBA Preferred Lender, which means faster processing times for your application.</p>
+                                    <p>To qualify, you'll need a solid business plan, at least two years of tax returns (or strong projections for startups), a personal credit score above 680, and collateral for loans over $25,000. Heritage Bank's business lending team can guide you through the documentation requirements and help you choose between 7(a), 504, and microloan programs.</p>
+                                    <p>New for 2026: The SBA has expanded eligibility for tech startups and green energy businesses. If your business supports sustainability or innovation, you may qualify for enhanced terms. Contact our business banking team for a free eligibility assessment.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">RT</div>
+                                        <div>
+                                            <span class="blog-author-name">Robert Thompson</span>
+                                            <span class="blog-author-title">Business Lending Manager</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Feb 28, 2026</span>
+                                        <span><i class="far fa-clock"></i> 7 min read</span>
+                                    </div>
                                 </div>
                                 <div class="blog-meta">
-                                    <span><i class="far fa-calendar"></i> Dec 5, 2024</span>
-                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read More <i class="fas fa-arrow-right"></i></a>
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Post 7 -->
+                        <div class="blog-card" data-category="savings">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80')">
+                            </div>
+                            <div class="blog-content">
+                                <span class="blog-category cat-savings">Savings</span>
+                                <h3><a href="#">The 50/30/20 Rule Is Dead — Here's What's Replacing It</a></h3>
+                                <p class="blog-excerpt">The classic budgeting rule doesn't work for everyone. Financial planners are recommending a more flexible approach for 2026's economy.</p>
+                                <div class="blog-full">
+                                    <p>For years, the 50/30/20 rule (50% needs, 30% wants, 20% savings) was gospel. But with rising housing costs eating up more than 50% of many budgets, and student loan payments resuming, the formula needs updating.</p>
+                                    <p>The new approach is "values-based budgeting" — where you prioritize spending on what matters most to you while automating savings first. Heritage Bank's budgeting tools let you create custom categories, set spending alerts, and automatically sweep money into savings before you spend it.</p>
+                                    <p>The key insight: any budget that has you saving consistently and living within your means is a good budget. Don't let perfectionism stop you from starting. Heritage Bank's free financial coaching sessions can help you design a system that fits your unique situation.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">LN</div>
+                                        <div>
+                                            <span class="blog-author-name">Lisa Nguyen</span>
+                                            <span class="blog-author-title">Personal Finance Editor</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Feb 22, 2026</span>
+                                        <span><i class="far fa-clock"></i> 5 min read</span>
+                                    </div>
+                                </div>
+                                <div class="blog-meta">
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post 8 -->
+                        <div class="blog-card" data-category="security">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80')">
+                            </div>
+                            <div class="blog-content">
+                                <span class="blog-category cat-security">Security</span>
+                                <h3><a href="#">Passkeys vs Passwords: The Future of Banking Authentication</a></h3>
+                                <p class="blog-excerpt">Heritage Bank now supports passkey login. Here's why this biometric-powered technology is more secure than passwords and how to set it up.</p>
+                                <div class="blog-full">
+                                    <p>Passwords are the weakest link in online security — they can be phished, guessed, leaked in data breaches, and reused across sites. Passkeys replace passwords entirely with biometric authentication (fingerprint, face scan) tied to your specific device.</p>
+                                    <p>When you log in with a passkey, your phone or computer proves your identity using cryptographic keys that never leave your device. There's nothing to type, nothing to remember, and nothing a hacker can steal remotely.</p>
+                                    <p>To set up passkeys on your Heritage Bank account: Go to Settings → Security → Enable Passkey. You'll authenticate once with your existing credentials, and from then on, a simple fingerprint or face scan logs you in instantly. Heritage Bank still supports traditional passwords and 2FA as fallback options.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">MK</div>
+                                        <div>
+                                            <span class="blog-author-name">Michael Kim</span>
+                                            <span class="blog-author-title">Cybersecurity Lead</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Feb 15, 2026</span>
+                                        <span><i class="far fa-clock"></i> 4 min read</span>
+                                    </div>
+                                </div>
+                                <div class="blog-meta">
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post 9 -->
+                        <div class="blog-card" data-category="investing">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=600&q=80')">
+                            </div>
+                            <div class="blog-content">
+                                <span class="blog-category cat-investing">Investing</span>
+                                <h3><a href="#">Treasury Bonds, CDs, or Money Market? Where to Put Your Short-Term Cash</a></h3>
+                                <p class="blog-excerpt">With yields still attractive, short-term fixed-income options are competing for your dollars. We compare the top choices for conservative investors.</p>
+                                <div class="blog-full">
+                                    <p>Treasury Bills (T-Bills) offer the safety of U.S. government backing with competitive yields. However, they require a brokerage account and have specific maturity dates. Heritage Bank's brokerage services make purchasing T-Bills straightforward.</p>
+                                    <p>Certificates of Deposit (CDs) lock your money for a fixed term but guarantee your rate. Heritage Bank currently offers CD terms from 3 months to 5 years. Our CD ladder strategy lets you maintain liquidity while capturing higher long-term rates.</p>
+                                    <p>Money Market accounts offer the best of both worlds — competitive yields with daily liquidity. Heritage Bank's Money Market account has no minimum balance requirement and includes check-writing privileges. The right choice depends on when you'll need the money — talk to a Heritage Bank advisor to map out your short-term cash strategy.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">DR</div>
+                                        <div>
+                                            <span class="blog-author-name">David Rodriguez</span>
+                                            <span class="blog-author-title">Chief Investment Strategist</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Feb 8, 2026</span>
+                                        <span><i class="far fa-clock"></i> 6 min read</span>
+                                    </div>
+                                </div>
+                                <div class="blog-meta">
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post 10 -->
+                        <div class="blog-card" data-category="homebuying">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80')">
+                            </div>
+                            <div class="blog-content">
+                                <span class="blog-category cat-homebuying">Home Buying</span>
+                                <h3><a href="#">Home Equity Lines of Credit: Tap Your Home's Value Without Selling</a></h3>
+                                <p class="blog-excerpt">With home values near all-time highs, HELOCs are an increasingly popular way to fund renovations, consolidate debt, or cover large expenses.</p>
+                                <div class="blog-full">
+                                    <p>A Home Equity Line of Credit (HELOC) lets you borrow against the equity in your home at rates significantly lower than credit cards or personal loans. Heritage Bank offers HELOCs with competitive variable rates, no annual fees for the first year, and draw periods up to 10 years.</p>
+                                    <p>Common uses include home renovations (which can further increase your home's value), debt consolidation, education expenses, and emergency reserves. The interest may even be tax-deductible if used for home improvements — consult your tax advisor for specifics.</p>
+                                    <p>To qualify, you'll typically need at least 15-20% equity in your home, a credit score above 680, and a debt-to-income ratio below 43%. Heritage Bank's mortgage team can provide a free home equity estimate and pre-qualification within 24 hours.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">AW</div>
+                                        <div>
+                                            <span class="blog-author-name">Angela Washington</span>
+                                            <span class="blog-author-title">Mortgage Division Director</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Jan 30, 2026</span>
+                                        <span><i class="far fa-clock"></i> 5 min read</span>
+                                    </div>
+                                </div>
+                                <div class="blog-meta">
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post 11 -->
+                        <div class="blog-card" data-category="fintech">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1556742393-d75f468bfcb0?w=600&q=80')">
+                            </div>
+                            <div class="blog-content">
+                                <span class="blog-category cat-fintech">Fintech</span>
+                                <h3><a href="#">Instant Payments Are the New Normal: What FedNow Means for You</a></h3>
+                                <p class="blog-excerpt">The Federal Reserve's instant payment system is now fully live. Say goodbye to waiting days for transfers — here's how Heritage Bank customers benefit.</p>
+                                <div class="blog-full">
+                                    <p>FedNow enables real-time, 24/7/365 money transfers between participating banks. Unlike ACH transfers that can take 1-3 business days, FedNow payments settle in seconds — even on weekends and holidays. Heritage Bank was among the first wave of banks to integrate FedNow.</p>
+                                    <p>For Heritage Bank customers, this means instant incoming payroll deposits, real-time bill payments that post immediately (no more "it'll clear in 2-3 days"), and instant transfers to friends and family at other FedNow-participating banks.</p>
+                                    <p>The service is free for Heritage Bank personal account holders. Business accounts can send FedNow payments for a small per-transaction fee. To use FedNow, simply select "Instant Transfer" when sending money through your Heritage Bank app or online banking.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">JP</div>
+                                        <div>
+                                            <span class="blog-author-name">James Park</span>
+                                            <span class="blog-author-title">Digital Banking Director</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Jan 22, 2026</span>
+                                        <span><i class="far fa-clock"></i> 4 min read</span>
+                                    </div>
+                                </div>
+                                <div class="blog-meta">
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post 12 -->
+                        <div class="blog-card" data-category="business">
+                            <div class="blog-image-cover" style="background-image:url('https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&q=80')">
+                            </div>
+                            <div class="blog-content">
+                                <span class="blog-category cat-business">Business</span>
+                                <h3><a href="#">Cash Flow Management: 7 Strategies Every Small Business Owner Needs</a></h3>
+                                <p class="blog-excerpt">Cash flow problems are the #1 killer of small businesses. These proven strategies keep your business solvent even during slow seasons.</p>
+                                <div class="blog-full">
+                                    <p>1. <strong>Invoice immediately</strong> — don't wait until the end of the month. Heritage Bank's invoicing tools let you send invoices the same day you complete work. 2. <strong>Offer early payment discounts</strong> — a 2% discount for payment within 10 days can dramatically accelerate your receivables.</p>
+                                    <p>3. <strong>Build a cash reserve</strong> — aim for 3-6 months of operating expenses in a Heritage Bank Business Savings account. 4. <strong>Use a business line of credit</strong> — establish one before you need it so you have a safety net for seasonal dips. 5. <strong>Negotiate vendor terms</strong> — if your customers pay in 30 days, negotiate 45-60 day terms with your suppliers.</p>
+                                    <p>6. <strong>Review expenses quarterly</strong> — cancel unused subscriptions and renegotiate contracts. 7. <strong>Separate tax funds</strong> — set aside estimated taxes in a dedicated Heritage Bank sub-account so you're never caught off guard at tax time.</p>
+                                </div>
+                                <div class="blog-author-row">
+                                    <div class="blog-author-info">
+                                        <div class="blog-author-avatar">RT</div>
+                                        <div>
+                                            <span class="blog-author-name">Robert Thompson</span>
+                                            <span class="blog-author-title">Business Lending Manager</span>
+                                        </div>
+                                    </div>
+                                    <div class="blog-meta-right">
+                                        <span><i class="far fa-calendar"></i> Jan 15, 2026</span>
+                                        <span><i class="far fa-clock"></i> 8 min read</span>
+                                    </div>
+                                </div>
+                                <div class="blog-meta">
+                                    <a href="#" class="read-more" onclick="togglePost(this, event)">Read Full Article <i class="fas fa-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Load More -->
+                    <div style="text-align:center; margin-top:40px">
+                        <button class="btn btn-outline" onclick="this.textContent='No more posts'; this.disabled=true; this.style.opacity='0.5'" style="padding:14px 40px; border:2px solid #1a472a; color:#1a472a; border-radius:12px; font-weight:600; cursor:pointer; background:transparent; font-size:0.95rem;">Load More Articles</button>
                     </div>
                 </div>
 
                 <!-- Sidebar -->
                 <div>
                     <div class="categories-sidebar">
+                        <h3><i class="fas fa-fire"></i> Trending Topics</h3>
+                        <ul class="category-list trending-list">
+                            <li><a href="#" onclick="filterPosts('investing', document.querySelector('[onclick*=investing]')); return false;"><i class="fas fa-robot"></i> AI in Banking <span class="trending-badge">Hot</span></a></li>
+                            <li><a href="#" onclick="filterPosts('security', document.querySelector('[onclick*=security]')); return false;"><i class="fas fa-shield-alt"></i> Fraud Prevention</a></li>
+                            <li><a href="#" onclick="filterPosts('homebuying', document.querySelector('[onclick*=homebuying]')); return false;"><i class="fas fa-house-chimney"></i> Mortgage Rates</a></li>
+                            <li><a href="#" onclick="filterPosts('savings', document.querySelector('[onclick*=savings]')); return false;"><i class="fas fa-piggy-bank"></i> High-Yield Savings</a></li>
+                            <li><a href="#" onclick="filterPosts('fintech', document.querySelector('[onclick*=fintech]')); return false;"><i class="fas fa-bolt"></i> Instant Payments</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="categories-sidebar" style="margin-top:24px">
                         <h3><i class="fas fa-folder"></i> Categories</h3>
                         <ul class="category-list">
-                            <li><a href="#">Savings Tips <span>12</span></a></li>
-                            <li><a href="#">Investment <span>8</span></a></li>
-                            <li><a href="#">Home Buying <span>6</span></a></li>
-                            <li><a href="#">Security <span>5</span></a></li>
-                            <li><a href="#">Business Banking <span>7</span></a></li>
-                            <li><a href="#">Retirement <span>4</span></a></li>
-                            <li><a href="#">News & Updates <span>15</span></a></li>
+                            <li><a href="#" onclick="filterPosts('savings', document.querySelector('[onclick*=savings]')); return false;">Savings & Budgeting <span>2</span></a></li>
+                            <li><a href="#" onclick="filterPosts('investing', document.querySelector('[onclick*=investing]')); return false;">Investing <span>2</span></a></li>
+                            <li><a href="#" onclick="filterPosts('homebuying', document.querySelector('[onclick*=homebuying]')); return false;">Home Buying <span>2</span></a></li>
+                            <li><a href="#" onclick="filterPosts('security', document.querySelector('[onclick*=security]')); return false;">Security <span>2</span></a></li>
+                            <li><a href="#" onclick="filterPosts('business', document.querySelector('[onclick*=business]')); return false;">Business Banking <span>2</span></a></li>
+                            <li><a href="#" onclick="filterPosts('fintech', document.querySelector('[onclick*=fintech]')); return false;">Fintech & Innovation <span>2</span></a></li>
+                            <li><a href="#" onclick="filterPosts('retirement', document.querySelector('[onclick*=retirement]')); return false;">Retirement <span>1</span></a></li>
                         </ul>
                     </div>
 
                     <div class="newsletter-box">
                         <h3><i class="fas fa-envelope"></i> Newsletter</h3>
-                        <p>Get the latest financial tips delivered to your inbox</p>
-                        <input type="email" placeholder="Your email address">
-                        <button>Subscribe</button>
+                        <p>Get the latest financial tips delivered weekly</p>
+                        <form onsubmit="event.preventDefault(); this.innerHTML='<p style=color:white;font-weight:600>✓ You\'re subscribed!</p>'" class="newsletter-form-blog">
+                            <input type="email" placeholder="Your email address" required>
+                            <button type="submit">Subscribe</button>
+                        </form>
+                        <p style="font-size:0.75rem; opacity:0.5; margin-top:12px">No spam. Unsubscribe anytime.</p>
+                    </div>
+
+                    <div class="categories-sidebar" style="margin-top:24px">
+                        <h3><i class="fas fa-headset"></i> Need Help?</h3>
+                        <p style="font-size:0.9rem; color:var(--light-text); margin-bottom:16px">Our financial advisors are ready to help you reach your goals.</p>
+                        <a href="contact.html" style="display:block; text-align:center; padding:12px; background:#1a472a; color:white; border-radius:10px; text-decoration:none; font-weight:600; font-size:0.9rem">Book a Free Consultation</a>
                     </div>
                 </div>
             </div>
@@ -267,14 +595,47 @@
             e.preventDefault();
             const card = link.closest('.blog-content');
             const full = card.querySelector('.blog-full');
-            if (full.style.display === 'none') {
+            if (full.style.display === 'none' || !full.style.display) {
                 full.style.display = 'block';
                 link.innerHTML = 'Show Less <i class="fas fa-arrow-up"></i>';
             } else {
                 full.style.display = 'none';
-                link.innerHTML = 'Read More <i class="fas fa-arrow-right"></i>';
+                link.innerHTML = 'Read Full Article <i class="fas fa-arrow-right"></i>';
             }
         }
+
+        function filterPosts(category, btn) {
+            const cards = document.querySelectorAll('.blog-card');
+            const buttons = document.querySelectorAll('.blog-filter-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            if (btn && btn.classList) btn.classList.add('active');
+
+            cards.forEach(card => {
+                if (category === 'all' || card.dataset.category === category) {
+                    card.style.display = '';
+                    card.style.animation = 'fadeInUp 0.4s ease';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Animate cards on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.blog-card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            observer.observe(card);
+        });
+
         const backBtn = document.getElementById('backToTop');
         window.addEventListener('scroll', () => { backBtn.classList.toggle('visible', window.scrollY > 400); });
         backBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
