@@ -177,7 +177,7 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (server-to-server, curl, mobile apps)
+        // Allow requests with no origin (same-origin requests from static files served by this server)
         if (!origin) return callback(null, true);
         if (ALLOWED_ORIGINS.indexOf(origin) !== -1) return callback(null, true);
         callback(new Error('Not allowed by CORS'));
@@ -370,7 +370,8 @@ function resolveDbConfig() {
     // - TiDB Cloud typically works best with rejectUnauthorized=true.
     const looksLikeTiDb = !!(host && String(host).toLowerCase().includes('tidbcloud.com'));
     const envRejectUnauthorized = getBoolEnv('DB_SSL_REJECT_UNAUTHORIZED', null);
-    const defaultRejectUnauthorized = looksLikeTiDb ? true : false;
+    const isProduction = process.env.NODE_ENV === 'production';
+    const defaultRejectUnauthorized = (isProduction || looksLikeTiDb) ? true : false;
 
     let ssl = { rejectUnauthorized: envRejectUnauthorized ?? defaultRejectUnauthorized };
 
@@ -426,7 +427,7 @@ const pool = mysql.createPool({
 let DB_READY = false;
 
 // JWT Secret - Must be set in environment
-const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-jwt-secret-change-me' : null);
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? crypto.randomBytes(32).toString('hex') : null);
 if (!JWT_SECRET) {
     console.error('❌ JWT_SECRET environment variable is required (set it in your environment or backend/.env)');
     process.exit(1);
@@ -634,6 +635,10 @@ async function initializeDatabase() {
         // Email verification columns
         try { await connection.execute('ALTER TABLE users ADD COLUMN emailVerified BOOLEAN DEFAULT false'); } catch (e) {}
         try { await connection.execute('ALTER TABLE users ADD COLUMN emailVerifyToken VARCHAR(255) NULL'); } catch (e) {}
+
+        // Two-factor authentication columns
+        try { await connection.execute('ALTER TABLE users ADD COLUMN twoFactorEnabled BOOLEAN DEFAULT false'); } catch (e) {}
+        try { await connection.execute("ALTER TABLE users ADD COLUMN twoFactorMethod VARCHAR(20) NULL"); } catch (e) {}
 
         // Pending transfers table (for accounts with transfer restrictions)
         await connection.execute(`
@@ -1818,27 +1823,31 @@ async function checkSuspiciousActivity(userId, amount, type) {
     }
     
     // Check for rapid transactions (potential structuring)
-    const [recentTxns] = await pool.execute(
-        `SELECT COUNT(*) as count, SUM(amount) as total FROM transactions 
-         WHERE userId = ? AND createdAt > DATE_SUB(NOW(), INTERVAL 1 HOUR)`,
-        [userId]
-    );
-    
-    if (recentTxns[0].count > MAX_TXN_PER_HOUR) {
-        flags.push({ type: 'velocity', description: 'High transaction velocity detected' });
-    }
+    try {
+        const [recentTxns] = await pool.execute(
+            `SELECT COUNT(*) as count, SUM(amount) as total FROM transactions 
+             WHERE fromUserId = ? AND createdAt > DATE_SUB(NOW(), INTERVAL 1 HOUR)`,
+            [userId]
+        );
+        
+        if (recentTxns?.[0]?.count > MAX_TXN_PER_HOUR) {
+            flags.push({ type: 'velocity', description: 'High transaction velocity detected' });
+        }
+    } catch (e) { console.error('Velocity check error:', e.message); }
     
     // Check if multiple transactions just under $10k (structuring)
-    const [underThreshold] = await pool.execute(
-        `SELECT COUNT(*) as count FROM transactions 
-         WHERE userId = ? AND amount BETWEEN 9000 AND 9999 
-         AND createdAt > DATE_SUB(NOW(), INTERVAL 24 HOUR)`,
-        [userId]
-    );
-    
-    if (underThreshold[0].count >= 2) {
-        flags.push({ type: 'structuring', description: 'Potential structuring detected - multiple transactions just under $10,000' });
-    }
+    try {
+        const [underThreshold] = await pool.execute(
+            `SELECT COUNT(*) as count FROM transactions 
+             WHERE fromUserId = ? AND amount BETWEEN 9000 AND 9999 
+             AND createdAt > DATE_SUB(NOW(), INTERVAL 24 HOUR)`,
+            [userId]
+        );
+        
+        if (underThreshold?.[0]?.count >= 2) {
+            flags.push({ type: 'structuring', description: 'Potential structuring detected - multiple transactions just under $10,000' });
+        }
+    } catch (e) { console.error('Structuring check error:', e.message); }
     
     return flags;
 }
@@ -9686,9 +9695,6 @@ app.get('/api/admin/jobs', requireAuth, requireAdmin, async (req, res) => {
 // Manually trigger a job (Admin only)
 app.post('/api/admin/jobs/:jobType/run', requireAuth, requireAdmin, async (req, res) => {
     try {
-        const [admins] = await pool.execute('SELECT * FROM users WHERE id = ? AND isAdmin = true', [req.auth.id]);
-        if (admins.length === 0) return res.status(403).json({ success: false, message: 'Admin access required' });
-
         const { jobType } = req.params;
         let result = {};
 
