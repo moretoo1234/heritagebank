@@ -471,6 +471,12 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
     opacity: 0.7;
 }
 
+.card-3d-visa {
+    font-size: 2rem;
+    color: rgba(255,255,255,0.85);
+    line-height: 1;
+}
+
 @keyframes cardFloat {
     0%, 100% {
         transform: translate(-50%, -50%) rotateY(-12deg) rotateX(8deg) translateZ(0);
@@ -4780,7 +4786,11 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
     }
 
     .card-3d-number {
-        font-size: 0.9rem;
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .card-3d-label {
@@ -4789,6 +4799,10 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 
     .card-3d-value {
         font-size: 0.72rem;
+    }
+
+    .card-3d-visa {
+        font-size: 1.5rem;
     }
 
     .hero-widget {
