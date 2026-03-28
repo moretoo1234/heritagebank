@@ -4445,10 +4445,16 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
     }
 
     /* Hero split layout tablet */
+    .hero {
+        min-height: 0;
+        padding-bottom: 60px;
+    }
+
     .hero-layout {
         grid-template-columns: 1fr;
         gap: 40px;
         text-align: center;
+        min-height: 0;
     }
 
     .hero-content {
@@ -4547,19 +4553,25 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
         display: none;
     }
 
-    /* Hero split layout mobile */
+    .hero {
+        min-height: 0;
+        padding-top: 80px;
+        padding-bottom: 40px;
+    }
+
     .hero-layout {
         grid-template-columns: 1fr;
-        gap: 30px;
+        gap: 20px;
+        min-height: 0;
     }
 
     .hero-visual {
-        min-height: 340px;
+        min-height: 280px;
     }
 
     .hero-3d-scene {
-        max-width: 350px;
-        height: 340px;
+        max-width: 320px;
+        height: 280px;
     }
 
     .floating-card-3d {
@@ -4686,6 +4698,20 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
     .bento-card,
     .why-card {
         padding: 28px 22px;
+    }
+
+    .quick-stats {
+        margin-top: -40px;
+    }
+
+    .services,
+    .why-us,
+    .testimonials {
+        padding: 60px 0 70px;
+    }
+
+    .bento-card {
+        min-height: 0;
     }
 
     .contact-wrapper {
@@ -4821,11 +4847,28 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
         margin-top: -30px;
     }
 
+    .hero {
+        padding-bottom: 30px;
+    }
+
+    .hero-layout {
+        gap: 16px;
+    }
+
+    .hero-visual {
+        min-height: 240px;
+    }
+
+    .hero-3d-scene {
+        max-width: 280px;
+        height: 240px;
+    }
+
     .services,
     .why-us,
     .testimonials,
     .contact {
-        padding: 50px 0 60px;
+        padding: 40px 0 50px;
     }
 
     .particle {
