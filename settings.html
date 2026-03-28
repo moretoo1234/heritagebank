@@ -476,6 +476,334 @@
                 justify-content: center;
             }
         }
+
+        /* === Settings Info Grid (Account Info) === */
+        .settings-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+        .settings-info-grid > div {
+            background: linear-gradient(135deg, #f8faf9, #f0f4f1);
+            padding: 18px;
+            border-radius: 14px;
+            border: 1px solid rgba(26,71,42,0.06);
+            transition: all 0.3s ease;
+        }
+        .settings-info-grid > div:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        }
+        .settings-info-grid strong {
+            color: #94a3b8;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .settings-value-mono { font-family: 'Courier New', monospace; font-size: 1.05rem; color: #1a472a; font-weight: 600; }
+        .settings-value-capitalize { text-transform: capitalize; font-size: 1.05rem; color: #333; font-weight: 500; }
+        .settings-value { font-size: 1.05rem; color: #333; font-weight: 500; }
+        .settings-value-bold { font-size: 1.15rem; color: #1a472a; font-weight: 700; }
+        body.dark-mode .settings-info-grid > div { background: linear-gradient(135deg, #1f2b47, #243352); border-color: #333; }
+        body.dark-mode .settings-value-mono, body.dark-mode .settings-value-bold { color: #d4af37; }
+        body.dark-mode .settings-value, body.dark-mode .settings-value-capitalize { color: #ddd; }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: white;
+            letter-spacing: 0.3px;
+        }
+
+        /* === Transaction Limits Grid === */
+        .settings-limits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .settings-limits-grid > div {
+            background: #f8faf9;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+        .settings-limits-grid strong {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .settings-limits-grid .settings-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a472a;
+        }
+        body.dark-mode .settings-limits-grid > div { background: #16213e; border-color: #333; }
+        body.dark-mode .settings-limits-grid .settings-value { color: #d4af37; }
+
+        .limit-increase-section { margin-top: 10px; }
+        .limit-increase-msg {
+            margin-top: 10px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: #e7f3ff;
+            color: #0a5dc2;
+            font-size: 0.9rem;
+        }
+        .limit-increase-msg:empty { display: none; }
+
+        /* === Form Helpers === */
+        .required-mark { color: #dc3545; font-weight: 600; }
+        .readonly-hint { color: #94a3b8; font-size: 0.82rem; font-weight: 400; }
+        .input-readonly { background: #f0f2f5 !important; cursor: not-allowed; color: #64748b !important; }
+        body.dark-mode .input-readonly { background: #16213e !important; }
+
+        /* === Verification Badge === */
+        .verification-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.82rem;
+            margin-top: 6px;
+        }
+
+        /* === Settings Description === */
+        .settings-desc { color: #94a3b8; font-size: 0.85rem; margin-top: 2px; }
+
+        /* === Password Form Section === */
+        .password-form-section {
+            display: none;
+            padding: 20px;
+            margin: 15px 0;
+            background: #f8faf9;
+            border-radius: 14px;
+            border: 1px solid rgba(0,0,0,0.04);
+            animation: slideDown 0.3s ease;
+        }
+        .password-form-section.show { display: block; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        body.dark-mode .password-form-section { background: #16213e; border-color: #333; }
+
+        /* Password Strength */
+        .password-strength-bar {
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .password-strength-meter {
+            height: 100%;
+            width: 0;
+            border-radius: 3px;
+            transition: width 0.3s, background 0.3s;
+        }
+        .password-strength-text { font-size: 0.78rem; color: #94a3b8; margin-top: 4px; display: block; }
+
+        /* === Login History === */
+        .login-history-section, .active-sessions-section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .login-history-heading, .active-sessions-heading {
+            font-size: 0.95rem;
+            color: #1a472a;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        body.dark-mode .login-history-heading, body.dark-mode .active-sessions-heading { color: #d4af37; }
+        .login-history-container, .active-sessions-container {
+            background: #f8faf9;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.04);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        body.dark-mode .login-history-container, body.dark-mode .active-sessions-container { background: #16213e; border-color: #333; }
+        .login-history-loading, .active-sessions-loading { padding: 20px; text-align: center; color: #94a3b8; }
+
+        /* Security Item Separator */
+        .security-item-separator { margin-top: 10px; }
+
+        /* === 2FA Setup === */
+        .twofa-setup {
+            display: none;
+            padding: 20px;
+            margin: 10px 0 15px;
+            background: #f8faf9;
+            border-radius: 14px;
+            border: 1px solid rgba(0,0,0,0.04);
+            animation: slideDown 0.3s ease;
+        }
+        .twofa-setup.show { display: block; }
+        .twofa-setup h4 {
+            color: #1a472a;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+        body.dark-mode .twofa-setup { background: #16213e; border-color: #333; }
+        body.dark-mode .twofa-setup h4 { color: #d4af37; }
+
+        /* === Biometric Credentials === */
+        .biometric-credentials-list { min-height: 0; }
+        .biometric-creds-spacing { margin-top: 10px; }
+        .biometric-cred-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, #f8faf9, #f0f4f1);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(26,71,42,0.06);
+            transition: all 0.3s ease;
+        }
+        .biometric-cred-item:hover { transform: translateX(4px); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        body.dark-mode .biometric-cred-item { background: linear-gradient(135deg, #1f2b47, #243352); border-color: #333; }
+        .biometric-cred-info { display: flex; align-items: center; gap: 12px; }
+        .biometric-cred-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #e7f3ff, #cce5ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #007bff;
+            font-size: 1rem;
+        }
+        .biometric-cred-name { font-weight: 600; color: #333; font-size: 0.92rem; }
+        body.dark-mode .biometric-cred-name { color: #eee; }
+        .biometric-cred-date { font-size: 0.78rem; color: #94a3b8; margin-top: 2px; }
+        .passkey-count-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background: rgba(40,167,69,0.1);
+            color: #28a745;
+            margin-left: 8px;
+        }
+
+        /* === Add Beneficiary Form === */
+        .add-beneficiary-form {
+            display: none;
+            padding: 20px;
+            margin-top: 15px;
+            background: #f8faf9;
+            border-radius: 14px;
+            border: 1px solid rgba(0,0,0,0.04);
+            animation: slideDown 0.3s ease;
+        }
+        .add-beneficiary-form.show { display: block; }
+        .add-beneficiary-form h4 { color: #1a472a; margin-bottom: 15px; }
+        body.dark-mode .add-beneficiary-form { background: #16213e; border-color: #333; }
+        body.dark-mode .add-beneficiary-form h4 { color: #d4af37; }
+        .btn-cancel-ml { margin-left: 10px; }
+
+        /* === Document Upload === */
+        .doc-request-alert {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #fff3e0, #fff8e1);
+            border-radius: 12px;
+            border-left: 4px solid #f57c00;
+            margin-bottom: 15px;
+        }
+        .doc-request-title { color: #e65100; margin-bottom: 6px; }
+        .doc-request-msg { color: #795548; font-size: 0.9rem; }
+        body.dark-mode .doc-request-alert { background: linear-gradient(135deg, #3a3020, #3a3520); border-color: #f57c00; }
+        body.dark-mode .doc-request-title { color: #ffb74d; }
+        body.dark-mode .doc-request-msg { color: #bcaaa4; }
+        .doc-upload-zone {
+            padding: 25px;
+            text-align: center;
+            border: 2px dashed #d4af37;
+            border-radius: 14px;
+            background: rgba(212,175,55,0.03);
+            transition: all 0.3s ease;
+        }
+        .doc-upload-zone:hover { background: rgba(212,175,55,0.06); border-color: #c49b2f; }
+        .doc-upload-hint { color: #94a3b8; font-size: 0.82rem; margin-top: 10px; }
+        .uploaded-docs-list { margin-top: 15px; }
+
+        /* Verification Status */
+        .verification-status { margin-bottom: 20px; }
+        .verification-loading { text-align: center; padding: 20px; color: #94a3b8; }
+
+        /* Beneficiaries List */
+        .beneficiaries-list { margin-bottom: 15px; }
+        .beneficiaries-loading { text-align: center; padding: 20px; color: #94a3b8; }
+
+        /* Close Account */
+        .close-account-section { margin-top: 10px; }
+        .close-account-label { color: #dc3545 !important; }
+        .icon-close-account { color: #dc3545 !important; background: rgba(220,53,69,0.1) !important; }
+        .icon-freeze { color: #f57c00 !important; }
+        .icon-intl { color: #2196f3 !important; }
+        .icon-dark { color: #7c4dff !important; }
+        .icon-pin { color: #d4af37 !important; }
+
+        /* === Settings Navigation (Quick Jump) === */
+        .settings-nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+            padding: 16px 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.04);
+            position: sticky;
+            top: 10px;
+            z-index: 10;
+        }
+        .settings-nav-btn {
+            padding: 8px 16px;
+            border: 1.5px solid #e2e8f0;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: #64748b;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .settings-nav-btn:hover, .settings-nav-btn.active {
+            background: linear-gradient(135deg, #1a472a, #2d5f3f);
+            color: white;
+            border-color: #1a472a;
+        }
+        .settings-nav-btn i { font-size: 0.75rem; }
+        body.dark-mode .settings-nav { background: #1f2b47; border-color: #333; }
+        body.dark-mode .settings-nav-btn { background: #1f2b47; border-color: #444; color: #aaa; }
+        body.dark-mode .settings-nav-btn:hover, body.dark-mode .settings-nav-btn.active {
+            background: linear-gradient(135deg, #d4af37, #c9a42e);
+            color: #1a472a;
+            border-color: #d4af37;
+        }
     </style>
 </head>
 <body>
@@ -504,9 +832,21 @@
             </div>
             
             <div id="alertBox" class="alert"></div>
+
+            <!-- Quick Navigation -->
+            <nav class="settings-nav">
+                <button class="settings-nav-btn" onclick="scrollToSection('account-info')"><i class="fas fa-landmark"></i> Account</button>
+                <button class="settings-nav-btn" onclick="scrollToSection('personal-info')"><i class="fas fa-user"></i> Profile</button>
+                <button class="settings-nav-btn" onclick="scrollToSection('transaction-limits')"><i class="fas fa-chart-bar"></i> Limits</button>
+                <button class="settings-nav-btn" onclick="scrollToSection('security-auth')"><i class="fas fa-shield-alt"></i> Security</button>
+                <button class="settings-nav-btn" onclick="scrollToSection('verification')"><i class="fas fa-check-circle"></i> Verification</button>
+                <button class="settings-nav-btn" onclick="scrollToSection('beneficiaries')"><i class="fas fa-users"></i> Beneficiaries</button>
+                <button class="settings-nav-btn" onclick="scrollToSection('controls')"><i class="fas fa-lock-open"></i> Controls</button>
+                <button class="settings-nav-btn" onclick="scrollToSection('preferences')"><i class="fas fa-sliders-h"></i> Preferences</button>
+            </nav>
             
             <!-- Account Information (Read-Only) -->
-            <div class="settings-card">
+            <div class="settings-card" id="account-info">
                 <h2><i class="fas fa-landmark"></i> Account Information</h2>
                 <div class="settings-info-grid">
                     <div>
@@ -537,7 +877,7 @@
             </div>
 
             <!-- Profile Settings -->
-            <div class="settings-card">
+            <div class="settings-card" id="personal-info">
                 <h2><i class="fas fa-user"></i> Personal Information</h2>
                 
                 <!-- Profile Picture Upload -->
@@ -626,7 +966,7 @@
             </div>
 
             <!-- Transaction Limits -->
-            <div class="settings-card">
+            <div class="settings-card" id="transaction-limits">
                 <h2><i class="fas fa-chart-bar"></i> Transaction Limits</h2>
                 <div class="settings-limits-grid">
                     <div>
@@ -665,10 +1005,8 @@
             </div>
             
             <!-- Security Settings -->
-            <div class="settings-card">
+            <div class="settings-card" id="security-auth">
                 <h2><i class="fas fa-shield-alt"></i> Security & Authentication</h2>
-                
-                <!-- Login History -->
                 <div class="login-history-section">
                     <h3 class="login-history-heading"><i class="fas fa-history"></i> Recent Login Activity</h3>
                     <div id="loginHistoryContainer" class="login-history-container">
@@ -750,8 +1088,8 @@
                     <div class="security-info">
                         <i class="fas fa-fingerprint"></i>
                         <div>
-                            <strong>Biometric Login (Passkey)</strong>
-                            <p class="settings-desc">Sign in with Face ID, Touch ID, or Windows Hello</p>
+                            <strong>Passkey Authentication</strong>
+                            <p class="settings-desc">Use Face ID, Touch ID, or Windows Hello for passwordless sign-in</p>
                         </div>
                     </div>
                     <button class="btn btn-secondary" id="biometricRegisterBtn" onclick="registerBiometric()">
@@ -762,7 +1100,7 @@
             </div>
             
             <!-- Account Verification -->
-            <div class="settings-card">
+            <div class="settings-card" id="verification">
                 <h2><i class="fas fa-shield-alt"></i> Account Verification</h2>
                 
                 <div id="verificationStatus" class="verification-status">
@@ -789,7 +1127,7 @@
             </div>
 
             <!-- Beneficiaries -->
-            <div class="settings-card">
+            <div class="settings-card" id="beneficiaries">
                 <h2><i class="fas fa-users"></i> Beneficiaries</h2>
                 
                 <div id="beneficiariesList" class="beneficiaries-list">
@@ -832,7 +1170,7 @@
             </div>
 
             <!-- Account Controls -->
-            <div class="settings-card">
+            <div class="settings-card" id="controls">
                 <h2><i class="fas fa-lock-open"></i> Account Controls</h2>
                 
                 <div class="security-item">
@@ -865,7 +1203,7 @@
             </div>
             
             <!-- Preferences -->
-            <div class="settings-card">
+            <div class="settings-card" id="preferences">
                 <h2><i class="fas fa-sliders-h"></i> Preferences</h2>
                 
                 <div class="security-item">
@@ -983,6 +1321,43 @@
         if (localStorage.getItem('darkMode') === 'true') {
             document.body.classList.add('dark-mode');
         }
+
+        // Quick Navigation – smooth scroll to section
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const navHeight = document.querySelector('.settings-nav')?.offsetHeight || 0;
+            const y = el.getBoundingClientRect().top + window.pageYOffset - navHeight - 20;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+            // Highlight active nav button
+            document.querySelectorAll('.settings-nav-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.settings-nav-btn[onclick*="${id}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+        }
+
+        // Auto-highlight nav button on scroll
+        (function() {
+            const sections = ['account-info','personal-info','transaction-limits','security-auth','verification','beneficiaries','controls','preferences'];
+            let ticking = false;
+            window.addEventListener('scroll', function() {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(function() {
+                    const navHeight = (document.querySelector('.settings-nav')?.offsetHeight || 0) + 30;
+                    let current = '';
+                    for (const id of sections) {
+                        const el = document.getElementById(id);
+                        if (el && el.getBoundingClientRect().top <= navHeight) current = id;
+                    }
+                    document.querySelectorAll('.settings-nav-btn').forEach(btn => btn.classList.remove('active'));
+                    if (current) {
+                        const activeBtn = document.querySelector(`.settings-nav-btn[onclick*="${current}"]`);
+                        if (activeBtn) activeBtn.classList.add('active');
+                    }
+                    ticking = false;
+                });
+            });
+        })();
     </script>
     <script src="settings-enhanced.js"></script>
     <footer class="app-footer">

@@ -1671,15 +1671,23 @@ async function loadBiometricCredentials() {
         });
         const data = await res.json();
         if (!data.success || !data.credentials.length) {
-            container.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;padding:4px 0 0 40px;">No passkeys registered yet.</p>';
+            container.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;padding:10px 0 0;">No passkeys registered yet. Add one to enable passwordless sign-in.</p>';
             return;
         }
-        container.innerHTML = data.credentials.map((c, i) => `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px 8px 40px;background:#f8fafc;border-radius:8px;margin-bottom:6px;">
-                <span style="font-size:0.9rem;color:#334155;"><i class="fas fa-key" style="margin-right:8px;color:#d4af37;"></i>Passkey ${i + 1} — Added ${new Date(c.createdAt).toLocaleDateString()}</span>
-                <button class="btn btn-danger" style="padding:4px 12px;font-size:0.8rem;" onclick="removeBiometricCredential(${c.id})"><i class="fas fa-trash"></i></button>
-            </div>
-        `).join('');
+        container.innerHTML = data.credentials.map((c, i) => {
+            const dateStr = new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            return `
+            <div class="biometric-cred-item">
+                <div class="biometric-cred-info">
+                    <div class="biometric-cred-icon"><i class="fas fa-fingerprint"></i></div>
+                    <div>
+                        <div class="biometric-cred-name">Passkey ${i + 1}</div>
+                        <div class="biometric-cred-date"><i class="fas fa-calendar-alt"></i> Added ${dateStr}</div>
+                    </div>
+                </div>
+                <button class="btn btn-danger" style="padding:6px 14px;font-size:0.8rem;border-radius:8px;" onclick="removeBiometricCredential(${c.id})"><i class="fas fa-trash"></i> Remove</button>
+            </div>`;
+        }).join('');
     } catch (e) {
         container.innerHTML = '';
     }

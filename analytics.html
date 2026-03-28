@@ -118,9 +118,117 @@
         body.dark-mode .stat-card h3 { color: #eee; }
         .stat-card p { color: #64748b; font-size: 0.9rem; }
         body.dark-mode .stat-card p { color: #aaa; }
-        .stat-card .change { font-size: 0.85rem; margin-top: 10px; }
-        .stat-card .change.positive { color: #28a745; }
-        .stat-card .change.negative { color: #dc3545; }
+        .stat-card .change { font-size: 0.85rem; margin-top: 10px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+        .stat-card .change.positive { color: #28a745; background: rgba(40,167,69,0.1); }
+        .stat-card .change.negative { color: #dc3545; background: rgba(220,53,69,0.1); }
+
+        /* Financial Overview Hero */
+        .finance-hero {
+            background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 50%, #1a472a 100%);
+            border-radius: 20px;
+            padding: 32px 36px;
+            color: white;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(26,71,42,0.25);
+        }
+        .finance-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -15%;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(212,175,55,0.15), transparent);
+            pointer-events: none;
+        }
+        .finance-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -40%;
+            left: 10%;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05), transparent);
+            pointer-events: none;
+        }
+        .finance-hero-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+        .finance-hero-left h2 { font-size: 1.15rem; font-weight: 500; opacity: 0.85; margin-bottom: 6px; }
+        .finance-hero-left .hero-balance { font-size: 2.4rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+        .finance-hero-left .hero-subtitle { font-size: 0.88rem; opacity: 0.7; }
+        .finance-hero-right {
+            display: flex;
+            gap: 28px;
+        }
+        .hero-metric {
+            text-align: center;
+            padding: 14px 20px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 14px;
+-webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.08);
+            min-width: 120px;
+        }
+        .hero-metric .metric-value { font-size: 1.5rem; font-weight: 700; }
+        .hero-metric .metric-label { font-size: 0.78rem; opacity: 0.7; margin-top: 4px; }
+        .hero-metric.savings-rate .metric-value { color: #7dffb3; }
+        .hero-income { color: #7dffb3; }
+        .hero-expense { color: #ff8a8a; }
+        body.dark-mode .finance-hero { background: linear-gradient(135deg, #0d2818 0%, #1a3a28 50%, #0d2818 100%); }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+
+        /* Spending Insights */
+        .insights-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .insight-card {
+            background: white;
+            padding: 22px 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.04);
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            transition: all 0.3s ease;
+        }
+        .insight-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        body.dark-mode .insight-card { background: #1f2b47; }
+        .insight-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+        .insight-icon.top-cat { background: linear-gradient(135deg, #fff3e0, #ffe0b2); color: #f57c00; }
+        .insight-icon.avg-spend { background: linear-gradient(135deg, #e7f3ff, #cce5ff); color: #007bff; }
+        .insight-content h4 { font-size: 0.82rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .insight-content p { font-size: 1.15rem; color: #1a472a; font-weight: 600; }
+        body.dark-mode .insight-content p { color: #d4af37; }
+
+        @media (max-width: 600px) {
+            .finance-hero-inner { flex-direction: column; gap: 20px; text-align: center; }
+            .finance-hero-right { justify-content: center; }
+            .insights-row { grid-template-columns: 1fr; }
+            .finance-hero-left .hero-balance { font-size: 1.8rem; }
+        }
         
         .charts-row {
             display: grid;
@@ -244,6 +352,15 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.06);
             margin-bottom: 30px;
             border: 1px solid rgba(0,0,0,0.04);
+            position: relative;
+            overflow: hidden;
+        }
+        .converter-widget::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #d4af37, #1a472a, #d4af37);
         }
         body.dark-mode .converter-widget { background: #1f2b47; }
         .converter-widget h3 { color: #1a472a; margin-bottom: 20px; }
@@ -287,15 +404,18 @@
         .swap-btn:hover { transform: rotate(180deg); }
         body.dark-mode .swap-btn { background: #d4af37; color: #1a472a; }
         .conversion-result {
-            margin-top: 15px;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 8px;
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8faf9, #f0f4f1);
+            border-radius: 14px;
             text-align: center;
+            border: 1px solid rgba(26,71,42,0.06);
         }
-        body.dark-mode .conversion-result { background: #16213e; }
-        .conversion-result h4 { color: #1a472a; font-size: 1.5rem; }
+        .conversion-result p { color: #94a3b8; font-size: 0.85rem; margin-bottom: 6px; }
+        body.dark-mode .conversion-result { background: linear-gradient(135deg, #16213e, #1a2540); border-color: #333; }
+        .conversion-result h4 { color: #1a472a; font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px; }
         body.dark-mode .conversion-result h4 { color: #d4af37; }
+        .conversion-result small { color: #64748b; font-size: 0.82rem; display: block; margin-top: 6px; }
         
         @media (max-width: 900px) {
             .charts-row { grid-template-columns: 1fr; }
@@ -337,7 +457,35 @@
                     <a href="dashboard.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
                     <h1><i class="fas fa-chart-pie"></i> Spending Analytics</h1>
                 </div>
-                <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                <div class="header-actions">
+                    <button class="filter-btn" onclick="exportCSV()" title="Export Transactions"><i class="fas fa-download"></i> Export</button>
+                    <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </div>
+            
+            <!-- Financial Overview Hero -->
+            <div class="finance-hero">
+                <div class="finance-hero-inner">
+                    <div class="finance-hero-left">
+                        <h2><i class="fas fa-chart-line"></i> Financial Overview</h2>
+                        <div class="hero-balance" id="heroBalance">$0.00</div>
+                        <div class="hero-subtitle" id="heroPeriodLabel">This month's net cash flow</div>
+                    </div>
+                    <div class="finance-hero-right">
+                        <div class="hero-metric">
+                            <div class="metric-value hero-income" id="heroIncome">$0</div>
+                            <div class="metric-label"><i class="fas fa-arrow-down"></i> Income</div>
+                        </div>
+                        <div class="hero-metric">
+                            <div class="metric-value hero-expense" id="heroExpense">$0</div>
+                            <div class="metric-label"><i class="fas fa-arrow-up"></i> Expenses</div>
+                        </div>
+                        <div class="hero-metric savings-rate">
+                            <div class="metric-value" id="heroSavingsRate">0%</div>
+                            <div class="metric-label"><i class="fas fa-piggy-bank"></i> Savings Rate</div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <!-- Currency Converter -->
@@ -411,6 +559,24 @@
                     <div class="icon transactions"><i class="fas fa-receipt"></i></div>
                     <h3 id="totalTransactions">0</h3>
                     <p>Transactions</p>
+                </div>
+            </div>
+            
+            <!-- Quick Insights -->
+            <div class="insights-row">
+                <div class="insight-card">
+                    <div class="insight-icon top-cat"><i class="fas fa-fire"></i></div>
+                    <div class="insight-content">
+                        <h4>Top Spending Category</h4>
+                        <p id="topCategory">—</p>
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-icon avg-spend"><i class="fas fa-calculator"></i></div>
+                    <div class="insight-content">
+                        <h4>Avg. Daily Spending</h4>
+                        <p id="avgDailySpend">$0.00</p>
+                    </div>
                 </div>
             </div>
             
@@ -548,6 +714,30 @@
             document.getElementById('netFlow').textContent = (nf < 0 ? '-' : '') + fmt(nf);
             document.getElementById('netFlow').style.color = nf >= 0 ? '#28a745' : '#dc3545';
             document.getElementById('totalTransactions').textContent = data.transactionCount || 0;
+
+            // Hero section
+            document.getElementById('heroBalance').textContent = (nf < 0 ? '-' : '+') + fmt(nf);
+            document.getElementById('heroIncome').textContent = fmt(data.totalIncome);
+            document.getElementById('heroExpense').textContent = fmt(data.totalExpenses);
+            const income = data.totalIncome || 0;
+            const expenses = Math.abs(data.totalExpenses || 0);
+            const savingsRate = income > 0 ? Math.round(((income - expenses) / income) * 100) : 0;
+            document.getElementById('heroSavingsRate').textContent = savingsRate + '%';
+            const periodLabels = { week: "This week's", month: "This month's", quarter: "This quarter's", year: "This year's", all: "All-time" };
+            document.getElementById('heroPeriodLabel').textContent = (periodLabels[currentPeriod] || "This month's") + ' net cash flow';
+
+            // Quick insights
+            const categories = data.categories || [];
+            if (categories.length > 0) {
+                const topCat = categories.reduce((a, b) => (b.total || 0) > (a.total || 0) ? b : a, categories[0]);
+                const catName = (topCat.category || 'Other').replace(/^\w/, c => c.toUpperCase());
+                document.getElementById('topCategory').textContent = catName + ' (' + fmt(topCat.total) + ')';
+            }
+            const txCount = data.transactionCount || 1;
+            const periodDays = { week: 7, month: 30, quarter: 90, year: 365, all: 365 };
+            const days = periodDays[currentPeriod] || 30;
+            const avgDaily = expenses / days;
+            document.getElementById('avgDailySpend').textContent = fmt(avgDaily);
         }
         
         function updateCharts(data) {
@@ -738,6 +928,30 @@
             localStorage.clear();
             if (consent) localStorage.setItem('cookieConsent', consent);
             window.location.href = 'signin.html';
+        }
+
+        // Export transactions to CSV
+        function exportCSV() {
+            const rows = document.querySelectorAll('#transactionsBody tr');
+            if (!rows.length || rows[0].querySelector('.empty-state')) {
+                alert('No transactions to export.');
+                return;
+            }
+            let csv = 'Date,Description,Category,Amount\n';
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 4) {
+                    const vals = Array.from(cells).map(c => '"' + c.textContent.trim().replace(/"/g, '""') + '"');
+                    csv += vals.join(',') + '\n';
+                }
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'heritage-bank-transactions.csv';
+            a.click();
+            URL.revokeObjectURL(url);
         }
     </script>
     <footer class="app-footer">

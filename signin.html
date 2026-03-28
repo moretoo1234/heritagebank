@@ -79,8 +79,56 @@
         .biometric-or-row { display: flex; align-items: center; gap: 12px; margin: 18px 0 10px; }
         .biometric-or-line { flex: 1; height: 1px; background: rgba(255,255,255,0.15); }
         .biometric-or-text { color: rgba(255,255,255,0.5); font-size: 0.85rem; font-weight: 500; }
-        .btn-biometric { background: linear-gradient(135deg, #d4af37, #b8962e); width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; color: #fff; transition: all 0.3s; }
-        .btn-biometric .fa-fingerprint { font-size: 1.2rem; }
+        .btn-biometric {
+            background: linear-gradient(135deg, #d4af37, #b8962e);
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: #fff;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-biometric::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #d4af37, transparent, #d4af37);
+            z-index: -1;
+            animation: bioPulse 2.5s ease-in-out infinite;
+            opacity: 0.5;
+        }
+        @keyframes bioPulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.03); }
+        }
+        .btn-biometric:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(212,175,55,0.4);
+            background: linear-gradient(135deg, #e0bd4a, #d4af37);
+        }
+        .btn-biometric .fa-fingerprint { font-size: 1.3rem; animation: fingerprintPulse 3s ease-in-out infinite; }
+        @keyframes fingerprintPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+        .biometric-hint {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.35);
+        }
+        .biometric-hint i { margin-right: 4px; color: rgba(16,185,129,0.6); }
+        .alert-success { background: rgba(16,185,129,0.15); color: #7dffb3; border: 1px solid rgba(16,185,129,0.25); }
     </style>
 </head>
 <body>
@@ -136,12 +184,13 @@
             <div class="biometric-divider initially-hidden" id="biometricSection">
                 <div class="biometric-or-row">
                     <div class="biometric-or-line"></div>
-                    <span class="biometric-or-text">or</span>
+                    <span class="biometric-or-text">or sign in instantly</span>
                     <div class="biometric-or-line"></div>
                 </div>
                 <button type="button" class="btn-biometric" id="biometricLoginBtn" onclick="biometricLogin()">
-                    <i class="fas fa-fingerprint"></i> Sign in with Biometric
+                    <i class="fas fa-fingerprint"></i> Sign in with Passkey
                 </button>
+                <p class="biometric-hint"><i class="fas fa-shield-alt"></i> Face ID, Touch ID, or Windows Hello — no password needed</p>
             </div>
             
             <div class="auth-links">
@@ -332,7 +381,7 @@
                         document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ${optData.message || 'Biometric login failed'}</div>`;
                     }
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-fingerprint" style="font-size:1.2rem;"></i> Sign in with Biometric';
+                    btn.innerHTML = '<i class="fas fa-fingerprint"></i> Sign in with Passkey';
                     return;
                 }
 
@@ -383,7 +432,7 @@
                 } else {
                     document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle"></i> ${data.message || 'Biometric login failed'}</div>`;
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-fingerprint" style="font-size:1.2rem;"></i> Sign in with Biometric';
+                    btn.innerHTML = '<i class="fas fa-fingerprint"></i> Sign in with Passkey';
                 }
             } catch (e) {
                 if (e.name === 'NotAllowedError') {
@@ -392,7 +441,7 @@
                     document.getElementById('alertBox').innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Biometric login error. Please try again.</div>';
                 }
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-fingerprint" style="font-size:1.2rem;"></i> Sign in with Biometric';
+                btn.innerHTML = '<i class="fas fa-fingerprint"></i> Sign in with Passkey';
             }
         }
     </script>
