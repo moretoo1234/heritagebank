@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,6 +35,7 @@
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .header h1 { color: #1a472a; }
+        .header h1::after { content: ''; display: block; width: 40px; height: 3px; background: linear-gradient(90deg, #d4af37, transparent); border-radius: 2px; margin-top: 6px; }
         body.dark-mode .header h1 { color: #d4af37; }
         
         .back-link { color: #d4af37; text-decoration: none; cursor: pointer; font-size: 14px; }
@@ -47,11 +49,13 @@
         }
         .filter-btn {
             padding: 10px 20px;
-            border: 1px solid #e2e8f0;
+            border: 1.5px solid #e2e8f0;
             background: white;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
         body.dark-mode .filter-btn { background: #1f2b47; border-color: #444; color: #eee; }
         .filter-btn.active, .filter-btn:hover {
@@ -74,9 +78,27 @@
         .stat-card {
             background: white;
             padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: all 0.35s ease;
+            position: relative;
+            overflow: hidden;
         }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #1a472a, #d4af37);
+            transform: scaleX(0);
+            transition: transform 0.35s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+        }
+        .stat-card:hover::before { transform: scaleX(1); }
         body.dark-mode .stat-card { background: #1f2b47; }
         .stat-card .icon {
             width: 50px;
@@ -88,10 +110,10 @@
             font-size: 1.5rem;
             margin-bottom: 15px;
         }
-        .stat-card .icon.income { background: #d4edda; color: #28a745; }
-        .stat-card .icon.expense { background: #f8d7da; color: #dc3545; }
-        .stat-card .icon.net { background: #e7f3ff; color: #007bff; }
-        .stat-card .icon.transactions { background: #fff3e0; color: #f57c00; }
+        .stat-card .icon.income { background: linear-gradient(135deg, #d4edda, #b8e6c8); color: #28a745; }
+        .stat-card .icon.expense { background: linear-gradient(135deg, #f8d7da, #f5c6cb); color: #dc3545; }
+        .stat-card .icon.net { background: linear-gradient(135deg, #e7f3ff, #cce5ff); color: #007bff; }
+        .stat-card .icon.transactions { background: linear-gradient(135deg, #fff3e0, #ffe0b2); color: #f57c00; }
         .stat-card h3 { font-size: 1.8rem; color: #333; margin-bottom: 5px; }
         body.dark-mode .stat-card h3 { color: #eee; }
         .stat-card p { color: #64748b; font-size: 0.9rem; }
@@ -109,10 +131,13 @@
         
         .chart-card {
             background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 28px;
+            border-radius: 18px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: box-shadow 0.3s ease;
         }
+        .chart-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
         body.dark-mode .chart-card { background: #1f2b47; }
         .chart-card h3 { color: #1a472a; margin-bottom: 20px; }
         body.dark-mode .chart-card h3 { color: #d4af37; }
@@ -141,9 +166,10 @@
         
         .transactions-table {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 18px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
             overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.04);
         }
         body.dark-mode .transactions-table { background: #1f2b47; }
         
@@ -163,54 +189,61 @@
             text-align: left;
         }
         th {
-            background: #f9f9f9;
-            color: #64748b;
+            background: #f8faf9;
+            color: #94a3b8;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             text-transform: uppercase;
+            letter-spacing: 0.8px;
         }
         body.dark-mode th { background: #16213e; color: #aaa; }
         td { border-bottom: 1px solid #e2e8f0; }
         body.dark-mode td { border-color: #333; color: #ddd; }
-        tr:hover { background: #f9f9f9; }
+        tr:hover { background: linear-gradient(90deg, #f8faf9, #f0f7f2); }
         body.dark-mode tr:hover { background: #2a3a5c; }
         
         .amount.credit { color: #28a745; }
         .amount.debit { color: #dc3545; }
         
         .category-badge {
-            padding: 4px 10px;
+            padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.8rem;
-            background: #e9ecef;
-            color: #64748b;
+            background: linear-gradient(135deg, #f0f4f1, #e8ede9);
+            color: #1a472a;
+            font-weight: 500;
+            border: 1px solid rgba(26,71,42,0.08);
         }
         body.dark-mode .category-badge { background: #2a3a5c; color: #aaa; }
         
         .logout-btn {
-            background: #d4af37;
+            background: linear-gradient(135deg, #d4af37, #c9a42e);
             color: #1a472a;
             border: none;
             padding: 10px 20px;
-            border-radius: 6px;
+            border-radius: 10px;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(212,175,55,0.25);
+            transition: all 0.3s ease;
         }
+        .logout-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(212,175,55,0.35); }
         
         .empty-state {
             text-align: center;
             padding: 60px 20px;
             color: #94a3b8;
         }
-        .empty-state i { font-size: 4rem; margin-bottom: 20px; opacity: 0.3; }
+        .empty-state i { font-size: 4rem; margin-bottom: 20px; color: #d4af37; opacity: 0.5; }
         
         /* Currency Converter Widget */
         .converter-widget {
             background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 28px;
+            border-radius: 18px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
             margin-bottom: 30px;
+            border: 1px solid rgba(0,0,0,0.04);
         }
         body.dark-mode .converter-widget { background: #1f2b47; }
         .converter-widget h3 { color: #1a472a; margin-bottom: 20px; }
@@ -226,9 +259,17 @@
         body.dark-mode .converter-form label { color: #aaa; }
         .converter-form input, .converter-form select {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            padding: 13px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            background: #f8faf9;
+        }
+        .converter-form input:focus, .converter-form select:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 0 3px rgba(212,175,55,0.12);
+            background: white;
         }
         body.dark-mode .converter-form input, body.dark-mode .converter-form select {
             background: #2a3a5c; border-color: #444; color: #eee;
@@ -274,7 +315,7 @@
     </style>
 </head>
 <body>
-    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo"><img src="assets/logo.png" alt="Heritage Bank"></div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="dashboard">
         <nav class="sidebar">
             <div class="sidebar-logo"><i class="fas fa-landmark"></i> Heritage Bank</div>

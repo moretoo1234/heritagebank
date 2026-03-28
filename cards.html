@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="manifest" href="manifest.json">
     <meta name="description" content="Manage your Heritage Bank debit and credit cards, view details, and request new cards.">
     <title>Cards - Heritage Bank</title>
@@ -24,6 +25,11 @@
             color: #1a472a;
             text-align: center;
             margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+        h1 i {
+            color: #d4af37;
+            margin-right: 8px;
         }
         .back-link {
             color: #d4af37;
@@ -38,85 +44,229 @@
         }
         .card {
             background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            border-radius: 18px;
+            padding: 28px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: box-shadow 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
         .card-display {
-            background: linear-gradient(135deg, #1a472a 0%, #2d6b42 100%);
+            background: linear-gradient(135deg, #1a472a 0%, #1e5533 30%, #2d6b42 60%, #1a472a 100%);
             color: white;
-            padding: 25px;
-            border-radius: 12px;
+            padding: 28px 30px;
+            border-radius: 16px;
             margin-bottom: 20px;
-            min-height: 200px;
+            min-height: 220px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            box-shadow: 0 8px 20px rgba(26, 71, 42, 0.3);
+            box-shadow: 0 15px 35px rgba(26, 71, 42, 0.35), 0 5px 15px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease, box-shadow 0.5s ease;
+        }
+        .card-display:hover {
+            transform: perspective(800px) rotateY(-5deg) rotateX(3deg) translateY(-4px);
+            box-shadow: 0 25px 50px rgba(26, 71, 42, 0.4), 0 10px 25px rgba(0,0,0,0.2);
+        }
+        /* Holographic shine overlay */
+        .card-display::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(212, 175, 55, 0.06) 40%,
+                rgba(255, 255, 255, 0.1) 50%,
+                rgba(212, 175, 55, 0.06) 60%,
+                transparent 70%
+            );
+            transform: rotate(-25deg);
+            pointer-events: none;
+            animation: cardShine 6s ease-in-out infinite;
+        }
+        @keyframes cardShine {
+            0%, 100% { transform: rotate(-25deg) translateX(-30%); }
+            50% { transform: rotate(-25deg) translateX(30%); }
+        }
+        /* Subtle pattern overlay */
+        .card-display::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 2px,
+                rgba(255,255,255,0.015) 2px,
+                rgba(255,255,255,0.015) 4px
+            );
+            pointer-events: none;
+            border-radius: 16px;
+        }
+        .card-display > * { position: relative; z-index: 1; }
+        /* EMV chip */
+        .card-chip {
+            width: 45px;
+            height: 34px;
+            background: linear-gradient(135deg, #e8d5a3 0%, #c9a84c 30%, #f0e0a0 50%, #c9a84c 70%, #b8963a 100%);
+            border-radius: 6px;
+            display: inline-block;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+        .card-chip::before {
+            content: '';
+            position: absolute;
+            top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px solid rgba(150, 120, 50, 0.4);
+            border-radius: 3px;
+        }
+        .card-chip::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 4px;
+            right: 4px;
+            height: 1px;
+            background: rgba(150, 120, 50, 0.4);
+        }
+        /* Contactless icon */
+        .card-contactless {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            margin-left: 12px;
+            opacity: 0.85;
+            transform: rotate(90deg);
+        }
+        .card-contactless i { font-size: 16px; }
+        /* Card network logo */
+        .card-network {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            text-transform: uppercase;
         }
         .card-number {
-            font-size: 24px;
-            letter-spacing: 2px;
-            margin: 30px 0;
+            font-size: 22px;
+            letter-spacing: 3px;
+            margin: 20px 0 16px;
             font-family: 'Courier New', monospace;
             text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         .card-info {
             display: flex;
             justify-content: space-between;
+            align-items: flex-end;
         }
         .card-info div {
-            font-size: 12px;
+            font-size: 11px;
+        }
+        .card-info div:first-child { text-transform: uppercase; }
+        .card-info-label {
+            opacity: 0.7;
+            font-size: 9px !important;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
         }
         .card-item {
             display: grid;
             grid-template-columns: 1fr 1fr auto;
             gap: 20px;
             align-items: center;
-            padding: 20px;
-            background: #f5f7fa;
-            border-radius: 8px;
+            padding: 22px 24px;
+            background: linear-gradient(135deg, #f8faf9 0%, #f0f4f1 100%);
+            border-radius: 14px;
             margin-bottom: 15px;
+            border: 1px solid rgba(26, 71, 42, 0.08);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, #1a472a, #d4af37);
+            border-radius: 4px 0 0 4px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .card-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(26, 71, 42, 0.12);
+            border-color: rgba(26, 71, 42, 0.15);
+        }
+        .card-item:hover::before {
+            opacity: 1;
         }
         .card-name h3 {
             color: #1a472a;
             margin: 0 0 5px 0;
+            font-weight: 600;
         }
         .card-name p {
             color: #94a3b8;
             margin: 0;
             font-size: 12px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
         }
         .card-status {
             font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
         }
         .status-active {
             color: #27ae60;
+            background: rgba(39, 174, 96, 0.1);
         }
         .status-frozen {
             color: #3498db;
+            background: rgba(52, 152, 219, 0.1);
         }
         .status-blocked {
             color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
         }
         .status-inactive {
             color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
         }
         .btn {
             padding: 10px 20px;
-            background: #d4af37;
+            background: linear-gradient(135deg, #d4af37 0%, #c19b2e 100%);
             color: #1a472a;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             margin-right: 10px;
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
         }
         .btn:hover {
-            background: #b8941f;
+            background: linear-gradient(135deg, #e0be4a 0%, #d4af37 100%);
             transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
         }
         .btn-secondary {
             background: #ddd;
@@ -136,15 +286,18 @@
             font-weight: 600;
         }
         .form-group input, .form-group select {
-            padding: 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
+            padding: 12px 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
             font-size: 14px;
+            transition: all 0.3s ease;
+            background: #f8faf9;
         }
         .form-group input:focus, .form-group select:focus {
             outline: none;
             border-color: #d4af37;
-            box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+            background: white;
         }
         .modal {
             position: fixed;
@@ -153,6 +306,8 @@
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.6);
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -160,11 +315,17 @@
         }
         .modal-content {
             background: white;
-            border-radius: 12px;
+            border-radius: 18px;
             max-width: 600px;
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            animation: modalSlideUp 0.35s ease;
+        }
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .modal-header {
             padding: 20px 25px;
@@ -325,7 +486,7 @@
     </style>
 </head>
 <body>
-    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo"><img src="assets/logo.png" alt="Heritage Bank"></div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="container">
         <a class="back-link" onclick="window.location.href = 'dashboard.html'">← Back to Dashboard</a>
         
@@ -669,8 +830,12 @@
                             <div class="modal-body">
                                 <div class="card-display">
                                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                                        <div style="font-weight:700;">HERITAGE BANK</div>
-                                        <div style="opacity:0.9;">${kindLabel.toUpperCase()}</div>
+                                        <div style="font-weight:700; font-size:15px; letter-spacing:1px;">HERITAGE BANK</div>
+                                        <div class="card-network">${kindLabel.toUpperCase()}</div>
+                                    </div>
+                                    <div style="display:flex; align-items:center; margin-top:8px;">
+                                        <div class="card-chip"></div>
+                                        <div class="card-contactless"><i class="fas fa-wifi"></i></div>
                                     </div>
                                     <div style="text-align:center;">
                                         <div class="card-number" id="cardNumberDisplay" data-full="${fullNumber ? escapeHtml(displayNumber) : ''}" data-masked="${escapeHtml(maskedDisplay)}">${maskedDisplay}</div>
@@ -678,16 +843,19 @@
                                     </div>
                                     <div class="card-info">
                                         <div>
-                                            <div style="opacity:0.8;">CARDHOLDER</div>
+                                            <div class="card-info-label">CARDHOLDER</div>
                                             <div style="font-weight:700;">${escapeHtml(card.cardholderName || 'Card Holder')}</div>
                                         </div>
                                         <div>
-                                            <div style="opacity:0.8;">EXPIRES</div>
+                                            <div class="card-info-label">EXPIRES</div>
                                             <div style="font-weight:700;">${expiry}</div>
                                         </div>
                                         <div>
-                                            <div style="opacity:0.8;">STATUS</div>
+                                            <div class="card-info-label">STATUS</div>
                                             <div class="${statusClass}" style="font-weight:700; text-transform:uppercase;">${card.status || 'Unknown'}</div>
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <div style="font-weight:700; font-size:18px; font-style:italic; letter-spacing:1px;">VISA</div>
                                         </div>
                                     </div>
                                 </div>
@@ -965,22 +1133,29 @@ Click 'Manage' in the mobile app or call us at 1-800-HERITAGE
                                 </p>
                                 <div class="card-display">
                                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                                        <div style="font-weight:700;">HERITAGE BANK</div>
-                                        <div style="opacity:0.9;">VIRTUAL</div>
+                                        <div style="font-weight:700; font-size:15px; letter-spacing:1px;">HERITAGE BANK</div>
+                                        <div class="card-network">VIRTUAL</div>
+                                    </div>
+                                    <div style="display:flex; align-items:center; margin-top:8px;">
+                                        <div class="card-chip"></div>
+                                        <div class="card-contactless"><i class="fas fa-wifi"></i></div>
                                     </div>
                                     <div class="card-number">${escapeHtml(c.cardNumber).replace(/(.{4})/g, '$1 ').trim()}</div>
                                     <div class="card-info">
                                         <div>
-                                            <div style="opacity:0.8;">CARDHOLDER</div>
+                                            <div class="card-info-label">CARDHOLDER</div>
                                             <div style="font-weight:700;">${escapeHtml(c.cardholderName)}</div>
                                         </div>
                                         <div>
-                                            <div style="opacity:0.8;">EXP</div>
+                                            <div class="card-info-label">EXP</div>
                                             <div style="font-weight:700;">${escapeHtml(c.expirationDate)}</div>
                                         </div>
                                         <div>
-                                            <div style="opacity:0.8;">CVV</div>
+                                            <div class="card-info-label">CVV</div>
                                             <div style="font-weight:700;">${escapeHtml(c.cvv)}</div>
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <div style="font-weight:700; font-size:18px; font-style:italic; letter-spacing:1px;">VISA</div>
                                         </div>
                                     </div>
                                 </div>

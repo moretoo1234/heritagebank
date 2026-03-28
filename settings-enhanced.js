@@ -1647,3 +1647,137 @@ if (typeof module !== 'undefined' && module.exports) {
         getTimeAgo
     };
 }
+
+// ============================================================================
+// BIOMETRIC / PASSKEY REGISTRATION
+// ============================================================================
+
+function bufferToBase64url(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function loadBiometricCredentials() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const container = document.getElementById('biometricCredentialsList');
+    if (!container) return;
+
+    try {
+        const res = await fetch(`${API_URL}/api/auth/webauthn/credentials`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!data.success || !data.credentials.length) {
+            container.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;padding:4px 0 0 40px;">No passkeys registered yet.</p>';
+            return;
+        }
+        container.innerHTML = data.credentials.map((c, i) => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px 8px 40px;background:#f8fafc;border-radius:8px;margin-bottom:6px;">
+                <span style="font-size:0.9rem;color:#334155;"><i class="fas fa-key" style="margin-right:8px;color:#d4af37;"></i>Passkey ${i + 1} — Added ${new Date(c.createdAt).toLocaleDateString()}</span>
+                <button class="btn btn-danger" style="padding:4px 12px;font-size:0.8rem;" onclick="removeBiometricCredential(${c.id})"><i class="fas fa-trash"></i></button>
+            </div>
+        `).join('');
+    } catch (e) {
+        container.innerHTML = '';
+    }
+}
+
+async function registerBiometric() {
+    if (!window.PublicKeyCredential) {
+        showAlert('Your browser does not support biometric/passkey login.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('biometricRegisterBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...'; }
+
+    const token = localStorage.getItem('token');
+    try {
+        // Step 1: Get registration options from server
+        const optRes = await fetch(`${API_URL}/api/auth/webauthn/register-options`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        });
+        const optData = await optRes.json();
+        if (!optData.success) throw new Error(optData.message || 'Failed to get options');
+
+        const options = optData.options;
+
+        // Decode base64url fields for the browser API
+        options.challenge = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+        options.user.id = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+        if (options.excludeCredentials) {
+            options.excludeCredentials = options.excludeCredentials.map(c => ({
+                ...c,
+                id: Uint8Array.from(atob(c.id.replace(/-/g, '+').replace(/_/g, '/')), c2 => c2.charCodeAt(0))
+            }));
+        }
+
+        // Step 2: Create credential via browser
+        const credential = await navigator.credentials.create({ publicKey: options });
+
+        // Step 3: Encode response for server
+        const attestationResponse = {
+            id: credential.id,
+            rawId: bufferToBase64url(credential.rawId),
+            type: credential.type,
+            response: {
+                clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
+                attestationObject: bufferToBase64url(credential.response.attestationObject),
+                transports: credential.response.getTransports ? credential.response.getTransports() : ['internal']
+            },
+            clientExtensionResults: credential.getClientExtensionResults()
+        };
+
+        // Step 4: Verify with server
+        const verRes = await fetch(`${API_URL}/api/auth/webauthn/register-verify`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ attestationResponse })
+        });
+        const verData = await verRes.json();
+
+        if (verData.success) {
+            showAlert('Biometric passkey registered successfully!', 'success');
+            loadBiometricCredentials();
+        } else {
+            throw new Error(verData.message || 'Verification failed');
+        }
+    } catch (e) {
+        if (e.name === 'NotAllowedError') {
+            showAlert('Biometric registration was cancelled.', 'error');
+        } else {
+            showAlert('Failed to register passkey: ' + e.message, 'error');
+        }
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Passkey'; }
+    }
+}
+
+async function removeBiometricCredential(credId) {
+    if (!confirm('Remove this passkey? You won\'t be able to use it for biometric login anymore.')) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_URL}/api/auth/webauthn/credentials/${credId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+            showAlert('Passkey removed.', 'success');
+            loadBiometricCredentials();
+        } else {
+            showAlert(data.message || 'Failed to remove passkey.', 'error');
+        }
+    } catch (e) {
+        showAlert('Error removing passkey.', 'error');
+    }
+}
+
+// Load biometric credentials on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(loadBiometricCredentials, 500);
+});

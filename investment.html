@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -355,15 +356,15 @@
     </style>
 </head>
 <body>
-    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo"><img src="assets/logo.png" alt="Heritage Bank"></div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="container">
         <div class="header">
-            <button class="back-btn" onclick="location.href='dashboard.html'"><i class="fas fa-arrow-left"></i></button>
-            <h1><i class="fas fa-chart-line" style="color:#d4af37"></i> Investments</h1>
+            <button class="back-btn" onclick="location.href='dashboard.html'" title="Back to Dashboard"><i class="fas fa-arrow-left"></i></button>
+            <h1><i class="fas fa-chart-line icon-gold"></i> Investments</h1>
         </div>
 
         <!-- Portfolio Summary -->
-        <div class="portfolio-banner" id="portfolioBanner" style="display:none">
+        <div class="portfolio-banner initially-hidden" id="portfolioBanner">
             <div class="portfolio-stats">
                 <div class="portfolio-stat">
                     <label>Total Invested</label>
@@ -389,7 +390,7 @@
         <div class="products-grid">
             <div class="product-card" onclick="openInvestModal('Savings Bond')">
                 <span class="risk-badge risk-low">Low Risk</span>
-                <div class="product-icon" style="background:#d1fae5;color:#065f46"><i class="fas fa-shield-alt"></i></div>
+                <div class="product-icon invest-icon-bonds"><i class="fas fa-shield-alt"></i></div>
                 <h3>Savings Bond</h3>
                 <p class="product-desc">Low risk, guaranteed returns backed by government securities.</p>
                 <div class="product-rate">3.5% <span>APY</span></div>
@@ -402,7 +403,7 @@
 
             <div class="product-card" onclick="openInvestModal('Index Fund')">
                 <span class="risk-badge risk-moderate">Moderate</span>
-                <div class="product-icon" style="background:#fef3c7;color:#92400e"><i class="fas fa-chart-bar"></i></div>
+                <div class="product-icon invest-icon-index"><i class="fas fa-chart-bar"></i></div>
                 <h3>Index Fund</h3>
                 <p class="product-desc">Diversified portfolio tracking the market index for steady growth.</p>
                 <div class="product-rate">7.2% <span>APY*</span></div>
@@ -415,7 +416,7 @@
 
             <div class="product-card" onclick="openInvestModal('Fixed Deposit')">
                 <span class="risk-badge risk-low">Low Risk</span>
-                <div class="product-icon" style="background:#dbeafe;color:#1e40af"><i class="fas fa-lock"></i></div>
+                <div class="product-icon invest-icon-cd"><i class="fas fa-lock"></i></div>
                 <h3>Fixed Deposit</h3>
                 <p class="product-desc">Competitive rates with flexible terms and guaranteed principal.</p>
                 <div class="product-rate">4.8% <span>APY</span></div>
@@ -428,7 +429,7 @@
 
             <div class="product-card" onclick="openInvestModal('Growth Fund')">
                 <span class="risk-badge risk-high">Higher Risk</span>
-                <div class="product-icon" style="background:#fee2e2;color:#991b1b"><i class="fas fa-rocket"></i></div>
+                <div class="product-icon invest-icon-growth"><i class="fas fa-rocket"></i></div>
                 <h3>Growth Fund</h3>
                 <p class="product-desc">Aggressive growth targeting high-return opportunities over time.</p>
                 <div class="product-rate">9.5% <span>APY*</span></div>
@@ -447,7 +448,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Product</label>
-                        <select id="product" required>
+                        <select id="product" required aria-label="Investment Product">
                             <option value="">Select a product...</option>
                             <option value="Savings Bond">Savings Bond (3.5% APY)</option>
                             <option value="Index Fund">Index Fund (7.2% APY)</option>
@@ -469,7 +470,7 @@
                     <div class="est-row"><span>Principal</span><span id="estPrincipal">$0</span></div>
                     <div class="est-row"><span>APY Rate</span><span id="estRate">0%</span></div>
                     <div class="est-row"><span>Period</span><span id="estPeriod">0 years</span></div>
-                    <div class="est-row"><span>Estimated Return</span><span id="estReturn" style="color:#16a34a">+$0</span></div>
+                    <div class="est-row"><span>Estimated Return</span><span id="estReturn" class="est-return-val">+$0</span></div>
                     <div class="est-row"><span>Total at Maturity</span><span id="estTotal">$0</span></div>
                 </div>
 
@@ -480,7 +481,7 @@
         </div>
 
         <!-- My Investments -->
-        <div class="investments-card" id="myInvestments" style="display:none">
+        <div class="investments-card initially-hidden" id="myInvestments">
             <div class="investments-card-header">
                 <h2><i class="fas fa-briefcase"></i> My Investments</h2>
                 <span class="inv-count-badge" id="invCount">0</span>
@@ -508,9 +509,9 @@
                     <label>Period (Years)</label>
                     <input type="number" id="modalPeriod" placeholder="5" min="1" max="30" step="1">
                 </div>
-                <div id="modalEstimate" style="display:none">
+                <div id="modalEstimate" class="initially-hidden">
                     <div class="modal-detail-row"><span class="label">APY Rate</span><span class="val" id="modalRate">3.5%</span></div>
-                    <div class="modal-detail-row"><span class="label">Estimated Return</span><span class="val" id="modalReturn" style="color:#16a34a">+$0</span></div>
+                    <div class="modal-detail-row"><span class="label">Estimated Return</span><span class="val est-return-val" id="modalReturn">+$0</span></div>
                     <div class="modal-detail-row total"><span class="label">Total at Maturity</span><span class="val" id="modalTotal">$0</span></div>
                 </div>
             </div>
@@ -547,7 +548,7 @@
             </div>
             <div class="modal-details" id="successDetails"></div>
             <div class="modal-actions">
-                <button class="modal-btn modal-btn-primary" onclick="closeModal('successModal')" style="flex:1">Done</button>
+                <button class="modal-btn modal-btn-primary modal-btn-full" onclick="closeModal('successModal')">Done</button>
             </div>
         </div>
     </div>

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,6 +44,7 @@
             right: 0;
             bottom: 0;
             background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -51,9 +53,10 @@
         .pin-modal-content {
             background: white;
             padding: 30px;
-            border-radius: 12px;
+            border-radius: 18px;
             width: 400px;
             max-width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
         }
         body.dark-mode .pin-modal-content { background: #1f2b47; }
         .pin-modal-content h3 { color: #1a472a; margin-bottom: 20px; }
@@ -89,6 +92,7 @@
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .header h1 { color: #1a472a; }
+        .header h1::after { content: ''; display: block; width: 40px; height: 3px; background: linear-gradient(90deg, #d4af37, transparent); border-radius: 2px; margin-top: 6px; }
         
         .back-link { color: #d4af37; text-decoration: none; cursor: pointer; font-size: 14px; }
         .back-link:hover { text-decoration: underline; }
@@ -96,17 +100,24 @@
         .settings-card {
             background: white;
             padding: 30px;
-            border-radius: 12px;
+            border-radius: 18px;
             margin-bottom: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: box-shadow 0.3s ease;
         }
+        .settings-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
         
         .settings-card h2 {
             color: #1a472a;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 2px solid #f0f2f5;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
+        .settings-card h2 i { color: #d4af37; }
         
         .form-group {
             margin-bottom: 20px;
@@ -121,15 +132,19 @@
         
         .form-group input, .form-group select {
             width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            padding: 13px 15px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
             font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f8faf9;
         }
         
         .form-group input:focus, .form-group select:focus {
             outline: none;
-            border-color: #1a472a;
+            border-color: #d4af37;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.12);
+            background: white;
         }
         
         .form-row {
@@ -141,37 +156,44 @@
         .btn {
             padding: 12px 30px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 1rem;
-            transition: all 0.3s;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
         
         .btn-primary {
-            background: #1a472a;
+            background: linear-gradient(135deg, #1a472a, #2d5f3f);
             color: white;
+            box-shadow: 0 3px 10px rgba(26,71,42,0.2);
         }
         
         .btn-primary:hover {
-            background: #2d5f3f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26,71,42,0.25);
         }
         
         .btn-danger {
-            background: #dc3545;
+            background: linear-gradient(135deg, #dc3545, #c82333);
             color: white;
+            box-shadow: 0 3px 10px rgba(220,53,69,0.2);
         }
         
         .btn-danger:hover {
-            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220,53,69,0.25);
         }
         
         .btn-secondary {
-            background: #6c757d;
+            background: linear-gradient(135deg, #64748b, #475569);
             color: white;
+            box-shadow: 0 2px 8px rgba(100,116,139,0.2);
         }
         
         .btn-secondary:hover {
-            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(100,116,139,0.3);
         }
         
         .alert {
@@ -264,9 +286,11 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 15px 0;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 16px 0;
+            border-bottom: 1px solid #f0f2f5;
+            transition: all 0.3s ease;
         }
+        .security-item:hover { padding-left: 8px; background: #f8faf9; border-radius: 8px; }
         
         .security-item:last-child {
             border-bottom: none;
@@ -280,24 +304,28 @@
         
         .security-info i {
             font-size: 1.5rem;
-            color: #1a472a;
-            width: 40px;
-            height: 40px;
+            color: #d4af37;
+            width: 42px;
+            height: 42px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #f0f7f2;
-            border-radius: 8px;
+            background: linear-gradient(135deg, #f0f7f2, #e8ede9);
+            border-radius: 12px;
         }
         
         .logout-btn {
-            background: #d4af37;
+            background: linear-gradient(135deg, #d4af37, #c9a42e);
             color: #1a472a;
             border: none;
             padding: 10px 20px;
-            border-radius: 6px;
+            border-radius: 10px;
             cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(212,175,55,0.25);
+            transition: all 0.3s ease;
         }
+        .logout-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(212,175,55,0.35); }
         
         /* Activity Section */
         .activity-item {
@@ -451,7 +479,7 @@
     </style>
 </head>
 <body>
-    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo"><img src="assets/logo.png" alt="Heritage Bank"></div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="dashboard">
         <nav class="sidebar">
             <div class="sidebar-logo"><i class="fas fa-landmark"></i> Heritage Bank</div>
@@ -517,19 +545,19 @@
                     <div class="profile-picture-wrapper">
                         <div class="profile-picture-avatar" id="profilePictureAvatar">
                             <i class="fas fa-user" id="profilePictureIcon"></i>
-                            <img id="profilePictureImg" src="" alt="Profile" style="display:none;">
+                            <img id="profilePictureImg" src="" alt="Profile" class="initially-hidden">
                         </div>
                         <label class="profile-picture-overlay" for="profilePictureInput">
                             <i class="fas fa-camera"></i>
                         </label>
-                        <input type="file" id="profilePictureInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+                        <input type="file" id="profilePictureInput" accept="image/jpeg,image/png,image/gif,image/webp" class="initially-hidden" aria-label="Upload profile picture">
                     </div>
                     <div class="profile-picture-info">
                         <h3 id="profilePictureName">Your Photo</h3>
                         <p>Upload a profile picture (JPEG, PNG, GIF, WebP &bull; max 5MB)</p>
                         <div class="profile-picture-actions">
                             <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('profilePictureInput').click()"><i class="fas fa-upload"></i> Upload</button>
-                            <button type="button" class="btn btn-sm btn-outline" id="removeProfilePicBtn" style="display:none;" onclick="removeProfilePicture()"><i class="fas fa-trash"></i> Remove</button>
+                            <button type="button" class="btn btn-sm btn-outline initially-hidden" id="removeProfilePicBtn" onclick="removeProfilePicture()"><i class="fas fa-trash"></i> Remove</button>
                         </div>
                     </div>
                 </div>
@@ -716,6 +744,21 @@
                     </div>
                     <button class="btn btn-primary" onclick="generateBackupCodes()"><i class="fas fa-key"></i> Generate Backup Codes</button>
                 </div>
+
+                <!-- Biometric / Passkey Login -->
+                <div class="security-item security-item-separator">
+                    <div class="security-info">
+                        <i class="fas fa-fingerprint"></i>
+                        <div>
+                            <strong>Biometric Login (Passkey)</strong>
+                            <p class="settings-desc">Sign in with Face ID, Touch ID, or Windows Hello</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" id="biometricRegisterBtn" onclick="registerBiometric()">
+                        <i class="fas fa-plus-circle"></i> Add Passkey
+                    </button>
+                </div>
+                <div id="biometricCredentialsList" class="biometric-credentials-list biometric-creds-spacing"></div>
             </div>
             
             <!-- Account Verification -->

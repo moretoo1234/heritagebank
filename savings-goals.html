@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,6 +34,7 @@
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .header h1 { color: #1a472a; }
+        .header h1::after { content: ''; display: block; width: 40px; height: 3px; background: linear-gradient(90deg, #d4af37, transparent); border-radius: 2px; margin-top: 6px; }
         body.dark-mode .header h1 { color: #d4af37; }
         
         .back-link { color: #d4af37; text-decoration: none; cursor: pointer; font-size: 14px; }
@@ -48,12 +50,32 @@
         .stat-card {
             background: white;
             padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: all 0.35s ease;
+            position: relative;
+            overflow: hidden;
         }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #1a472a, #d4af37);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .stat-card:hover::before { opacity: 1; }
         body.dark-mode .stat-card { background: #1f2b47; }
-        .stat-card i { font-size: 2rem; color: #d4af37; margin-bottom: 10px; }
-        .stat-card h3 { font-size: 1.8rem; color: #1a472a; margin-bottom: 5px; }
+        .stat-card i { font-size: 2rem; color: #d4af37; margin-bottom: 10px; filter: drop-shadow(0 2px 4px rgba(212,175,55,0.3)); }
+        .stat-card h3 { font-size: 1.8rem; color: #1a472a; margin-bottom: 5px; font-weight: 700; }
         body.dark-mode .stat-card h3 { color: #d4af37; }
         .stat-card p { color: #64748b; font-size: 0.9rem; }
         body.dark-mode .stat-card p { color: #aaa; }
@@ -67,9 +89,16 @@
         
         .goal-card {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
             overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: all 0.35s ease;
+        }
+        .goal-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.1);
+            border-color: rgba(26, 71, 42, 0.12);
         }
         body.dark-mode .goal-card { background: #1f2b47; }
         
@@ -83,12 +112,14 @@
         .goal-icon {
             width: 50px;
             height: 50px;
-            border-radius: 12px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
+            transition: transform 0.3s ease;
         }
+        .goal-card:hover .goal-icon { transform: scale(1.1) rotate(5deg); }
         .goal-icon.vacation { background: #e3f2fd; color: #1976d2; }
         .goal-icon.home { background: #fce4ec; color: #c2185b; }
         .goal-icon.car { background: #e8f5e9; color: #388e3c; }
@@ -135,14 +166,30 @@
             background: #eee;
             border-radius: 6px;
             overflow: hidden;
+            position: relative;
         }
         body.dark-mode .progress-bar { background: #333; }
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #1a472a, #2d5f3f);
+            background: linear-gradient(90deg, #1a472a, #2d5f3f, #d4af37);
+            background-size: 200% 100%;
             border-radius: 6px;
-            transition: width 0.5s ease;
+            transition: width 0.8s ease;
+            animation: progressShimmer 3s ease-in-out infinite;
+            position: relative;
         }
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: progressShine 2s ease-in-out infinite;
+        }
+        @keyframes progressShimmer { 0%,100% { background-position: 0% 0; } 50% { background-position: 100% 0; } }
+        @keyframes progressShine { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
         
         .goal-stats {
             display: grid;
@@ -188,8 +235,8 @@
         
         .add-goal-card {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
             padding: 30px;
             display: flex;
             flex-direction: column;
@@ -197,13 +244,14 @@
             justify-content: center;
             min-height: 300px;
             cursor: pointer;
-            border: 2px dashed #ddd;
-            transition: all 0.3s;
+            border: 2px dashed #d4af37;
+            transition: all 0.4s ease;
         }
         body.dark-mode .add-goal-card { background: #1f2b47; border-color: #444; }
-        .add-goal-card:hover { border-color: #1a472a; background: #f9f9f9; }
+        .add-goal-card:hover { border-color: #1a472a; background: linear-gradient(135deg, #f0f7f2, #f8faf9); transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
         body.dark-mode .add-goal-card:hover { border-color: #d4af37; background: #2a3a5c; }
-        .add-goal-card i { font-size: 3rem; color: #ddd; margin-bottom: 15px; }
+        .add-goal-card i { font-size: 3rem; color: #d4af37; margin-bottom: 15px; transition: transform 0.3s ease; }
+        .add-goal-card:hover i { transform: scale(1.2) rotate(90deg); }
         .add-goal-card p { color: #64748b; }
         body.dark-mode .add-goal-card p { color: #aaa; }
         
@@ -225,12 +273,15 @@
         .modal-content {
             background: white;
             padding: 30px;
-            border-radius: 12px;
+            border-radius: 18px;
             width: 500px;
             max-width: 90%;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+            animation: goalModalSlide 0.3s ease;
         }
+        @keyframes goalModalSlide { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
         body.dark-mode .modal-content { background: #1f2b47; }
         
         .modal-content h3 { color: #1a472a; margin-bottom: 20px; }
@@ -320,7 +371,7 @@
     </style>
 </head>
 <body>
-    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo"><img src="assets/logo.png" alt="Heritage Bank"></div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="dashboard">
         <nav class="sidebar">
             <div class="sidebar-logo"><i class="fas fa-landmark"></i> Heritage Bank</div>

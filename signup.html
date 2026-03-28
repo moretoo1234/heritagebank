@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="manifest" href="manifest.json">
     <meta name="description" content="Create your Heritage Bank account and start banking securely online.">
     <title>Sign Up - Heritage Bank</title>
@@ -34,7 +35,7 @@
         }
         /* Subtle grid overlay */
         .auth-container::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
-        .auth-card { position: relative; z-index: 1; background: rgba(255,255,255,0.07); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 24px; padding: 44px 40px; max-width: 480px; width: 100%; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 8px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05) inset; }
+        .auth-card { position: relative; z-index: 1; background: rgba(255,255,255,0.07); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); border-radius: 24px; padding: 44px 40px; max-width: 480px; width: 100%; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 8px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05) inset; }
         .auth-header { text-align: center; margin-bottom: 32px; }
         .auth-logo { margin-bottom: 12px; }
         .auth-logo a { display: inline-block; }
@@ -128,8 +129,8 @@
 
                 <div class="form-group">
                     <label>Gender</label>
-                    <select id="gender" required style="width:100%;padding:12px 16px;border:1px solid rgba(255,255,255,0.15);border-radius:12px;background:rgba(255,255,255,0.06);color:#fff;font-size:0.95rem;outline:none;transition:border-color 0.3s;">
-                        <option value="" disabled selected style="color:#999;">Select Gender</option>
+                    <select id="gender" required class="auth-select" aria-label="Gender">
+                        <option value="" disabled selected class="auth-select-placeholder">Select Gender</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
                     </select>

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="stylesheet" href="loading.css">
     <link rel="manifest" href="manifest.json">
     <meta name="description" content="View your Heritage Bank account dashboard with balances, recent transactions, and quick actions.">
@@ -322,14 +323,32 @@
             display: flex;
             align-items: flex-start;
             gap: 16px;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .metric-card:hover { border-color: #d4af37; box-shadow: 0 4px 16px rgba(212,175,55,0.1); }
+        .metric-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #1a472a, #d4af37);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+            transform-origin: left;
+        }
+        .metric-card:hover { border-color: #d4af37; box-shadow: 0 8px 25px rgba(212,175,55,0.12); transform: translateY(-3px); }
+        .metric-card:hover::after { transform: scaleX(1); }
         .metric-card.primary {
             background: linear-gradient(135deg, #1a472a 0%, #2d6b45 100%);
             color: white;
             border: none;
+            box-shadow: 0 6px 20px rgba(26, 71, 42, 0.25);
         }
+        .metric-card.primary::after { display: none; }
+        .metric-card.primary:hover { box-shadow: 0 10px 35px rgba(26, 71, 42, 0.35); }
         .metric-card.primary .metric-label { color: rgba(255,255,255,0.8); }
         .metric-card.primary .metric-value { color: white; }
         .metric-card.primary .metric-sub { color: rgba(255,255,255,0.7); }
@@ -389,6 +408,13 @@
             padding: 16px;
             background: #f8fafc;
             border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        .info-item:hover {
+            background: white;
+            border-color: rgba(212,175,55,0.2);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
         }
         .info-item label {
             display: block;
@@ -446,16 +472,28 @@
             border-radius: 14px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
             border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+        .action-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(26,71,42,0.03), rgba(212,175,55,0.05));
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
         .action-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-4px);
             border-color: #d4af37;
-            box-shadow: 0 8px 24px rgba(212,175,55,0.12);
+            box-shadow: 0 10px 30px rgba(212,175,55,0.15);
         }
-        .action-card i { font-size: 1.5rem; color: #d4af37; margin-bottom: 10px; display: block; }
-        .action-card h4 { color: #334155; font-size: 0.82rem; font-weight: 600; }
+        .action-card:hover::before { opacity: 1; }
+        .action-card:hover i { transform: scale(1.15); }
+        .action-card i { font-size: 1.5rem; color: #d4af37; margin-bottom: 10px; display: block; transition: transform 0.3s ease; position: relative; z-index: 1; }
+        .action-card h4 { color: #334155; font-size: 0.82rem; font-weight: 600; position: relative; z-index: 1; }
 
         /* ===== TRANSACTIONS ===== */
         .transactions-card { /* card wrapper for transactions */ display: block; }
@@ -488,14 +526,16 @@
         .transaction-item {
             display: flex;
             align-items: center;
-            padding: 14px 0;
+            padding: 14px 8px;
             border-bottom: 1px solid #f1f5f9;
             cursor: pointer;
-            transition: all 0.15s;
+            transition: all 0.25s ease;
             position: relative;
+            border-radius: 10px;
+            margin-bottom: 2px;
         }
         .transaction-item:last-child { border-bottom: none; }
-        .transaction-item:hover { background: #f8fafc; border-radius: 10px; padding-left: 8px; padding-right: 8px; margin: 0 -8px; }
+        .transaction-item:hover { background: linear-gradient(90deg, rgba(26,71,42,0.03), rgba(212,175,55,0.03)); box-shadow: 0 2px 8px rgba(0,0,0,0.04); transform: translateX(4px); }
         body.dark-mode .transaction-item:hover { background: #334155; }
         .transaction-icon {
             width: 44px;
@@ -506,9 +546,11 @@
             justify-content: center;
             margin-right: 14px;
             font-size: 0.95rem;
+            transition: transform 0.25s ease;
         }
-        .transaction-icon.credit { background: #d1fae5; color: #059669; }
-        .transaction-icon.debit { background: #fee2e2; color: #dc2626; }
+        .transaction-item:hover .transaction-icon { transform: scale(1.1); }
+        .transaction-icon.credit { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #059669; }
+        .transaction-icon.debit { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #dc2626; }
         .transaction-details { flex: 1; min-width: 0; }
         .transaction-details h4 { color: #1e293b; font-size: 0.9rem; margin-bottom: 2px; font-weight: 600; }
         .transaction-details span { color: #94a3b8; font-size: 0.8rem; }
@@ -524,9 +566,9 @@
             cursor: pointer;
             color: #94a3b8;
             font-size: 14px;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
         }
-        .btn-receipt:hover { background: #f1f5f9; color: #475569; }
+        .btn-receipt:hover { background: #1a472a; color: white; border-color: #1a472a; transform: scale(1.05); }
 
         .no-transactions {
             text-align: center;
@@ -541,6 +583,7 @@
         .txn-modal { background:white; border-radius:20px; width:90%; max-width:500px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation: txnSlideUp 0.3s ease; }
         body.dark-mode .txn-modal { background: #1e293b; }
         @keyframes txnSlideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .txn-modal-header { display:flex; justify-content:space-between; align-items:center; padding:20px 25px; border-bottom:1px solid #f1f5f9; }
         body.dark-mode .txn-modal-header { border-color: #334155; }
         .txn-modal-header h3 { color:#0f2b1a; font-size:1.1rem; display:flex; align-items:center; gap:10px; }
@@ -745,7 +788,7 @@
     </style>
 </head>
 <body>
-    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo"><img src="assets/logo.png" alt="Heritage Bank"></div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="dashboard">
         <!-- SIDEBAR -->
         <nav class="sidebar" id="sidebar">
@@ -756,7 +799,7 @@
             <div class="sidebar-user-avatar" id="sidebarUserAvatar">
                 <div class="sidebar-avatar-circle">
                     <i class="fas fa-user" id="sidebarUserAvatarIcon"></i>
-                    <img id="sidebarUserAvatarImg" src="" alt="" style="display:none;">
+                    <img id="sidebarUserAvatarImg" src="" alt="" class="initially-hidden">
                 </div>
                 <span class="sidebar-user-name" id="sidebarUserName"></span>
             </div>
@@ -1136,7 +1179,10 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    document.getElementById('notifBadge').textContent = data.unreadCount || 0;
+                    const unread = data.unreadCount || 0;
+                    const badge = document.getElementById('notifBadge');
+                    badge.textContent = unread;
+                    badge.style.display = unread > 0 ? 'flex' : 'none';
                     const list = document.getElementById('notifList');
                     if (data.notifications && data.notifications.length > 0) {
                         list.innerHTML = data.notifications.map(n => `
@@ -1145,12 +1191,48 @@
                                 <div style="font-size:0.75rem; color:#999; margin-top:4px;">${new Date(n.createdAt).toLocaleDateString()}</div>
                             </div>
                         `).join('');
+
+                        // Show toast for new unread notifications
+                        if (typeof window._lastNotifCheck !== 'undefined') {
+                            const newOnes = data.notifications.filter(n => !n.read && new Date(n.createdAt) > window._lastNotifCheck);
+                            newOnes.forEach(n => showAlertToast(n.title || 'New Alert', n.message || n.title));
+                        }
+                        window._lastNotifCheck = new Date();
                     }
                 }
             } catch (e) {
                 console.error('Notifications load error:', e);
             }
         }
+
+        // Real-time alert toast system
+        function showAlertToast(title, message) {
+            let container = document.getElementById('alertToastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'alertToastContainer';
+                container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:10px;max-width:380px;';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.style.cssText = 'background:#fff;border-left:4px solid #1a472a;border-radius:10px;padding:14px 18px;box-shadow:0 8px 30px rgba(0,0,0,0.15);animation:slideInRight 0.4s ease;display:flex;align-items:flex-start;gap:12px;';
+            toast.innerHTML = `
+                <div style="background:#ecfdf5;color:#059669;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:0.88rem;color:#1e293b;">${escapeHtmlDash(title)}</div>
+                    <div style="font-size:0.82rem;color:#64748b;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtmlDash(message)}</div>
+                </div>
+                <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1rem;padding:0;line-height:1;">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => { if (toast.parentElement) toast.remove(); }, 6000);
+        }
+
+        // Poll notifications every 30 seconds for real-time alerts
+        window._lastNotifCheck = new Date();
+        setInterval(() => { loadNotifications(); }, 30000);
 
         function escapeHtmlDash(str) {
             const d = document.createElement('div');

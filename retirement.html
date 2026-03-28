@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -62,7 +63,7 @@
             background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(10,20,14,0.65) 50%, rgba(10,20,14,0.92) 100%);
         }
         .product-card-content { position: relative; z-index: 2; padding: 24px; }
-        .product-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; font-size: 1.3rem; backdrop-filter: blur(10px); }
+        .product-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; font-size: 1.3rem; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
         .product-icon.ira { background: rgba(46,125,50,0.3); color: #66bb6a; }
         .product-icon.roth { background: rgba(25,118,210,0.3); color: #64b5f6; }
         .product-icon.rollover { background: rgba(230,81,0,0.3); color: #ffb74d; }
@@ -76,7 +77,7 @@
         .product-meta strong { color: #d4af37; }
         .btn-contribute {
             width: 100%; padding: 11px; background: rgba(212,175,55,0.2); color: #d4af37; border: 1px solid rgba(212,175,55,0.35); border-radius: 10px;
-            font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.25s; font-family: inherit; backdrop-filter: blur(8px);
+            font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.25s; font-family: inherit; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
         }
         .btn-contribute:hover { background: rgba(212,175,55,0.35); color: #fff; border-color: rgba(212,175,55,0.5); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(212,175,55,0.15); }
 
@@ -181,15 +182,22 @@
             .products-grid { grid-template-columns: 1fr; }
             .product-card { min-height: 260px; }
         }
+        .product-card-ira { background-image: url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80'); }
+        .product-card-roth { background-image: url('https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=600&q=80'); }
+        .product-card-rollover { background-image: url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80'); }
+        .product-card-sep { background-image: url('https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&q=80'); }
+        .product-card-edu { background-image: url('https://images.unsplash.com/photo-1523050854058-8df90110c476?w=600&q=80'); }
+        .product-card-pension { background-image: url('https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=600&q=80'); }
+        .withdraw-warning-text { text-align: center; color: #64748b; font-size: 0.88rem; margin-bottom: 12px; }
     </style>
 </head>
 <body>
     <!-- Page Loader -->
-    <div class="page-loader" id="pageLoader"><div class="loader-spinner"></div></div>
+    <div class="page-loader" id="pageLoader"><div class="loader-logo"><img src="assets/logo.png" alt="Heritage Bank"></div><div class="loader-spinner"></div></div>
 
     <div class="container">
         <div class="header">
-            <button class="back-btn" onclick="location.href='dashboard.html'"><i class="fas fa-arrow-left"></i></button>
+            <button class="back-btn" onclick="location.href='dashboard.html'" title="Back to Dashboard"><i class="fas fa-arrow-left"></i></button>
             <h1><i class="fas fa-umbrella-beach"></i> Retirement & IRA</h1>
         </div>
 
@@ -207,7 +215,7 @@
         <!-- Products -->
         <h2 class="section-title"><i class="fas fa-th-large"></i> Retirement Products</h2>
         <div class="products-grid">
-            <div class="product-card" style="background-image: url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80');">
+            <div class="product-card product-card-ira">
                 <div class="product-card-content">
                     <div class="product-icon ira"><i class="fas fa-landmark"></i></div>
                     <h3>Traditional IRA</h3>
@@ -220,7 +228,7 @@
                     <button class="btn-contribute" onclick="openContributeModal('Traditional IRA')">Open / Contribute <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
-            <div class="product-card" style="background-image: url('https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=600&q=80');">
+            <div class="product-card product-card-roth">
                 <div class="product-card-content">
                     <div class="product-icon roth"><i class="fas fa-shield-alt"></i></div>
                     <h3>Roth IRA</h3>
@@ -233,7 +241,7 @@
                     <button class="btn-contribute" onclick="openContributeModal('Roth IRA')">Open / Contribute <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
-            <div class="product-card" style="background-image: url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80');">
+            <div class="product-card product-card-rollover">
                 <div class="product-card-content">
                     <div class="product-icon rollover"><i class="fas fa-sync-alt"></i></div>
                     <h3>401(k) Rollover</h3>
@@ -246,7 +254,7 @@
                     <button class="btn-contribute" onclick="openContributeModal('401(k) Rollover')">Roll Over <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
-            <div class="product-card" style="background-image: url('https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&q=80');">
+            <div class="product-card product-card-sep">
                 <div class="product-card-content">
                     <div class="product-icon sep"><i class="fas fa-user-tie"></i></div>
                     <h3>SEP IRA</h3>
@@ -259,7 +267,7 @@
                     <button class="btn-contribute" onclick="openContributeModal('SEP IRA')">Open / Contribute <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
-            <div class="product-card" id="education" style="background-image: url('https://images.unsplash.com/photo-1523050854058-8df90110c476?w=600&q=80');">
+            <div class="product-card product-card-edu" id="education">
                 <div class="product-card-content">
                     <div class="product-icon edu"><i class="fas fa-graduation-cap"></i></div>
                     <h3>529 Education Plan</h3>
@@ -272,7 +280,7 @@
                     <button class="btn-contribute" onclick="openContributeModal('529 Education Plan')">Start Saving <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
-            <div class="product-card" style="background-image: url('https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=600&q=80');">
+            <div class="product-card product-card-pension">>
                 <div class="product-card-content">
                     <div class="product-icon pension"><i class="fas fa-chess-king"></i></div>
                     <h3>Pension Plan</h3>
@@ -318,7 +326,7 @@
                     </div>
                 </div>
 
-                <div class="estimate-box" id="estimateBox" style="display:none;">
+                <div class="estimate-box initially-hidden" id="estimateBox">
                     <div class="estimate-row"><span>Contribution</span><span id="estContrib">$0</span></div>
                     <div class="estimate-row"><span>Annual APY</span><span id="estApy">0%</span></div>
                     <div class="estimate-row"><span>Projected in 10 years</span><span id="estProjection">$0</span></div>
@@ -375,7 +383,7 @@
         <div class="modal-card">
             <div class="modal-icon warning"><i class="fas fa-exclamation-triangle"></i></div>
             <h3>Early Withdrawal</h3>
-            <p style="text-align:center; color:#64748b; font-size:0.88rem; margin-bottom:12px;">
+            <p class="withdraw-warning-text">
                 Early withdrawal incurs a <strong>10% penalty</strong>. Are you sure?
             </p>
             <div class="modal-details" id="withdrawDetails"></div>

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="manifest" href="manifest.json">
     <meta name="description" content="Sign in to your Heritage Bank account to manage your finances securely.">
     <title>Sign In - Heritage Bank</title>
@@ -33,7 +34,7 @@
         }
         /* Subtle grid overlay */
         .auth-container::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
-        .auth-card { position: relative; z-index: 1; background: rgba(255,255,255,0.07); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 24px; padding: 44px 40px; max-width: 440px; width: 100%; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 8px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05) inset; }
+        .auth-card { position: relative; z-index: 1; background: rgba(255,255,255,0.07); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); border-radius: 24px; padding: 44px 40px; max-width: 440px; width: 100%; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 8px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05) inset; }
         .auth-header { text-align: center; margin-bottom: 32px; }
         .auth-logo { margin-bottom: 12px; }
         .auth-logo a { display: inline-block; }
@@ -75,6 +76,11 @@
             .form-options { font-size: 0.8rem; }
             .auth-bg-orb { filter: blur(60px); opacity: 0.4; }
         }
+        .biometric-or-row { display: flex; align-items: center; gap: 12px; margin: 18px 0 10px; }
+        .biometric-or-line { flex: 1; height: 1px; background: rgba(255,255,255,0.15); }
+        .biometric-or-text { color: rgba(255,255,255,0.5); font-size: 0.85rem; font-weight: 500; }
+        .btn-biometric { background: linear-gradient(135deg, #d4af37, #b8962e); width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; color: #fff; transition: all 0.3s; }
+        .btn-biometric .fa-fingerprint { font-size: 1.2rem; }
     </style>
 </head>
 <body>
@@ -126,6 +132,17 @@
                 
                 <div id="loginAttempts" class="login-attempts"></div>
             </form>
+
+            <div class="biometric-divider initially-hidden" id="biometricSection">
+                <div class="biometric-or-row">
+                    <div class="biometric-or-line"></div>
+                    <span class="biometric-or-text">or</span>
+                    <div class="biometric-or-line"></div>
+                </div>
+                <button type="button" class="btn-biometric" id="biometricLoginBtn" onclick="biometricLogin()">
+                    <i class="fas fa-fingerprint"></i> Sign in with Biometric
+                </button>
+            </div>
             
             <div class="auth-links">
                 <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
@@ -273,7 +290,111 @@
             if (localStorage.getItem('rememberMe') === 'true') {
                 document.getElementById('rememberMe').checked = true;
             }
+            // Show biometric button if browser supports it
+            if (window.PublicKeyCredential) {
+                document.getElementById('biometricSection').style.display = 'block';
+            }
         });
+
+        // ===== Biometric / Passkey Login =====
+        function bufferToBase64url(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        async function biometricLogin() {
+            const email = document.getElementById('email').value;
+            if (!email) {
+                document.getElementById('alertBox').innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Please enter your email first, then click biometric login.</div>';
+                document.getElementById('email').focus();
+                return;
+            }
+
+            const btn = document.getElementById('biometricLoginBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+
+            try {
+                // Step 1: Get authentication options
+                const optRes = await fetch(`${API_URL}/api/auth/webauthn/login-options`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const optData = await optRes.json();
+
+                if (!optData.success) {
+                    if (optData.noBiometric) {
+                        document.getElementById('alertBox').innerHTML = '<div class="alert alert-danger"><i class="fas fa-fingerprint"></i> No biometric passkey registered. Set one up in Settings after logging in.</div>';
+                    } else {
+                        document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ${optData.message || 'Biometric login failed'}</div>`;
+                    }
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-fingerprint" style="font-size:1.2rem;"></i> Sign in with Biometric';
+                    return;
+                }
+
+                const options = optData.options;
+                // Decode challenge
+                options.challenge = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+                if (options.allowCredentials) {
+                    options.allowCredentials = options.allowCredentials.map(c => ({
+                        ...c,
+                        id: Uint8Array.from(atob(c.id.replace(/-/g, '+').replace(/_/g, '/')), c2 => c2.charCodeAt(0))
+                    }));
+                }
+
+                // Step 2: Authenticate with browser
+                const assertion = await navigator.credentials.get({ publicKey: options });
+
+                // Step 3: Send to server
+                const assertionResponse = {
+                    id: assertion.id,
+                    rawId: bufferToBase64url(assertion.rawId),
+                    type: assertion.type,
+                    response: {
+                        clientDataJSON: bufferToBase64url(assertion.response.clientDataJSON),
+                        authenticatorData: bufferToBase64url(assertion.response.authenticatorData),
+                        signature: bufferToBase64url(assertion.response.signature),
+                        userHandle: assertion.response.userHandle ? bufferToBase64url(assertion.response.userHandle) : null
+                    },
+                    clientExtensionResults: assertion.getClientExtensionResults()
+                };
+
+                const verRes = await fetch(`${API_URL}/api/auth/webauthn/login-verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ assertionResponse })
+                });
+                const data = await verRes.json();
+
+                if (data.success) {
+                    localStorage.removeItem('failedAttempts');
+                    localStorage.removeItem('lockoutUntil');
+                    localStorage.setItem('token', data.token);
+                    const safeUser = { id: data.user.id, firstName: data.user.firstName, lastName: data.user.lastName, email: data.user.email, accountNumber: data.user.accountNumber, accountType: data.user.accountType, isAdmin: !!data.user.isAdmin };
+                    localStorage.setItem('user', JSON.stringify(safeUser));
+                    document.getElementById('alertBox').innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> Biometric login successful! Redirecting...</div>';
+                    setTimeout(() => {
+                        window.location.href = data.user.isAdmin ? 'admin.html' : 'dashboard.html';
+                    }, 1000);
+                } else {
+                    document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle"></i> ${data.message || 'Biometric login failed'}</div>`;
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-fingerprint" style="font-size:1.2rem;"></i> Sign in with Biometric';
+                }
+            } catch (e) {
+                if (e.name === 'NotAllowedError') {
+                    document.getElementById('alertBox').innerHTML = '<div class="alert alert-danger"><i class="fas fa-hand-paper"></i> Biometric authentication was cancelled.</div>';
+                } else {
+                    document.getElementById('alertBox').innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Biometric login error. Please try again.</div>';
+                }
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-fingerprint" style="font-size:1.2rem;"></i> Sign in with Biometric';
+            }
+        }
     </script>
     <script src="cookie-consent.js"></script>
 </body>

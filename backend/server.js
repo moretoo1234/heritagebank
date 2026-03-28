@@ -12,6 +12,16 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 let nodemailer = null;
+
+// WebAuthn: lazy-loaded ESM module, in-memory challenge store
+let _webauthn = null;
+async function getWebAuthn() {
+    if (!_webauthn) { _webauthn = await import('@simplewebauthn/server'); }
+    return _webauthn;
+}
+const webauthnChallenges = new Map(); // key=challenge, value={userId,expiresAt}
+setInterval(() => { const now = Date.now(); for (const [k, v] of webauthnChallenges) { if (v.expiresAt < now) webauthnChallenges.delete(k); } }, 60000);
+
 try {
     // Optional dependency: only needed when SMTP is configured.
     // If not installed, password reset endpoints will return a clear config error.
@@ -1455,6 +1465,22 @@ async function initializeDatabase() {
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_tl_sender (sender_account_id),
                 INDEX idx_tl_receiver (receiver_account_id)
+            )
+        `);
+
+        // WebAuthn credentials table
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS webauthn_credentials (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                userId INT NOT NULL,
+                credentialId VARCHAR(512) NOT NULL,
+                publicKey TEXT NOT NULL,
+                counter BIGINT DEFAULT 0,
+                transports JSON,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uk_credentialId (credentialId),
+                INDEX idx_wc_user (userId),
+                FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
             )
         `);
 
@@ -3431,6 +3457,253 @@ app.post('/api/auth/login', async (req, res) => {
     } catch (error) {
         console.error('Login error:', error);
         console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
+    }
+});
+
+// ==================== WEBAUTHN BIOMETRIC AUTH ====================
+
+// Helper: get RP config from request
+function getWebAuthnRP(req) {
+    const host = req.hostname || 'localhost';
+    const proto = req.protocol || 'http';
+    const port = req.get('host')?.split(':')[1];
+    const origin = port && port !== '80' && port !== '443'
+        ? `${proto}://${host}:${port}`
+        : `${proto}://${host}`;
+    return { rpName: 'Heritage Bank', rpID: host, origin };
+}
+
+// Register biometric – Step 1: Get registration options (requires login)
+app.post('/api/auth/webauthn/register-options', requireAuth, async (req, res) => {
+    try {
+        const webauthn = await getWebAuthn();
+        const [users] = await pool.execute('SELECT id, email, firstName, lastName FROM users WHERE id = ?', [req.auth.id]);
+        if (!users.length) return res.status(404).json({ success: false, message: 'User not found' });
+        const user = users[0];
+
+        // Get existing credentials to exclude
+        const [existing] = await pool.execute('SELECT credentialId, transports FROM webauthn_credentials WHERE userId = ?', [user.id]);
+        const excludeCredentials = existing.map(c => ({
+            id: Buffer.from(c.credentialId, 'base64url'),
+            type: 'public-key',
+            transports: c.transports ? JSON.parse(c.transports) : ['internal']
+        }));
+
+        const rp = getWebAuthnRP(req);
+        const options = await webauthn.generateRegistrationOptions({
+            rpName: rp.rpName,
+            rpID: rp.rpID,
+            userID: new TextEncoder().encode(String(user.id)),
+            userName: user.email,
+            userDisplayName: `${user.firstName} ${user.lastName}`,
+            attestationType: 'none',
+            excludeCredentials,
+            authenticatorSelection: {
+                residentKey: 'preferred',
+                userVerification: 'preferred',
+                authenticatorAttachment: 'platform'
+            }
+        });
+
+        // Store challenge
+        webauthnChallenges.set(options.challenge, { userId: user.id, expiresAt: Date.now() + 5 * 60 * 1000 });
+
+        res.json({ success: true, options });
+    } catch (error) {
+        console.error('WebAuthn register-options error:', error);
+        res.status(500).json({ success: false, message: 'Failed to generate registration options' });
+    }
+});
+
+// Register biometric – Step 2: Verify registration
+app.post('/api/auth/webauthn/register-verify', requireAuth, async (req, res) => {
+    try {
+        const webauthn = await getWebAuthn();
+        const { attestationResponse } = req.body;
+        if (!attestationResponse) return res.status(400).json({ success: false, message: 'Missing attestation response' });
+
+        const challenge = attestationResponse.response?.clientDataJSON
+            ? JSON.parse(Buffer.from(attestationResponse.response.clientDataJSON, 'base64url').toString()).challenge
+            : null;
+
+        const stored = challenge ? webauthnChallenges.get(challenge) : null;
+        if (!stored || stored.userId !== req.auth.id) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired challenge' });
+        }
+        webauthnChallenges.delete(challenge);
+
+        const rp = getWebAuthnRP(req);
+        const verification = await webauthn.verifyRegistrationResponse({
+            response: attestationResponse,
+            expectedChallenge: challenge,
+            expectedOrigin: rp.origin,
+            expectedRPID: rp.rpID
+        });
+
+        if (!verification.verified || !verification.registrationInfo) {
+            return res.status(400).json({ success: false, message: 'Verification failed' });
+        }
+
+        const { credential } = verification.registrationInfo;
+        const credIdBase64 = Buffer.from(credential.id).toString('base64url');
+        const pubKeyBase64 = Buffer.from(credential.publicKey).toString('base64url');
+        const transports = attestationResponse.response?.transports || ['internal'];
+
+        await pool.execute(
+            'INSERT INTO webauthn_credentials (userId, credentialId, publicKey, counter, transports) VALUES (?, ?, ?, ?, ?)',
+            [req.auth.id, credIdBase64, pubKeyBase64, credential.counter || 0, JSON.stringify(transports)]
+        );
+
+        await createNotification(req.auth.id, 'security', 'Biometric Login Enabled',
+            'A biometric passkey has been registered for your account.', null, 'high');
+
+        res.json({ success: true, message: 'Biometric credential registered successfully' });
+    } catch (error) {
+        console.error('WebAuthn register-verify error:', error);
+        res.status(500).json({ success: false, message: 'Failed to verify registration' });
+    }
+});
+
+// Biometric login – Step 1: Get authentication options
+app.post('/api/auth/webauthn/login-options', async (req, res) => {
+    try {
+        const webauthn = await getWebAuthn();
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+
+        const [users] = await pool.execute('SELECT id FROM users WHERE email = ? OR accountNumber = ?', [email, email]);
+        if (!users.length) return res.status(401).json({ success: false, message: 'No account found' });
+
+        const userId = users[0].id;
+        const [creds] = await pool.execute('SELECT credentialId, transports FROM webauthn_credentials WHERE userId = ?', [userId]);
+        if (!creds.length) return res.status(400).json({ success: false, message: 'No biometric credentials registered', noBiometric: true });
+
+        const allowCredentials = creds.map(c => ({
+            id: Buffer.from(c.credentialId, 'base64url'),
+            type: 'public-key',
+            transports: c.transports ? JSON.parse(c.transports) : ['internal']
+        }));
+
+        const rp = getWebAuthnRP(req);
+        const options = await webauthn.generateAuthenticationOptions({
+            rpID: rp.rpID,
+            allowCredentials,
+            userVerification: 'preferred'
+        });
+
+        webauthnChallenges.set(options.challenge, { userId, expiresAt: Date.now() + 5 * 60 * 1000 });
+
+        res.json({ success: true, options });
+    } catch (error) {
+        console.error('WebAuthn login-options error:', error);
+        res.status(500).json({ success: false, message: 'Failed to generate login options' });
+    }
+});
+
+// Biometric login – Step 2: Verify authentication
+app.post('/api/auth/webauthn/login-verify', async (req, res) => {
+    try {
+        const webauthn = await getWebAuthn();
+        const { assertionResponse } = req.body;
+        if (!assertionResponse) return res.status(400).json({ success: false, message: 'Missing assertion response' });
+
+        const challenge = assertionResponse.response?.clientDataJSON
+            ? JSON.parse(Buffer.from(assertionResponse.response.clientDataJSON, 'base64url').toString()).challenge
+            : null;
+
+        const stored = challenge ? webauthnChallenges.get(challenge) : null;
+        if (!stored) return res.status(400).json({ success: false, message: 'Invalid or expired challenge' });
+        webauthnChallenges.delete(challenge);
+
+        const userId = stored.userId;
+        const credIdBase64 = assertionResponse.id;
+        const [creds] = await pool.execute(
+            'SELECT * FROM webauthn_credentials WHERE userId = ? AND credentialId = ?',
+            [userId, credIdBase64]
+        );
+        if (!creds.length) return res.status(400).json({ success: false, message: 'Credential not found' });
+
+        const cred = creds[0];
+        const rp = getWebAuthnRP(req);
+        const verification = await webauthn.verifyAuthenticationResponse({
+            response: assertionResponse,
+            expectedChallenge: challenge,
+            expectedOrigin: rp.origin,
+            expectedRPID: rp.rpID,
+            credential: {
+                id: credIdBase64,
+                publicKey: Buffer.from(cred.publicKey, 'base64url'),
+                counter: Number(cred.counter),
+                transports: cred.transports ? JSON.parse(cred.transports) : ['internal']
+            }
+        });
+
+        if (!verification.verified) {
+            return res.status(401).json({ success: false, message: 'Biometric verification failed' });
+        }
+
+        // Update counter
+        await pool.execute('UPDATE webauthn_credentials SET counter = ? WHERE id = ?',
+            [verification.authenticationInfo.newCounter, cred.id]);
+
+        // Get user info and issue token
+        const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [userId]);
+        if (!users.length) return res.status(404).json({ success: false, message: 'User not found' });
+        const user = users[0];
+
+        if (user.accountStatus === 'frozen' || user.accountStatus === 'suspended' || user.accountStatus === 'closed') {
+            return res.status(403).json({ success: false, message: `Account is ${user.accountStatus}. Please contact support.` });
+        }
+
+        // Log successful login
+        await pool.execute(
+            'INSERT INTO login_history (userId, ipAddress, userAgent, loginStatus) VALUES (?, ?, ?, ?)',
+            [user.id, req.ip || null, req.get('user-agent') || null, 'success']
+        );
+        await pool.execute('UPDATE users SET lastLogin = NOW() WHERE id = ?', [user.id]);
+
+        const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '8h' });
+
+        res.json({
+            success: true,
+            token,
+            user: {
+                id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                accountNumber: user.accountNumber,
+                balance: parseFloat(user.balance),
+                isAdmin: Boolean(user.isAdmin) || user.isAdmin === 1 || user.isAdmin === '1',
+                lastLogin: user.lastLogin
+            }
+        });
+    } catch (error) {
+        console.error('WebAuthn login-verify error:', error);
+        res.status(500).json({ success: false, message: 'Biometric verification failed' });
+    }
+});
+
+// Get user's registered biometric credentials (for settings page)
+app.get('/api/auth/webauthn/credentials', requireAuth, async (req, res) => {
+    try {
+        const [creds] = await pool.execute(
+            'SELECT id, credentialId, createdAt FROM webauthn_credentials WHERE userId = ?',
+            [req.auth.id]
+        );
+        res.json({ success: true, credentials: creds });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to fetch credentials' });
+    }
+});
+
+// Delete a biometric credential
+app.delete('/api/auth/webauthn/credentials/:id', requireAuth, async (req, res) => {
+    try {
+        await pool.execute('DELETE FROM webauthn_credentials WHERE id = ? AND userId = ?', [req.params.id, req.auth.id]);
+        res.json({ success: true, message: 'Credential removed' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to remove credential' });
     }
 });
 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -309,6 +310,7 @@
         .tc-detail-card {
             background: rgba(255,255,255,0.1); border-radius: 14px;
             padding: 16px 24px; min-width: 260px; max-width: 340px;
+            -webkit-backdrop-filter: blur(8px);
             backdrop-filter: blur(8px);
             animation: tcFadeUp 0.5s ease 0.55s both;
         }
@@ -632,10 +634,16 @@
         .app-footer-links a { color: #8899aa; text-decoration: none; margin: 0 10px; font-size: 0.8rem; }
         .app-footer-links a:hover { color: #aabbcc; }
         .app-footer-copy { color: #556677; font-size: 0.75rem; margin: 0; }
+        .zelle-badge { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: linear-gradient(135deg, #6d1ed4, #8b5cf6); border-radius: 12px; margin-bottom: 16px; color: #fff; }
+        .zelle-badge .fa-bolt { font-size: 1.3rem; }
+        .zelle-badge strong { font-size: 0.95rem; }
+        .zelle-badge p { font-size: 0.8rem; opacity: 0.85; margin: 2px 0 0; }
+        .receipt-bank-value { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+        .receipt-bank-icon { width: 22px; height: 22px; border-radius: 4px; object-fit: contain; border: 1px solid #e0e0e0; }
     </style>
 </head>
 <body>
-    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo"><img src="assets/logo.png" alt="Heritage Bank"></div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="container">
         <div class="header">
             <button class="back-btn" onclick="location.href='dashboard.html'" title="Back to Dashboard"><i class="fas fa-arrow-left"></i></button>
@@ -659,6 +667,9 @@
                 <button class="tab-btn" onclick="setTransferType('account', this)">
                     <i class="fas fa-university"></i> Heritage Account
                 </button>
+                <button class="tab-btn" onclick="setTransferType('zelle', this)">
+                    <i class="fas fa-bolt"></i> Zelle®
+                </button>
                 <button class="tab-btn" onclick="setTransferType('ukbank', this)">
                     <i class="fas fa-landmark"></i> UK Bank Transfer
                 </button>
@@ -678,6 +689,22 @@
                     <label>Recipient Account Number</label>
                     <input type="text" id="toAccountNumber" placeholder="10-digit account number" maxlength="10" oninput="lookupRecipient()">
                     <small>Enter the 10-digit Heritage Bank account number</small>
+                </div>
+
+                <!-- Zelle Instant Send -->
+                <div id="zelleGroup" class="initially-hidden">
+                    <div class="zelle-badge">
+                        <i class="fas fa-bolt"></i>
+                        <div>
+                            <strong>Zelle® Instant Send</strong>
+                            <p>Send money in minutes — no fees</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Recipient Email or Phone</label>
+                        <input type="text" id="zelleRecipient" placeholder="email@example.com or (555) 123-4567" oninput="lookupZelleRecipient()">
+                        <small>Enter the email or US mobile number linked to their Zelle® account</small>
+                    </div>
                 </div>
 
                 <!-- UK Bank Transfer Fields -->
@@ -871,7 +898,7 @@
             <div class="tc-detail-row" id="tcBankRow">
                 <span class="tc-detail-label">Bank</span>
                 <span class="tc-detail-value tc-bank-val">
-                    <img id="tcBankLogo" src="" alt="" style="display:none;">
+                    <img id="tcBankLogo" src="" alt="" class="initially-hidden">
                     <span id="tcBankName"></span>
                 </span>
             </div>
@@ -901,14 +928,14 @@
                     <div class="receipt-conversion-amount" id="receiptRecvAmount">$0.00</div>
                     <div class="receipt-conversion-rate" id="receiptExRate">Rate: 1 USD = 0.79 GBP</div>
                 </div>
-                <div class="receipt-bank-logo-row" id="receiptBankLogoRow" style="display:none;">
+                <div class="receipt-bank-logo-row initially-hidden" id="receiptBankLogoRow">
                     <img id="receiptBankLogo" src="" alt="">
                     <span class="bank-name-label" id="receiptBankLabel"></span>
                 </div>
                 <div class="receipt-stamp" id="receiptStamp">SUCCESSFUL</div>
                 <hr class="receipt-divider">
                 <div class="receipt-row"><span class="rlabel">To</span><span class="rvalue" id="receiptTo">-</span></div>
-                <div class="receipt-row"><span class="rlabel">Bank</span><span class="rvalue" id="receiptBank" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;"><img id="receiptBankIcon" src="" alt="" style="width:22px;height:22px;border-radius:4px;object-fit:contain;display:none;border:1px solid #e0e0e0;"><span id="receiptBankText">Heritage Bank</span></span></div>
+                <div class="receipt-row"><span class="rlabel">Bank</span><span class="rvalue receipt-bank-value" id="receiptBank"><img id="receiptBankIcon" src="" alt="" class="receipt-bank-icon initially-hidden"><span id="receiptBankText">Heritage Bank</span></span></div>
                 <div class="receipt-row"><span class="rlabel">Date & Time</span><span class="rvalue" id="receiptDate">-</span></div>
                 <div class="receipt-row"><span class="rlabel">Reference</span><span class="rvalue" id="receiptRef">-</span></div>
                 <div class="receipt-row"><span class="rlabel">Description</span><span class="rvalue" id="receiptDesc">-</span></div>
@@ -1117,6 +1144,7 @@
             
             document.getElementById('emailGroup').style.display = type === 'email' ? 'block' : 'none';
             document.getElementById('accountGroup').style.display = type === 'account' ? 'block' : 'none';
+            document.getElementById('zelleGroup').style.display = type === 'zelle' ? 'block' : 'none';
             document.getElementById('ukBankGroup').style.display = type === 'ukbank' ? 'block' : 'none';
             document.getElementById('usBankGroup').style.display = type === 'usbank' ? 'block' : 'none';
 
@@ -1126,6 +1154,9 @@
             } else if (type === 'account') {
                 document.getElementById('toEmail').required = false;
                 document.getElementById('toAccountNumber').required = true;
+            } else if (type === 'zelle') {
+                document.getElementById('toEmail').required = false;
+                document.getElementById('toAccountNumber').required = false;
             } else if (type === 'ukbank') {
                 document.getElementById('toEmail').required = false;
                 document.getElementById('toAccountNumber').required = false;
@@ -1214,7 +1245,20 @@
                 } else {
                     preview.classList.remove('show');
                 }
+            } else if (transferType === 'zelle') {
+                const val = document.getElementById('zelleRecipient').value.trim();
+                if (val && (val.includes('@') || val.replace(/\D/g,'').length >= 10)) {
+                    preview.classList.add('show');
+                    document.getElementById('recipientName').textContent = 'Zelle® Recipient';
+                    document.getElementById('recipientInfo').textContent = val;
+                } else {
+                    preview.classList.remove('show');
+                }
             }
+        }
+
+        function lookupZelleRecipient() {
+            lookupRecipient();
         }
         
         async function loadRecentRecipients() {
@@ -1360,6 +1404,21 @@
                     body.toEmail = document.getElementById('toEmail').value;
                 } else if (transferType === 'account') {
                     body.toAccountNumber = document.getElementById('toAccountNumber').value;
+                } else if (transferType === 'zelle') {
+                    const zelleVal = document.getElementById('zelleRecipient').value.trim();
+                    if (!zelleVal) {
+                        showAlert('Please enter the recipient\'s email or phone number', 'danger');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Money';
+                        return;
+                    }
+                    // Detect email vs phone – if contains @, treat as email
+                    if (zelleVal.includes('@')) {
+                        body.toEmail = zelleVal;
+                    } else {
+                        body.toEmail = zelleVal; // Server will look up by email; phone resolves via email match
+                    }
+                    body.description = `Zelle® Instant Send | ${document.getElementById('description').value || 'Sent via Zelle'}`;
                 } else if (transferType === 'ukbank') {
                     body.toAccountNumber = document.getElementById('ukAccountNumber').value;
                     body.description = `UK Transfer to ${document.getElementById('ukRecipientName').value} at ${selectedUkBank.name} (${selectedUkBank.sortCode}) | Ref: ${document.getElementById('ukReference').value || 'N/A'}`;

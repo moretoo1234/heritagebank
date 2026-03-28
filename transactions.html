@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,33 +18,45 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #f0f2f5; font-family: 'Inter', 'Segoe UI', sans-serif; min-height: 100vh; }
         .container { max-width: 1100px; margin: 30px auto; padding: 20px; }
-        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .back-btn { width: 40px; height: 40px; border-radius: 50%; background: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .back-btn i { color: #1a472a; }
-        h1 { color: #1a472a; }
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 24px; }
+        .back-btn { width: 42px; height: 42px; border-radius: 12px; background: white; border: 1px solid rgba(26,71,42,0.08); cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s ease; }
+        .back-btn:hover { background: #1a472a; border-color: #1a472a; box-shadow: 0 4px 12px rgba(26,71,42,0.2); }
+        .back-btn:hover i { color: white; }
+        .back-btn i { color: #1a472a; transition: color 0.3s ease; }
+        h1 { color: #1a472a; font-size: 1.6rem; }
+        h1::after { content: ''; display: block; width: 40px; height: 3px; background: linear-gradient(90deg, #d4af37, transparent); border-radius: 2px; margin-top: 6px; }
 
-        .card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .card { background: white; border-radius: 18px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.04); }
         .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 15px; }
         .toolbar-left { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        .input { padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; min-width: 240px; }
-        .btn { padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
-        .btn-primary { background: #1a472a; color: white; }
-        .btn-primary:hover { background: #2d5f3f; }
-        .btn-secondary { background: #d4af37; color: #1a472a; }
-        .btn-secondary:hover { background: #c19b2e; }
+        .input { padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; min-width: 240px; background: #f8faf9; transition: all 0.3s ease; }
+        .input:focus { outline: none; border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,0.12); background: white; }
+        .btn { padding: 10px 16px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: linear-gradient(135deg, #1a472a, #2d5f3f); color: white; box-shadow: 0 2px 6px rgba(26,71,42,0.15); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,71,42,0.25); }
+        .btn-secondary { background: linear-gradient(135deg, #d4af37, #c19b2e); color: #1a472a; box-shadow: 0 2px 6px rgba(212,175,55,0.2); }
+        .btn-secondary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212,175,55,0.3); }
 
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; }
-        th { color: #1a472a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
-        td { color: #333; font-size: 14px; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        th, td { padding: 14px 12px; text-align: left; vertical-align: middle; }
+        th { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; border-bottom: 2px solid #e8edf2; background: #f8faf9; }
+        th:first-child { border-radius: 8px 0 0 0; }
+        th:last-child { border-radius: 0 8px 0 0; }
+        td { color: #333; font-size: 14px; border-bottom: 1px solid #f0f2f5; }
         .muted { color: #777; font-size: 12px; }
-        .amount.credit { color: #28a745; font-weight: 700; }
+        .amount.credit { color: #1a8d48; font-weight: 700; }
+        .amount.credit::before { content: '+'; }
         .amount.debit { color: #dc3545; font-weight: 700; }
+        .amount.debit::before { content: '-'; }
 
-        .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-        .pill.completed { background: #d4edda; color: #155724; }
-        .pill.pending { background: #fff3cd; color: #856404; }
-        .pill.failed { background: #f8d7da; color: #721c24; }
+        .pill { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
+        .pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+        .pill.completed { background: rgba(39,174,96,0.1); color: #1a8d48; }
+        .pill.completed::before { background: #27ae60; }
+        .pill.pending { background: rgba(243,156,18,0.1); color: #b8860b; }
+        .pill.pending::before { background: #f39c12; }
+        .pill.failed { background: rgba(231,76,60,0.1); color: #c0392b; }
+        .pill.failed::before { background: #e74c3c; }
 
         /* Global word-wrap */
         h1, h2, h3, h4, p, span, td, th { overflow-wrap: break-word; word-wrap: break-word; }
@@ -52,13 +65,14 @@
         .empty i { font-size: 42px; color: #ddd; display: block; margin-bottom: 10px; }
 
         /* Clickable rows */
-        tbody tr { cursor: pointer; transition: background 0.2s; }
-        tbody tr:hover { background: #f0f2f5; }
+        tbody tr { cursor: pointer; transition: all 0.2s ease; }
+        tbody tr:hover { background: linear-gradient(90deg, rgba(26,71,42,0.03), rgba(212,175,55,0.03)); }
+        tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 #d4af37; }
 
         /* Transaction Detail Modal */
-        .txn-modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center; }
+        .txn-modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); z-index:10000; justify-content:center; align-items:center; }
         .txn-modal-overlay.active { display:flex; }
-        .txn-modal { background:white; border-radius:16px; width:90%; max-width:500px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation: txnSlideUp 0.3s ease; }
+        .txn-modal { background:white; border-radius:20px; width:90%; max-width:500px; max-height:90vh; overflow-y:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); animation: txnSlideUp 0.35s ease; }
         @keyframes txnSlideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
         .txn-modal-header { display:flex; justify-content:space-between; align-items:center; padding:20px 25px; border-bottom: 1px solid #e2e8f0; }
         .txn-modal-header h3 { color:#1a472a; font-size:1.1rem; display:flex; align-items:center; gap:10px; }
@@ -124,7 +138,7 @@
     </style>
 </head>
 <body>
-    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo"><img src="assets/logo.png" alt="Heritage Bank"></div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="container">
         <div class="header">
             <button class="back-btn" onclick="location.href='dashboard.html'" title="Back to Dashboard"><i class="fas fa-arrow-left"></i></button>

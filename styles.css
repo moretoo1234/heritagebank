@@ -29,6 +29,7 @@ body {
     color: var(--dark-text);
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -945,47 +946,59 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 }
 
 /* Ensure all card content sits above the overlay */
-.bento-card[style*="background-image"] .service-icon,
-.bento-card[style*="background-image"] h3,
-.bento-card[style*="background-image"] p,
-.bento-card[style*="background-image"] .service-link,
-.bento-card[style*="background-image"] .bento-glow {
+.bento-card.has-bg .service-icon,
+.bento-card.has-bg h3,
+.bento-card.has-bg p,
+.bento-card.has-bg .service-link,
+.bento-card.has-bg .bento-glow {
     position: relative;
     z-index: 1;
 }
 
-.bento-card[style*="background-image"] h3 {
+.bento-card.has-bg h3 {
     color: #fff;
     text-shadow: 0 2px 8px rgba(0,0,0,0.4);
     font-size: 1.25rem;
 }
 
-.bento-card[style*="background-image"] p {
+.bento-card.has-bg p {
     color: rgba(255,255,255,0.85);
     text-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
-.bento-card[style*="background-image"] .service-link {
+.bento-card.has-bg .service-link {
     color: var(--gold);
 }
 
-.bento-card[style*="background-image"] .service-icon {
+.bento-card.has-bg .service-icon {
     background: rgba(212,175,55,0.18);
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
 }
 
-.bento-card[style*="background-image"] .service-icon i {
+.bento-card.has-bg .service-icon i {
     color: var(--gold);
 }
 
-.bento-card[style*="background-image"] {
+.bento-card.has-bg {
     border-color: rgba(255,255,255,0.08);
 }
 
-.bento-card[style*="background-image"]:hover {
+.bento-card.has-bg:hover {
     border-color: rgba(212,175,55,0.2);
     box-shadow: 0 20px 50px rgba(0,0,0,0.3);
 }
+
+/* Bento card background images */
+.bento-bg-checking { background-image: url('https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&q=80'); }
+.bento-bg-savings { background-image: url('https://images.unsplash.com/photo-1579621970795-87facc2f976d?w=600&q=80'); }
+.bento-bg-mortgages { background-image: url('https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&q=80'); }
+.bento-bg-investments { background-image: url('https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=600&q=80'); }
+.bento-bg-auto { background-image: url('https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&q=80'); }
+.bento-bg-business { background-image: url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&q=80'); }
+.bento-bg-ira { background-image: url('https://images.unsplash.com/photo-1633158829585-23ba8f7c8caf?w=600&q=80'); }
+.bento-bg-retirement { background-image: url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&q=80'); }
+.bento-bg-education { background-image: url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=600&q=80'); }
 
 .bento-glow {
     position: absolute;
@@ -1093,7 +1106,7 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 .bento-wide-item h3 { color: #fff; }
 .bento-wide-item p { color: rgba(255,255,255,0.75); }
 .bento-wide-item .service-link { color: var(--gold); }
-.bento-wide-item .service-icon { background: rgba(212,175,55,0.18); backdrop-filter: blur(8px); }
+.bento-wide-item .service-icon { background: rgba(212,175,55,0.18); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .bento-wide-item .service-icon i { color: var(--gold); }
 
 /* Remove padding/bg from wide parent since items handle their own */
@@ -2248,6 +2261,10 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 .cards-section-heading {
     color: #1a472a;
     margin-top: 0;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 .cards-loading {
     color: #999;
@@ -2256,34 +2273,74 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 }
 .cards-apply-grid {
     display: grid;
-    gap: 20px;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+@media (max-width: 700px) {
+    .cards-apply-grid { grid-template-columns: 1fr; }
 }
 .card-option-box {
-    background: #f5f7fa;
-    padding: 18px;
-    border-radius: 10px;
+    background: linear-gradient(135deg, #f8faf9 0%, #f0f4f1 100%);
+    padding: 28px;
+    border-radius: 16px;
+    border: 1.5px solid rgba(26, 71, 42, 0.08);
+    transition: all 0.35s ease;
+    position: relative;
+    overflow: hidden;
+}
+.card-option-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #1a472a, #d4af37);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.card-option-box:hover {
+    border-color: rgba(26, 71, 42, 0.15);
+    box-shadow: 0 8px 25px rgba(26, 71, 42, 0.1);
+    transform: translateY(-3px);
+}
+.card-option-box:hover::before {
+    opacity: 1;
 }
 .card-option-title {
-    margin: 0 0 8px 0;
+    margin: 0 0 10px 0;
     color: #1a472a;
+    font-size: 1.1rem;
+}
+.card-option-title i {
+    color: #d4af37;
+    margin-right: 4px;
 }
 .card-option-desc {
-    margin: 0 0 12px 0;
-    color: #666;
+    margin: 0 0 18px 0;
+    color: #64748b;
     font-size: 14px;
+    line-height: 1.6;
 }
 .btn-full-width {
     width: 100%;
 }
 .btn-card-submit {
-    padding: 12px;
-    background: #d4af37;
-    color: #1a472a;
+    padding: 14px;
+    background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%);
+    color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
     width: 100%;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(26, 71, 42, 0.2);
+}
+.btn-card-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(26, 71, 42, 0.3);
 }
 
 /* Statements Page */
@@ -4743,3 +4800,47 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
         height: 32px;
     }
 }
+
+/* Footer newsletter signup */
+.newsletter-signup { margin-top: 16px; }
+.newsletter-signup h4 { margin-bottom: 8px; }
+.newsletter-signup-form { display: flex; gap: 6px; }
+.newsletter-signup-form input {
+    flex: 1; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px; background: rgba(255,255,255,0.1); color: #fff; font-size: 0.85rem;
+}
+.newsletter-signup-form button {
+    padding: 8px 14px; background: var(--gold, #d4af37); color: #1a472a;
+    border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;
+}
+
+/* About page CTA buttons */
+.about-cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.about-cta-btn { padding: 14px 28px; border-radius: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.about-cta-btn.gold { background: var(--gold); color: #1a472a; }
+
+/* Admin sidebar footer */
+.admin-sidebar-footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.08); }
+.admin-sidebar-footer .logout-btn { width: 100%; justify-content: center; }
+.admin-divider { margin: 16px 0; border-color: var(--border-color); }
+
+/* Investment page utilities */
+.invest-icon-bonds { background: #d1fae5; color: #065f46; }
+.invest-icon-index { background: #fef3c7; color: #92400e; }
+.invest-icon-cd { background: #dbeafe; color: #1e40af; }
+.invest-icon-growth { background: #fee2e2; color: #991b1b; }
+.est-return-val { color: #16a34a; }
+.modal-btn-full { flex: 1; }
+.icon-gold { color: #d4af37; }
+.icon-map-signs { color: #d4af37; }
+.admin-section-heading { margin-bottom: 12px; }
+
+/* Auth page select (signup gender) */
+.auth-select {
+    width: 100%; padding: 12px 16px; border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px; background: rgba(255,255,255,0.06); color: #fff;
+    font-size: 0.95rem; outline: none; transition: border-color 0.3s;
+}
+.auth-select-placeholder { color: #999; }
+.resize-vertical { resize: vertical; }
+.biometric-creds-spacing { margin-top: 8px; }

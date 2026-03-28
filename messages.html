@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,6 +34,8 @@
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .header h1 { color: #1a472a; }
+        .header h1 i { color: #d4af37; margin-right: 8px; }
+        .header h1::after { content: ''; display: block; width: 40px; height: 3px; background: linear-gradient(90deg, #d4af37, transparent); border-radius: 2px; margin-top: 6px; }
         body.dark-mode .header h1 { color: #d4af37; }
         
         .back-link { color: #d4af37; text-decoration: none; cursor: pointer; font-size: 14px; }
@@ -47,11 +50,12 @@
         
         .messages-sidebar {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            border: 1px solid rgba(0,0,0,0.04);
         }
         body.dark-mode .messages-sidebar { background: #1f2b47; }
         
@@ -74,8 +78,9 @@
         body.dark-mode .tab-btn { color: #aaa; }
         .tab-btn.active {
             color: #1a472a;
-            border-bottom: 2px solid #1a472a;
+            border-bottom: 3px solid #d4af37;
             font-weight: 600;
+            background: rgba(212,175,55,0.05);
         }
         body.dark-mode .tab-btn.active { color: #d4af37; border-color: #d4af37; }
         
@@ -85,17 +90,18 @@
         }
         
         .message-item {
-            padding: 15px 20px;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f2f5;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.25s ease;
         }
         body.dark-mode .message-item { border-color: #333; }
-        .message-item:hover { background: #f9f9f9; }
+        .message-item:hover { background: #f0f7f2; transform: translateX(3px); }
         body.dark-mode .message-item:hover { background: #2a3a5c; }
-        .message-item.active { background: #f0f7f2; border-left: 3px solid #1a472a; }
+        .message-item.active { background: linear-gradient(90deg, #f0f7f2, white); border-left: 4px solid #1a472a; }
         body.dark-mode .message-item.active { background: #2a3a5c; border-color: #d4af37; }
-        .message-item.unread { background: #fffbe6; }
+        .message-item.unread { background: linear-gradient(90deg, #fff9e6, #fffcf0); border-left: 4px solid #d4af37; }
+        .message-item.unread h4 { font-weight: 700; }
         body.dark-mode .message-item.unread { background: #3a3a2c; }
         
         .message-item h4 { color: #333; font-size: 14px; margin-bottom: 5px; }
@@ -106,10 +112,11 @@
         
         .message-view {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
             display: flex;
             flex-direction: column;
+            border: 1px solid rgba(0,0,0,0.04);
         }
         body.dark-mode .message-view { background: #1f2b47; }
         
@@ -171,19 +178,21 @@
         
         .compose-btn {
             margin: 15px;
-            padding: 12px;
-            background: #d4af37;
+            padding: 14px;
+            background: linear-gradient(135deg, #d4af37, #c19b2e);
             color: #1a472a;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
             font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            box-shadow: 0 3px 10px rgba(212,175,55,0.25);
+            transition: all 0.3s ease;
         }
-        .compose-btn:hover { background: #c9a431; }
+        .compose-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(212,175,55,0.35); }
         
         .compose-modal {
             display: none;
@@ -193,6 +202,8 @@
             right: 0;
             bottom: 0;
             background: rgba(0,0,0,0.5);
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -202,10 +213,13 @@
         .compose-form {
             background: white;
             padding: 30px;
-            border-radius: 12px;
+            border-radius: 18px;
             width: 500px;
             max-width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            animation: composeSlide 0.3s ease;
         }
+        @keyframes composeSlide { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
         body.dark-mode .compose-form { background: #1f2b47; }
         
         .compose-form h3 { color: #1a472a; margin-bottom: 20px; }
@@ -217,9 +231,17 @@
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 12px 15px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
             font-size: 14px;
+            background: #f8faf9;
+            transition: all 0.3s ease;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 0 3px rgba(212,175,55,0.12);
+            background: white;
         }
         body.dark-mode .form-group input, body.dark-mode .form-group select, body.dark-mode .form-group textarea {
             background: #2a3a5c; border-color: #444; color: #eee;
@@ -232,8 +254,9 @@
             justify-content: center;
             height: 100%;
             color: #94a3b8;
+            padding: 40px 20px;
         }
-        .empty-state i { font-size: 4rem; margin-bottom: 20px; opacity: 0.3; }
+        .empty-state i { font-size: 4rem; margin-bottom: 20px; color: #d4af37; opacity: 0.4; }
         
         .logout-btn {
             background: #d4af37;
@@ -283,7 +306,7 @@
     </style>
 </head>
 <body>
-    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo">H</div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-logo"><img src="assets/logo.png" alt="Heritage Bank"></div><div class="loader-spinner"></div><div class="loader-text">Loading...</div></div></div>
     <div class="dashboard">
         <nav class="sidebar">
             <div class="sidebar-logo"><i class="fas fa-landmark"></i> Heritage Bank</div>
