@@ -1,0 +1,17 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    # Runs every 14 minutes, 24/7
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Heritage Bank
+        run: |
+          curl -sf --max-time 30 "${{ secrets.RENDER_URL }}/api/build-info" \
+            && echo "✅ Service is awake" \
+            || echo "⚠️ Ping failed or service is waking up"
