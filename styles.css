@@ -2963,7 +2963,7 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 .phone-screen {
     width: 100%;
     height: 100%;
-    background: linear-gradient(180deg, #0a1a10 0%, #0f2b1a 40%, #112e1c 100%);
+    background: linear-gradient(180deg, #f7f8fa 0%, #f0f2f5 50%, #eef0f4 100%);
     border-radius: 36px;
     padding: 14px 16px 12px;
     display: flex;
@@ -2979,9 +2979,9 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
     padding: 2px 4px;
     margin-bottom: 16px;
 }
-.status-time { color: white; font-size: 0.68rem; font-weight: 700; min-width: 36px; }
+.status-time { color: #1e293b; font-size: 0.68rem; font-weight: 700; min-width: 36px; }
 .status-island { width: 64px; }
-.status-icons { display: flex; gap: 4px; color: white; font-size: 0.5rem; min-width: 36px; justify-content: flex-end; }
+.status-icons { display: flex; gap: 4px; color: #1e293b; font-size: 0.5rem; min-width: 36px; justify-content: flex-end; }
 
 /* App Header with Avatar */
 .phone-app-header {
@@ -2993,35 +2993,36 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 }
 .phone-avatar {
     width: 30px; height: 30px; border-radius: 50%;
-    background: linear-gradient(135deg, #d4af37, #c99c2a);
-    color: #0f2b1a; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1a472a, #2d6b45);
+    color: white; display: flex; align-items: center; justify-content: center;
     font-size: 0.6rem; font-weight: 800; flex-shrink: 0;
 }
-.phone-greeting { color: rgba(255,255,255,0.4); font-size: 0.55rem; line-height: 1.2; }
-.phone-user-name { color: white; font-size: 0.75rem; font-weight: 700; }
-.phone-bell { margin-left: auto; color: rgba(255,255,255,0.35); font-size: 0.78rem; }
+.phone-greeting { color: #94a3b8; font-size: 0.55rem; line-height: 1.2; }
+.phone-user-name { color: #1e293b; font-size: 0.75rem; font-weight: 700; }
+.phone-bell { margin-left: auto; color: #94a3b8; font-size: 0.78rem; }
 
 /* Balance Card */
 .phone-balance-card {
-    background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(26,71,42,0.3));
-    border: 1px solid rgba(212,175,55,0.12);
+    background: linear-gradient(135deg, #1a472a, #245a36);
+    border: none;
     border-radius: 14px;
     padding: 14px 16px;
     margin-bottom: 14px;
     text-align: center;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 16px rgba(26,71,42,0.25);
 }
 .phone-balance-card::before {
     content: '';
     position: absolute;
     top: -30%; right: -20%;
     width: 80px; height: 80px;
-    background: radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
     border-radius: 50%;
 }
 .phone-balance-label {
-    color: rgba(255,255,255,0.4); font-size: 0.58rem;
+    color: rgba(255,255,255,0.65); font-size: 0.58rem;
     text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;
     position: relative;
 }
@@ -3030,7 +3031,7 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
     letter-spacing: -0.02em; position: relative;
 }
 .phone-balance-change {
-    color: #66bb6a; font-size: 0.55rem; margin-top: 2px;
+    color: rgba(255,255,255,0.7); font-size: 0.55rem; margin-top: 2px;
     display: flex; align-items: center; justify-content: center; gap: 3px;
     position: relative;
 }
@@ -3042,17 +3043,18 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 .phone-actions { display: flex; gap: 8px; margin-bottom: 12px; justify-content: center; }
 .phone-actions span {
     display: flex; flex-direction: column; align-items: center;
-    gap: 5px; color: rgba(255,255,255,0.55); font-size: 0.55rem;
+    gap: 5px; color: #64748b; font-size: 0.55rem;
 }
 .phone-actions span i {
-    width: 36px; height: 36px; background: rgba(255,255,255,0.05);
+    width: 36px; height: 36px; background: white;
     border-radius: 10px; display: flex; align-items: center; justify-content: center;
-    font-size: 0.85rem; color: var(--gold);
+    font-size: 0.85rem; color: #1a472a;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 /* Section Title */
 .phone-section-title {
-    color: rgba(255,255,255,0.35); font-size: 0.58rem; font-weight: 600;
+    color: #94a3b8; font-size: 0.58rem; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.8px;
     margin-bottom: 6px; padding: 0 2px;
 }
@@ -3063,36 +3065,37 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 }
 .phone-txn {
     display: flex; align-items: center; gap: 8px;
-    padding: 7px 8px; background: rgba(255,255,255,0.035);
+    padding: 7px 8px; background: white;
     border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 .phone-txn-icon {
     width: 28px; height: 28px; border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
     font-size: 0.65rem; flex-shrink: 0;
 }
-.phone-txn-icon-gold { background: rgba(212,175,55,0.1); color: #d4af37; }
-.phone-txn-icon-green { background: rgba(76,175,80,0.1); color: #4caf50; }
-.phone-txn-icon-blue { background: rgba(59,130,246,0.1); color: #3b82f6; }
+.phone-txn-icon-gold { background: #fef9ee; color: #d4af37; }
+.phone-txn-icon-green { background: #ecfdf5; color: #059669; }
+.phone-txn-icon-blue { background: #eff6ff; color: #3b82f6; }
 .phone-txn-info { flex: 1; display: flex; flex-direction: column; }
-.phone-txn-name { color: rgba(255,255,255,0.85); font-size: 0.65rem; font-weight: 600; }
-.phone-txn-date { color: rgba(255,255,255,0.28); font-size: 0.52rem; }
+.phone-txn-name { color: #1e293b; font-size: 0.65rem; font-weight: 600; }
+.phone-txn-date { color: #94a3b8; font-size: 0.52rem; }
 .phone-txn-amount { font-size: 0.65rem; font-weight: 700; }
-.phone-txn-debit { color: #ef5350; }
-.phone-txn-credit { color: #66bb6a; }
+.phone-txn-debit { color: #dc2626; }
+.phone-txn-credit { color: #059669; }
 
 /* Bottom Nav */
 .phone-bottom-nav {
     display: flex; justify-content: space-around;
     padding-top: 8px; margin-top: auto;
-    border-top: 1px solid rgba(255,255,255,0.05);
+    border-top: 1px solid #e2e8f0;
 }
 .phone-nav-item {
     display: flex; flex-direction: column; align-items: center;
-    gap: 2px; color: rgba(255,255,255,0.25); font-size: 0.45rem;
+    gap: 2px; color: #cbd5e1; font-size: 0.45rem;
 }
 .phone-nav-item i { font-size: 0.7rem; }
-.phone-nav-item.active { color: var(--gold); }
+.phone-nav-item.active { color: #1a472a; }
 
 /* ===== Trust Partners Bar ===== */
 .trust-partners {
