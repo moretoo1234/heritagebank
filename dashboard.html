@@ -115,8 +115,8 @@
                     <div class="metric-icon status"><i class="fas fa-shield-alt"></i></div>
                     <div class="metric-info">
                         <span class="metric-label">Account Status</span>
-                        <h2 class="metric-value status-active">Active</h2>
-                        <span class="metric-sub">All systems normal</span>
+                        <h2 class="metric-value status-active" id="accountStatus">Active</h2>
+                        <span class="metric-sub" id="accountStatusSub">All systems normal</span>
                     </div>
                 </div>
             </div>
@@ -152,10 +152,6 @@
                     <div class="info-item">
                         <label>Account Type</label>
                         <strong id="accType">Savings</strong>
-                    </div>
-                    <div class="info-item">
-                        <label>Account Status</label>
-                        <strong class="status-active"><i class="fas fa-check-circle"></i> Active</strong>
                     </div>
                 </div>
             </div>
@@ -335,6 +331,19 @@
                     document.getElementById('accountType').textContent = (data.user.accountType || 'Savings') + ' Account';
                     document.getElementById('accType').textContent = data.user.accountType || 'Savings';
                     
+                    // Update account status dynamically from admin settings
+                    const status = (data.user.accountStatus || 'active').toLowerCase();
+                    const statusEl = document.getElementById('accountStatus');
+                    const statusSubEl = document.getElementById('accountStatusSub');
+                    if (statusEl) {
+                        const statusLabels = { active: 'Active', frozen: 'Frozen', suspended: 'Suspended', closed: 'Closed' };
+                        const statusSubs = { active: 'All systems normal', frozen: 'Account temporarily frozen', suspended: 'Account suspended', closed: 'Account closed' };
+                        const statusClasses = { active: 'status-active', frozen: 'status-frozen', suspended: 'status-suspended', closed: 'status-closed' };
+                        statusEl.textContent = statusLabels[status] || status.charAt(0).toUpperCase() + status.slice(1);
+                        statusEl.className = 'metric-value ' + (statusClasses[status] || 'status-active');
+                        if (statusSubEl) statusSubEl.textContent = statusSubs[status] || '';
+                    }
+                    
                     // Load savings goals from API to calculate progress
                     const balance = data.user.balance || 0;
                     loadSavingsGoalProgress(balance, token);
@@ -362,8 +371,14 @@
                 if (data.success) {
                     const unread = data.unreadCount || 0;
                     const badge = document.getElementById('notifBadge');
+                    const notifBtn = document.getElementById('notifBtn');
                     badge.textContent = unread;
                     badge.style.display = unread > 0 ? 'flex' : 'none';
+                    // Animate bell when there are unread notifications
+                    if (notifBtn) {
+                        if (unread > 0) notifBtn.classList.add('has-unread');
+                        else notifBtn.classList.remove('has-unread');
+                    }
                     const list = document.getElementById('notifList');
                     if (data.notifications && data.notifications.length > 0) {
                         list.innerHTML = data.notifications.map(n => `
@@ -435,6 +450,8 @@
                 });
                 document.getElementById('notifBadge').textContent = '0';
                 document.getElementById('notifBadge').style.display = 'none';
+                var notifBtn = document.getElementById('notifBtn');
+                if (notifBtn) notifBtn.classList.remove('has-unread');
                 document.querySelectorAll('#notifList > div').forEach(d => d.style.background = '');
             } catch (e) { console.error(e); }
         }
@@ -615,8 +632,9 @@
                 if (fromId === me && toId !== me) {
                     const destCode = getCountryCode(tx);
                     const destName = getCountryName(tx);
-                    if (destCode !== 'US' && destName) return `Sent to ${toName || destName} — ${destName}`;
-                    return `Sent to ${toName || 'another account'}`;
+                    const toAcct = tx.toAccountNumber ? ` (...${String(tx.toAccountNumber).slice(-4)})` : '';
+                    if (destCode !== 'US' && destName) return `Sent to ${toName || destName}${toAcct} — ${destName}`;
+                    return `Sent to ${toName || 'another account'}${toAcct}`;
                 }
             }
 

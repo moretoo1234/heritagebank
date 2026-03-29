@@ -1,4 +1,4 @@
-ï»¿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -705,14 +705,11 @@
             <div id="alertBox"></div>
             
             <div class="transfer-tabs">
-                <button class="tab-btn active" onclick="setTransferType('email', this)">
-                    <i class="fas fa-envelope"></i> By Email
-                </button>
-                <button class="tab-btn" onclick="setTransferType('account', this)">
+                <button class="tab-btn active" onclick="setTransferType('account', this)">
                     <i class="fas fa-university"></i> Heritage Account
                 </button>
                 <button class="tab-btn" onclick="setTransferType('zelle', this)">
-                    <i class="fas fa-bolt"></i> ZelleÂ®
+                    <i class="fas fa-bolt"></i> Zelle®
                 </button>
                 <button class="tab-btn" onclick="setTransferType('ukbank', this)">
                     <i class="fas fa-landmark"></i> UK Bank Transfer
@@ -723,13 +720,7 @@
             </div>
             
             <form id="transferForm">
-                <div class="form-group" id="emailGroup">
-                    <label>Recipient Email</label>
-                    <input type="email" id="toEmail" placeholder="recipient@email.com" oninput="lookupRecipient()">
-                    <small>Enter the email address of the Heritage Bank user</small>
-                </div>
-                
-                <div class="form-group initially-hidden" id="accountGroup">
+                <div class="form-group" id="accountGroup">
                     <label>Recipient Account Number</label>
                     <input type="text" id="toAccountNumber" placeholder="10-digit account number" maxlength="10" oninput="lookupRecipient()">
                     <small>Enter the 10-digit Heritage Bank account number</small>
@@ -740,14 +731,14 @@
                     <div class="zelle-badge">
                         <i class="fas fa-bolt"></i>
                         <div>
-                            <strong>ZelleÂ® Instant Send</strong>
-                            <p>Send money in minutes â€” no fees</p>
+                            <strong>Zelle® Instant Send</strong>
+                            <p>Send money in minutes — no fees</p>
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Recipient Email or Phone</label>
                         <input type="text" id="zelleRecipient" placeholder="email@example.com or (555) 123-4567" oninput="lookupZelleRecipient()">
-                        <small>Enter the email or US mobile number linked to their ZelleÂ® account</small>
+                        <small>Enter the email or US mobile number linked to their Zelle® account</small>
                     </div>
                 </div>
 
@@ -855,7 +846,7 @@
                             <span class="cur-label">US Dollar</span>
                         </div>
                         <div class="currency-option" onclick="setRecipientCurrency('GBP', this)">
-                            <span class="cur-symbol">ï¿½</span>
+                            <span class="cur-symbol">?</span>
                             GBP
                             <span class="cur-label">British Pound</span>
                         </div>
@@ -875,7 +866,7 @@
                     <div class="conversion-arrow"><i class="fas fa-arrow-down"></i></div>
                     <div class="conv-receive">
                         <div><div class="conv-label">Recipient Receives</div></div>
-                        <div class="conv-amount" id="convReceiveAmount">ï¿½0.00</div>
+                        <div class="conv-amount" id="convReceiveAmount">?0.00</div>
                     </div>
                     <div class="conv-rate" id="convRate">
                         <i class="fas fa-chart-line"></i> Exchange rate: 1 USD = 0.79 GBP
@@ -1011,6 +1002,7 @@
     </div>
     
     <script>
+        if(localStorage.getItem('darkMode')==='true')document.body.classList.add('dark-mode');
         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:3001' 
             : window.location.origin;
@@ -1022,7 +1014,7 @@
 
         let userId = null;
         let currentBalance = 0;
-        let transferType = 'email';
+        let transferType = 'account';
         let recentRecipients = [];
         let selectedUkBank = null;
         let selectedUsBank = null;
@@ -1035,7 +1027,7 @@
             GBP: 0.79,
             EUR: 0.92
         };
-        const CURRENCY_SYMBOLS = { GBP: 'ï¿½', USD: '$', EUR: '?' };
+        const CURRENCY_SYMBOLS = { GBP: '?', USD: '$', EUR: '?' };
         const CURRENCY_NAMES = { GBP: 'British Pound', USD: 'US Dollar', EUR: 'Euro' };
 
         function setRecipientCurrency(cur, el) {
@@ -1213,27 +1205,35 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             if (btn) btn.closest('.tab-btn').classList.add('active');
             
-            document.getElementById('emailGroup').style.display = type === 'email' ? 'block' : 'none';
             document.getElementById('accountGroup').style.display = type === 'account' ? 'block' : 'none';
             document.getElementById('zelleGroup').style.display = type === 'zelle' ? 'block' : 'none';
             document.getElementById('ukBankGroup').style.display = type === 'ukbank' ? 'block' : 'none';
             document.getElementById('usBankGroup').style.display = type === 'usbank' ? 'block' : 'none';
 
-            if (type === 'email') {
-                document.getElementById('toEmail').required = true;
-                document.getElementById('toAccountNumber').required = false;
-            } else if (type === 'account') {
-                document.getElementById('toEmail').required = false;
+            // Auto-select currency based on destination country
+            const currencySelector = document.querySelector('.currency-selector');
+            const currencyGroup = currencySelector ? currencySelector.closest('.form-group') : null;
+            if (type === 'zelle' || type === 'usbank' || type === 'account') {
+                // Domestic USD-only transfers — hide currency selector
+                if (currencyGroup) currencyGroup.style.display = 'none';
+                setRecipientCurrency('USD', document.querySelector('.currency-option'));
+            } else if (type === 'ukbank') {
+                // UK transfers — auto-select GBP
+                if (currencyGroup) currencyGroup.style.display = '';
+                const gbpOption = document.querySelectorAll('.currency-option')[1];
+                if (gbpOption) setRecipientCurrency('GBP', gbpOption);
+            } else {
+                if (currencyGroup) currencyGroup.style.display = '';
+            }
+
+            if (type === 'account') {
                 document.getElementById('toAccountNumber').required = true;
             } else if (type === 'zelle') {
-                document.getElementById('toEmail').required = false;
                 document.getElementById('toAccountNumber').required = false;
             } else if (type === 'ukbank') {
-                document.getElementById('toEmail').required = false;
                 document.getElementById('toAccountNumber').required = false;
                 renderBankSelector();
             } else if (type === 'usbank') {
-                document.getElementById('toEmail').required = false;
                 document.getElementById('toAccountNumber').required = false;
                 renderUsBankSelector();
             }
@@ -1288,16 +1288,7 @@
         
         async function lookupRecipient() {
             const preview = document.getElementById('recipientPreview');
-            if (transferType === 'email') {
-                const email = document.getElementById('toEmail').value;
-                if (email && email.includes('@')) {
-                    preview.classList.add('show');
-                    document.getElementById('recipientName').textContent = 'Heritage Bank User';
-                    document.getElementById('recipientInfo').textContent = email;
-                } else {
-                    preview.classList.remove('show');
-                }
-            } else if (transferType === 'account') {
+            if (transferType === 'account') {
                 const account = document.getElementById('toAccountNumber').value;
                 if (account && account.length >= 8) {
                     preview.classList.add('show');
@@ -1320,7 +1311,7 @@
                 const val = document.getElementById('zelleRecipient').value.trim();
                 if (val && (val.includes('@') || val.replace(/\D/g,'').length >= 10)) {
                     preview.classList.add('show');
-                    document.getElementById('recipientName').textContent = 'ZelleÂ® Recipient';
+                    document.getElementById('recipientName').textContent = 'Zelle® Recipient';
                     document.getElementById('recipientInfo').textContent = val;
                 } else {
                     preview.classList.remove('show');
@@ -1361,12 +1352,12 @@
         }
         
         function selectRecipient(email, accountNumber) {
-            if (email) {
-                setTransferType('email');
-                document.getElementById('toEmail').value = email;
-            } else {
+            if (accountNumber) {
                 setTransferType('account');
                 document.getElementById('toAccountNumber').value = accountNumber;
+            } else if (email) {
+                // Fallback: set account tab and let user enter account number
+                setTransferType('account');
             }
             lookupRecipient();
             document.getElementById('amount').focus();
@@ -1484,9 +1475,7 @@
                 const exchangeRate = EXCHANGE_RATES[recipientCurrency];
                 const recvSym = CURRENCY_SYMBOLS[recipientCurrency];
 
-                if (transferType === 'email') {
-                    body.toEmail = document.getElementById('toEmail').value;
-                } else if (transferType === 'account') {
+                if (transferType === 'account') {
                     body.toAccountNumber = document.getElementById('toAccountNumber').value;
                 } else if (transferType === 'zelle') {
                     const zelleVal = document.getElementById('zelleRecipient').value.trim();
@@ -1496,13 +1485,13 @@
                         submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Money';
                         return;
                     }
-                    // Detect email vs phone â€“ if contains @, treat as email
+                    // Detect email vs phone – if contains @, treat as email
                     if (zelleVal.includes('@')) {
                         body.toEmail = zelleVal;
                     } else {
                         body.toEmail = zelleVal; // Server will look up by email; phone resolves via email match
                     }
-                    body.description = `ZelleÂ® Instant Send | ${document.getElementById('description').value || 'Sent via Zelle'}`;
+                    body.description = `Zelle® Instant Send | ${document.getElementById('description').value || 'Sent via Zelle'}`;
                 } else if (transferType === 'ukbank') {
                     body.toAccountNumber = document.getElementById('ukAccountNumber').value;
                     body.description = `UK Transfer to ${document.getElementById('ukRecipientName').value} at ${selectedUkBank.name} (${selectedUkBank.sortCode}) | Ref: ${document.getElementById('ukReference').value || 'N/A'}`;
@@ -1550,8 +1539,6 @@
                         acctDisplay = document.getElementById('ukAccountNumber').value;
                     } else if (transferType === 'account') {
                         acctDisplay = document.getElementById('toAccountNumber').value;
-                    } else if (transferType === 'email') {
-                        acctDisplay = document.getElementById('toEmail').value;
                     }
 
                     showReceiptModal({
@@ -1850,13 +1837,6 @@
                 });
                 setTransferType('account');
                 document.getElementById('toAccountNumber').value = accountNumber;
-            } else if (email) {
-                const tabs = document.querySelectorAll('.tab-btn');
-                tabs.forEach(btn => {
-                    if (btn.textContent.includes('Email')) btn.click();
-                });
-                setTransferType('email');
-                document.getElementById('toEmail').value = email;
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }

@@ -393,10 +393,10 @@
                     <img src="./assets/logo.png" alt="Heritage Bank" class="footer-logo">
                     <p>Building financial legacies since 1999.</p>
                     <div class="social-links">
-                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
-                        <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" title="Instagram"><i class="fab fa-instagram"></i></a>
                     </div>
                 </div>
                 <div class="footer-section">
@@ -432,6 +432,7 @@
 
     <script src="script.js"></script>
     <script>
+        if(localStorage.getItem('darkMode')==='true')document.body.classList.add('dark-mode');
         // API_URL is already defined in script.js
         let userId = null;
         let token = localStorage.getItem('token');
@@ -439,7 +440,7 @@
         // Check authentication on page load
         async function checkAuth() {
             if (!token) {
-                showAuthNotice();
+                window.location.href = 'signin.html';
                 return;
             }
 

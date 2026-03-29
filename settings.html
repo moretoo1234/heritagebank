@@ -569,6 +569,9 @@
         .readonly-hint { color: #94a3b8; font-size: 0.82rem; font-weight: 400; }
         .input-readonly { background: #f0f2f5 !important; cursor: not-allowed; color: #64748b !important; }
         body.dark-mode .input-readonly { background: #16213e !important; }
+        .input-with-action { display: flex; gap: 8px; align-items: center; }
+        .input-with-action input { flex: 1; }
+        .input-with-action .btn { white-space: nowrap; padding: 8px 14px; font-size: 0.82rem; }
 
         /* === Verification Badge === */
         .verification-badge {
@@ -931,13 +934,19 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Email Address <span class="readonly-hint">(Read-only)</span></label>
-                        <input type="email" id="email" readonly class="input-readonly" title="Email Address">
+                        <label>Email Address</label>
+                        <div class="input-with-action">
+                            <input type="email" id="email" required title="Email Address">
+                            <button type="button" class="btn btn-sm btn-outline" id="verifyEmailBtn" onclick="sendEmailVerification()" title="Verify your email"><i class="fas fa-envelope-open"></i> Verify</button>
+                        </div>
                         <span id="emailVerificationBadge" class="verification-badge"></span>
                     </div>
                     <div class="form-group">
                         <label>Phone Number <span class="required-mark">*</span></label>
-                        <input type="tel" id="phone" required title="Phone Number">
+                        <div class="input-with-action">
+                            <input type="tel" id="phone" required title="Phone Number">
+                            <button type="button" class="btn btn-sm btn-outline" id="verifyPhoneBtn" onclick="sendPhoneVerification()" title="Verify your phone"><i class="fas fa-mobile-alt"></i> Verify</button>
+                        </div>
                         <span id="phoneVerificationBadge" class="verification-badge"></span>
                     </div>
                     <div class="form-group">

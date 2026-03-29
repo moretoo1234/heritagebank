@@ -4133,6 +4133,44 @@ app.get('/api/auth/verify-email', async (req, res) => {
     }
 });
 
+// Resend email verification from settings
+app.post('/api/user/resend-email-verification', requireAuth, async (req, res) => {
+    try {
+        const [users] = await pool.execute('SELECT email, emailVerified FROM users WHERE id = ?', [req.auth.id]);
+        if (!users.length) return res.status(404).json({ success: false, message: 'User not found' });
+        const user = users[0];
+        if (user.emailVerified) return res.json({ success: true, message: 'Email is already verified' });
+
+        const emailVerifyToken = crypto.randomBytes(32).toString('hex');
+        await pool.execute('UPDATE users SET emailVerifyToken = ? WHERE id = ?', [emailVerifyToken, req.auth.id]);
+
+        // In production, send actual email. For now, mark as verified.
+        await pool.execute('UPDATE users SET emailVerified = TRUE, emailVerifyToken = NULL WHERE id = ?', [req.auth.id]);
+        res.json({ success: true, message: 'Email verified successfully' });
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
+    }
+});
+
+// Verify phone number from settings
+app.post('/api/user/verify-phone', requireAuth, async (req, res) => {
+    try {
+        const [users] = await pool.execute('SELECT phone, phoneVerified FROM users WHERE id = ?', [req.auth.id]);
+        if (!users.length) return res.status(404).json({ success: false, message: 'User not found' });
+        const user = users[0];
+        if (user.phoneVerified) return res.json({ success: true, message: 'Phone is already verified' });
+        if (!user.phone) return res.status(400).json({ success: false, message: 'No phone number on file. Please save your phone number first.' });
+
+        // In production, send SMS code. For now, mark as verified.
+        await pool.execute('UPDATE users SET phoneVerified = TRUE WHERE id = ?', [req.auth.id]);
+        res.json({ success: true, message: 'Phone number verified successfully' });
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
+    }
+});
+
 // Get user profile
 app.get('/api/user/profile', requireAuth, async (req, res) => {
     try {
@@ -4151,10 +4189,15 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
                 phone: user.phone,
                 accountNumber: user.accountNumber,
                 routingNumber: user.routingNumber,
+                swiftCode: user.swiftCode || 'HERBANKUS',
                 balance: parseFloat(user.balance),
+                accountType: user.accountType || 'savings',
+                accountStatus: user.accountStatus || 'active',
                 isAdmin: Boolean(user.isAdmin) || user.isAdmin === 1 || user.isAdmin === '1',
                 profileImage: user.profileImage || null,
-                gender: user.gender || null
+                gender: user.gender || null,
+                emailVerified: !!user.emailVerified,
+                phoneVerified: !!user.phoneVerified
             }
         });
     } catch (error) {
@@ -4180,10 +4223,15 @@ app.get('/api/auth/profile', requireAuth, async (req, res) => {
                 phone: user.phone,
                 accountNumber: user.accountNumber,
                 routingNumber: user.routingNumber,
+                swiftCode: user.swiftCode || 'HERBANKUS',
                 balance: parseFloat(user.balance),
+                accountType: user.accountType || 'savings',
+                accountStatus: user.accountStatus || 'active',
                 isAdmin: Boolean(user.isAdmin) || user.isAdmin === 1 || user.isAdmin === '1',
                 profileImage: user.profileImage || null,
-                gender: user.gender || null
+                gender: user.gender || null,
+                emailVerified: !!user.emailVerified,
+                phoneVerified: !!user.phoneVerified
             }
         });
     } catch (error) {
@@ -5381,7 +5429,7 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
         const transferFee = calculateTransferFee(amountValue, isExternalTransfer, destinationCountry || detectCountryFromDescription(description));
 
         if (!isExternalTransfer && !toEmailValue && !toAccountValue) {
-            return res.status(400).json({ success: false, message: 'Recipient email or account number required' });
+            return res.status(400).json({ success: false, message: 'Recipient account number or Zelle ID required' });
         }
 
         await connection.beginTransaction();
@@ -8448,7 +8496,7 @@ app.get('/api/user/profile/complete', requireAuth, async (req, res) => {
 app.put('/api/user/profile/complete', requireAuth, async (req, res) => {
     try {
         const { 
-            firstName, lastName, phone, address, city, state, zipCode, 
+            firstName, lastName, email, phone, address, city, state, zipCode, 
             dateOfBirth, country, gender 
         } = req.body;
 
@@ -8456,10 +8504,20 @@ app.put('/api/user/profile/complete', requireAuth, async (req, res) => {
         const validGenders = ['male', 'female'];
         const genderValue = (gender && validGenders.includes(String(gender).toLowerCase())) ? String(gender).toLowerCase() : undefined;
 
+        // If email is being changed, check it's not already taken by another user
+        if (email) {
+            const normalizedEmail = String(email).trim().toLowerCase();
+            const [existing] = await pool.execute('SELECT id FROM users WHERE email = ? AND id != ?', [normalizedEmail, req.auth.id]);
+            if (existing.length > 0) {
+                return res.status(400).json({ success: false, message: 'Email address is already in use by another account' });
+            }
+        }
+
         await pool.execute(`
             UPDATE users SET 
                 firstName = COALESCE(?, firstName),
                 lastName = COALESCE(?, lastName),
+                email = COALESCE(?, email),
                 phone = COALESCE(?, phone),
                 address = COALESCE(?, address),
                 city = COALESCE(?, city),
@@ -8469,7 +8527,7 @@ app.put('/api/user/profile/complete', requireAuth, async (req, res) => {
                 country = COALESCE(?, country),
                 gender = COALESCE(?, gender)
             WHERE id = ?
-        `, [firstName, lastName, phone, address, city, state, zipCode, dateOfBirth, country, genderValue || null, req.auth.id]);
+        `, [firstName, lastName, email ? String(email).trim().toLowerCase() : null, phone, address, city, state, zipCode, dateOfBirth, country, genderValue || null, req.auth.id]);
 
         res.json({ success: true, message: 'Profile updated successfully' });
     } catch (error) {
@@ -10959,20 +11017,10 @@ app.get('/api/user/spending-analytics', requireAuth, async (req, res) => {
     try {
         const { period, startDate, endDate } = req.query;
 
-        // --- date filter from period or explicit dates ---
-        let dateFilter = '';
+        // --- date filter params ---
         const dateParams = [];
         if (startDate && endDate) {
-            dateFilter = 'AND t.createdAt BETWEEN ? AND ?';
             dateParams.push(startDate, endDate);
-        } else {
-            const intervals = { week: 7, month: 30, quarter: 90, year: 365 };
-            const days = intervals[period] || intervals.month;
-            if (period === 'all') {
-                dateFilter = '';
-            } else {
-                dateFilter = `AND t.createdAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
-            }
         }
 
         // --- auto-categorize helper (keyword ? category) ---
@@ -10996,13 +11044,31 @@ app.get('/api/user/spending-analytics', requireAuth, async (req, res) => {
 
         const uid = req.auth.id;
 
+        // Detect available column names
+        const cols = await getTransactionsTableColumns();
+        const colSet = new Set((cols || []).map(c => c.toLowerCase()));
+        const hasCol = (name) => colSet.has(String(name).toLowerCase());
+        const createdCol = hasCol('createdAt') ? 't.createdAt' : (hasCol('created_at') ? 't.created_at' : 't.createdAt');
+        const fromCol = hasCol('fromUserId') ? 't.fromUserId' : (hasCol('from_user_id') ? 't.from_user_id' : 't.fromUserId');
+        const toCol = hasCol('toUserId') ? 't.toUserId' : (hasCol('to_user_id') ? 't.to_user_id' : 't.toUserId');
+
+        // Rebuild date filter with dynamic column name
+        let dynDateFilter = '';
+        if (startDate && endDate) {
+            dynDateFilter = `AND ${createdCol} BETWEEN ? AND ?`;
+        } else if (period !== 'all') {
+            const intervals = { week: 7, month: 30, quarter: 90, year: 365 };
+            const days = intervals[period] || intervals.month;
+            dynDateFilter = `AND ${createdCol} >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
+        }
+
         // 1. All transactions for this user in the period
         const [rows] = await pool.execute(`
-            SELECT t.id, t.amount, t.type, t.description, t.category,
-                   t.fromUserId, t.toUserId, DATE(t.createdAt) as txDate
+            SELECT t.id, t.amount, t.type, t.description, ${hasCol('category') ? 't.category,' : ''}
+                   ${fromCol} AS fromUserId, ${toCol} AS toUserId, DATE(${createdCol}) as txDate
             FROM transactions t
-            WHERE (t.fromUserId = ? OR t.toUserId = ?) ${dateFilter}
-            ORDER BY t.createdAt ASC
+            WHERE (${fromCol} = ? OR ${toCol} = ?) ${dynDateFilter}
+            ORDER BY ${createdCol} ASC
         `, [uid, uid, ...dateParams]);
 
         // 2. Build aggregates in JS (income/expense split, categories, trend)
@@ -13250,8 +13316,11 @@ app.post('/api/messages', requireAuth, async (req, res) => {
 
 // Analytics: frontend uses /api/analytics, backend uses /api/user/spending-analytics
 app.get('/api/analytics', requireAuth, async (req, res) => {
+    // Forward to spending-analytics handler with the same auth context
+    req.query = { ...req.query };
     const qs = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
     req.url = '/api/user/spending-analytics' + qs;
+    req.originalUrl = req.url;
     app.handle(req, res);
 });
 

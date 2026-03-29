@@ -136,14 +136,18 @@ function maskSSN(ssn) {
 function updateVerificationBadges(user) {
     const emailBadge = document.getElementById('emailVerificationBadge');
     const phoneBadge = document.getElementById('phoneVerificationBadge');
+    const verifyEmailBtn = document.getElementById('verifyEmailBtn');
+    const verifyPhoneBtn = document.getElementById('verifyPhoneBtn');
     
     if (emailBadge) {
         if (user.emailVerified) {
             emailBadge.innerHTML = '<i class="fas fa-check-circle" style="color: #4caf50;"></i> Verified';
             emailBadge.style.color = '#4caf50';
+            if (verifyEmailBtn) verifyEmailBtn.style.display = 'none';
         } else {
             emailBadge.innerHTML = '<i class="fas fa-exclamation-circle" style="color: #ff9800;"></i> Unverified';
             emailBadge.style.color = '#ff9800';
+            if (verifyEmailBtn) verifyEmailBtn.style.display = '';
         }
     }
     
@@ -151,12 +155,59 @@ function updateVerificationBadges(user) {
         if (user.phoneVerified) {
             phoneBadge.innerHTML = '<i class="fas fa-check-circle" style="color: #4caf50;"></i> Verified';
             phoneBadge.style.color = '#4caf50';
+            if (verifyPhoneBtn) verifyPhoneBtn.style.display = 'none';
         } else {
             phoneBadge.innerHTML = '<i class="fas fa-exclamation-circle" style="color: #ff9800;"></i> Unverified';
             phoneBadge.style.color = '#ff9800';
+            if (verifyPhoneBtn) verifyPhoneBtn.style.display = '';
         }
     }
 }
+
+// ============================================================================
+// EMAIL & PHONE VERIFICATION
+// ============================================================================
+
+async function sendEmailVerification() {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_URL}/api/user/resend-email-verification`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+            showAlert(data.message || 'Email verified!', 'success');
+            // Refresh badges
+            loadProfile();
+        } else {
+            showAlert(data.message || 'Verification failed', 'error');
+        }
+    } catch (e) {
+        showAlert('Error: ' + e.message, 'error');
+    }
+}
+window.sendEmailVerification = sendEmailVerification;
+
+async function sendPhoneVerification() {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_URL}/api/user/verify-phone`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+            showAlert(data.message || 'Phone verified!', 'success');
+            loadProfile();
+        } else {
+            showAlert(data.message || 'Verification failed', 'error');
+        }
+    } catch (e) {
+        showAlert('Error: ' + e.message, 'error');
+    }
+}
+window.sendPhoneVerification = sendPhoneVerification;
 
 // ============================================================================
 // ACCOUNT INFORMATION DISPLAY
@@ -450,6 +501,7 @@ async function updateProfile(e) {
     const profileData = {
         firstName: document.getElementById('firstName').value,
         lastName: document.getElementById('lastName').value,
+        email: document.getElementById('email').value,
         phone: document.getElementById('phone').value,
         address: document.getElementById('address').value,
         city: document.getElementById('city').value,

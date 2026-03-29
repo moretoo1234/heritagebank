@@ -551,6 +551,7 @@
 
     <script src="script.js"></script>
     <script>
+        if(localStorage.getItem('darkMode')==='true')document.body.classList.add('dark-mode');
         // API_URL is already defined in script.js
         let userId = null;
         const token = localStorage.getItem('token');

@@ -20,7 +20,7 @@
 }
 .sidebar-logo {
     padding: 0 24px 32px;
-    font-size: 1.4rem;
+    font-size: 2.8rem;
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -30,7 +30,7 @@
     text-decoration: none;
     color: white;
 }
-.sidebar-logo img { width: 52px; height: 52px; border-radius: 10px; }
+.sidebar-logo img { width: 104px; height: 104px; border-radius: 10px; }
 .sidebar-section {
     color: rgba(255,255,255,0.35);
     font-size: 0.7rem;

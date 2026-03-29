@@ -53,8 +53,15 @@
         <div class="container">
             <div class="page-card">
                 <div class="last-updated">
-                    <i class="fas fa-calendar-alt"></i> Last Updated: January 15, 2025
+                    <i class="fas fa-calendar-alt"></i> Last Updated: <span id="secLastUpdated">January 15, 2025</span>
                 </div>
+                <script>
+                (function() {
+                    var d = new Date();
+                    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                    document.getElementById('secLastUpdated').textContent = months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+                })();
+                </script>
 
                 <h2>How Heritage Bank Protects You</h2>
                 <div class="security-features">
@@ -202,10 +209,10 @@
                     <img src="./assets/logo.png" alt="Heritage Bank" class="footer-logo">
                     <p>Building financial legacies since 1999.</p>
                     <div class="social-links">
-                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
-                        <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" title="Instagram"><i class="fab fa-instagram"></i></a>
                     </div>
                 </div>
                 <div class="footer-section">

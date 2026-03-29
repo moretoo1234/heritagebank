@@ -73,7 +73,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Date of Birth <span class="required">*</span></label>
-                        <input type="date" id="dateOfBirth" title="Date of Birth" required max="2007-01-01">
+                        <input type="date" id="dateOfBirth" title="Date of Birth" required>
                         <div class="help-text">You must be 18 years or older</div>
                     </div>
                     <div class="form-group">
@@ -259,6 +259,15 @@
     </div>
 
     <script src="signup-enhanced.js"></script>
+    <script>
+    // Set DOB max date dynamically (must be 18+)
+    (function() {
+        var d = new Date();
+        d.setFullYear(d.getFullYear() - 18);
+        var el = document.getElementById('dateOfBirth');
+        if (el) el.max = d.toISOString().split('T')[0];
+    })();
+    </script>
     <footer class="app-footer">
         <div class="app-footer-inner">
             <div class="app-footer-links">

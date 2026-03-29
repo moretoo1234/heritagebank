@@ -185,12 +185,12 @@
             .products-grid { grid-template-columns: 1fr; }
             .product-card { min-height: 260px; }
         }
-        .product-card-ira { background-image: url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80'); }
-        .product-card-roth { background-image: url('https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=600&q=80'); }
-        .product-card-rollover { background-image: url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80'); }
-        .product-card-sep { background-image: url('https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&q=80'); }
-        .product-card-edu { background-image: url('https://images.unsplash.com/photo-1523050854058-8df90110c476?w=600&q=80'); }
-        .product-card-pension { background-image: url('https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=600&q=80'); }
+        .product-card-ira { background: linear-gradient(135deg, #0f4c75 0%, #1b6ca8 100%); }
+        .product-card-roth { background: linear-gradient(135deg, #1a5276 0%, #2980b9 100%); }
+        .product-card-rollover { background: linear-gradient(135deg, #145a32 0%, #1e8449 100%); }
+        .product-card-sep { background: linear-gradient(135deg, #1c2833 0%, #2c3e50 100%); }
+        .product-card-edu { background: linear-gradient(135deg, #4a235a 0%, #7d3c98 100%); }
+        .product-card-pension { background: linear-gradient(135deg, #7b241c 0%, #c0392b 100%); }
         .withdraw-warning-text { text-align: center; color: #64748b; font-size: 0.88rem; margin-bottom: 12px; }
     </style>
 </head>
@@ -416,6 +416,7 @@
     <script src="app-sidebar.js"></script>
     <script src="cookie-consent.js"></script>
     <script>
+        if(localStorage.getItem('darkMode')==='true')document.body.classList.add('dark-mode');
         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? 'http://localhost:3001' : window.location.origin;
         const token = localStorage.getItem('token');

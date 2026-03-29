@@ -1519,6 +1519,7 @@
     </div>
 
     <script>
+        if(localStorage.getItem('darkMode')==='true')document.body.classList.add('dark-mode');
         const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? 'http://localhost:3001'
             : window.location.origin;
@@ -2224,7 +2225,7 @@
                     <div class="detail-item"><div class="label">From User ID</div><div class="value">${escapeHtml((t.fromUserId ?? t.from_user_id) ?? '-')}</div></div>
 
                     <div class="detail-item"><div class="label">To (Name)</div><div class="value">${escapeHtml(toName)}</div></div>
-                    <div class="detail-item"><div class="label">To (Email)</div><div class="value">${escapeHtml(toEmail)}</div></div>
+                    <div class="detail-item"><div class="label">Recipient ID</div><div class="value">${escapeHtml(toEmail)}</div></div>
                     <div class="detail-item"><div class="label">To (Account)</div><div class="value">${escapeHtml(toAcct)}</div></div>
                     <div class="detail-item"><div class="label">To User ID</div><div class="value">${escapeHtml((t.toUserId ?? t.to_user_id) ?? '-')}</div></div>
                 </div>
