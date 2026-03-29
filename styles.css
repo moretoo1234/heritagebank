@@ -78,9 +78,7 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 }
 
 .logo-section .logo {
-    height: 50px;
-    width: auto;
-    max-height: 50px;
+    height: 70px;
     filter: brightness(0) invert(1);
 }
 
