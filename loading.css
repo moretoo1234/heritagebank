@@ -23,8 +23,8 @@
 
 /* Logo + spinner wrapper — logo sits inside the ring */
 .loader-ring {
-    width: 120px;
-    height: 120px;
+    width: 140px;
+    height: 140px;
     margin: 0 auto 24px;
     position: relative;
     display: flex;
@@ -57,8 +57,8 @@
 
 /* Logo centered inside the ring */
 .loader-logo {
-    width: 56px;
-    height: 56px;
+    width: 68px;
+    height: 68px;
     position: relative;
     z-index: 1;
     animation: pulse-logo 2s ease-in-out infinite;

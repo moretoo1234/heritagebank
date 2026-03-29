@@ -78,7 +78,7 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 }
 
 .logo-section .logo {
-    height: 90px;
+    height: 120px;
     filter: brightness(0) invert(1);
 }
 
@@ -1762,7 +1762,7 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 }
 
 .footer-logo {
-    height: 50px;
+    height: 65px;
     margin-bottom: 15px;
     filter: brightness(0) invert(1);
 }
