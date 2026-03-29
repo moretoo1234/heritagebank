@@ -1,16 +1,21 @@
 // Heritage Bank Service Worker - Offline support & caching
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 4;
 const CACHE_NAME = 'heritage-bank-v' + CACHE_VERSION;
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/signin.html',
+  '/signup.html',
   '/styles.css',
   '/script.js',
   '/app-layout.css',
   '/app-sidebar.js',
+  '/loading.css',
+  '/cookie-consent.js',
   '/assets/favicon.svg',
   '/404.html',
+  '/dashboard-page.css',
+  '/open-account-enhanced.css',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
@@ -51,7 +56,8 @@ self.addEventListener('fetch', function(event) {
   // HTML pages behind auth - network only (never serve stale dashboard/account pages)
   var authPages = ['/dashboard', '/admin', '/analytics', '/settings', '/messages',
     '/statements', '/transactions', '/transfer', '/pay-bills', '/cards',
-    '/investment', '/retirement', '/savings-goals', '/mobile-deposit', '/request-loan'];
+    '/investment', '/retirement', '/savings-goals', '/mobile-deposit', '/request-loan',
+    '/bulk-payments'];
   if (authPages.some(function(p) { return url.pathname.startsWith(p); })) {
     event.respondWith(
       fetch(event.request).catch(function() {
