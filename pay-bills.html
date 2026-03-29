@@ -149,12 +149,27 @@
             box-shadow: 0 6px 20px rgba(26,71,42,0.1);
         }
         .biller-card:hover::before, .biller-card.selected::before { transform: scaleX(1); }
-        .biller-card:hover i { transform: scale(1.15); }
-        .biller-card i {
-            font-size: 2rem;
-            color: #d4af37;
+        .biller-card:hover .biller-logo { transform: scale(1.15); }
+        .biller-card .biller-logo {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
             margin-bottom: 10px;
             transition: transform 0.3s ease;
+            border-radius: 8px;
+        }
+        .biller-card .biller-fallback-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1a472a, #2d5f3f);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 0 auto 10px;
         }
         .biller-card h4 { color: #333; font-size: 0.9rem; }
         
@@ -460,13 +475,23 @@
                 console.error('Error loading billers:', e);
                 // Fallback billers
                 billers = [
-                    { id: 1, name: 'Electric Company', category: 'Utilities' },
-                    { id: 2, name: 'Water Department', category: 'Utilities' },
-                    { id: 3, name: 'Internet Provider', category: 'Utilities' },
-                    { id: 4, name: 'Phone Company', category: 'Utilities' },
-                    { id: 5, name: 'Insurance Co', category: 'Insurance' },
-                    { id: 6, name: 'Credit Card Payment', category: 'Credit' },
-                    { id: 7, name: 'Rent Payment', category: 'Housing' }
+                    { id: 1, name: 'Con Edison', category: 'Utilities', logo: 'assets/biller-logos/coned.png' },
+                    { id: 2, name: 'PG&E', category: 'Utilities', logo: 'assets/biller-logos/pge.png' },
+                    { id: 3, name: 'National Grid', category: 'Utilities', logo: 'assets/biller-logos/nationalgrid.png' },
+                    { id: 4, name: 'Duke Energy', category: 'Utilities', logo: 'assets/biller-logos/duke-energy.png' },
+                    { id: 5, name: 'AT&T', category: 'Utilities', logo: 'assets/biller-logos/att.png' },
+                    { id: 6, name: 'Comcast Xfinity', category: 'Utilities', logo: 'assets/biller-logos/xfinity.png' },
+                    { id: 7, name: 'Verizon', category: 'Utilities', logo: 'assets/biller-logos/verizon.png' },
+                    { id: 8, name: 'T-Mobile', category: 'Utilities', logo: 'assets/biller-logos/tmobile.png' },
+                    { id: 9, name: 'State Farm', category: 'Insurance', logo: 'assets/biller-logos/statefarm.png' },
+                    { id: 10, name: 'GEICO', category: 'Insurance', logo: 'assets/biller-logos/geico.png' },
+                    { id: 11, name: 'Progressive', category: 'Insurance', logo: 'assets/biller-logos/progressive.png' },
+                    { id: 12, name: 'Allstate', category: 'Insurance', logo: 'assets/biller-logos/allstate.png' },
+                    { id: 13, name: 'American Express', category: 'Credit', logo: 'assets/biller-logos/americanexpress.png' },
+                    { id: 14, name: 'Discover', category: 'Credit', logo: 'assets/biller-logos/discover.png' },
+                    { id: 15, name: 'Capital One', category: 'Credit', logo: 'assets/biller-logos/capitalone.png' },
+                    { id: 16, name: 'Zillow Rent', category: 'Housing', logo: 'assets/biller-logos/zillow.png' },
+                    { id: 17, name: 'Rocket Mortgage', category: 'Housing', logo: 'assets/biller-logos/rocketmortgage.png' }
                 ];
                 displayBillers(billers);
             }
@@ -474,12 +499,17 @@
         
         function displayBillers(list) {
             const grid = document.getElementById('billersGrid');
-            grid.innerHTML = list.map(b => `
+            grid.innerHTML = list.map(b => {
+                const logoHtml = b.logo
+                    ? `<img class="biller-logo" src="${escapeHtml(b.logo)}" alt="${escapeHtml(b.name)}" onerror="this.outerHTML='<div class=biller-fallback-icon>'+this.alt.charAt(0)+'</div>'">`
+                    : `<div class="biller-fallback-icon">${escapeHtml(b.name).charAt(0)}</div>`;
+                return `
                 <div class="biller-card" onclick="selectBiller(${parseInt(b.id)}, '${escapeHtml(b.name)}', '${escapeHtml(b.category)}')" id="biller-${parseInt(b.id)}">
-                    <i class="fas ${billerIcons[b.category] || 'fa-building'}"></i>
+                    ${logoHtml}
                     <h4>${escapeHtml(b.name)}</h4>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
         
         function filterBillers(category, btn) {

@@ -6075,14 +6075,23 @@ app.get('/api/user/:userId/activity', requireAuth, async (req, res) => {
 
 // Bill Payment - Billers list
 const BILLERS = [
-    { id: 1, name: 'Electric Company', category: 'utilities', minAmount: 10, maxAmount: 5000 },
-    { id: 2, name: 'Water Services', category: 'utilities', minAmount: 10, maxAmount: 1000 },
-    { id: 3, name: 'Gas Company', category: 'utilities', minAmount: 10, maxAmount: 2000 },
-    { id: 4, name: 'Internet Provider', category: 'internet', minAmount: 20, maxAmount: 500 },
-    { id: 5, name: 'Mobile Phone', category: 'phone', minAmount: 10, maxAmount: 1000 },
-    { id: 6, name: 'Cable TV', category: 'entertainment', minAmount: 20, maxAmount: 500 },
-    { id: 7, name: 'Insurance Premium', category: 'insurance', minAmount: 50, maxAmount: 10000 },
-    { id: 8, name: 'Credit Card', category: 'finance', minAmount: 25, maxAmount: 50000 }
+    { id: 1, name: 'Con Edison', category: 'Utilities', logo: 'assets/biller-logos/coned.png', minAmount: 10, maxAmount: 5000 },
+    { id: 2, name: 'PG&E', category: 'Utilities', logo: 'assets/biller-logos/pge.png', minAmount: 10, maxAmount: 5000 },
+    { id: 3, name: 'National Grid', category: 'Utilities', logo: 'assets/biller-logos/nationalgrid.png', minAmount: 10, maxAmount: 2000 },
+    { id: 4, name: 'Duke Energy', category: 'Utilities', logo: 'assets/biller-logos/duke-energy.png', minAmount: 10, maxAmount: 5000 },
+    { id: 5, name: 'AT&T', category: 'Utilities', logo: 'assets/biller-logos/att.png', minAmount: 20, maxAmount: 1000 },
+    { id: 6, name: 'Comcast Xfinity', category: 'Utilities', logo: 'assets/biller-logos/xfinity.png', minAmount: 20, maxAmount: 500 },
+    { id: 7, name: 'Verizon', category: 'Utilities', logo: 'assets/biller-logos/verizon.png', minAmount: 10, maxAmount: 1000 },
+    { id: 8, name: 'T-Mobile', category: 'Utilities', logo: 'assets/biller-logos/tmobile.png', minAmount: 10, maxAmount: 1000 },
+    { id: 9, name: 'State Farm', category: 'Insurance', logo: 'assets/biller-logos/statefarm.png', minAmount: 50, maxAmount: 10000 },
+    { id: 10, name: 'GEICO', category: 'Insurance', logo: 'assets/biller-logos/geico.png', minAmount: 50, maxAmount: 10000 },
+    { id: 11, name: 'Progressive', category: 'Insurance', logo: 'assets/biller-logos/progressive.png', minAmount: 50, maxAmount: 10000 },
+    { id: 12, name: 'Allstate', category: 'Insurance', logo: 'assets/biller-logos/allstate.png', minAmount: 50, maxAmount: 10000 },
+    { id: 13, name: 'American Express', category: 'Credit', logo: 'assets/biller-logos/americanexpress.png', minAmount: 25, maxAmount: 50000 },
+    { id: 14, name: 'Discover', category: 'Credit', logo: 'assets/biller-logos/discover.png', minAmount: 25, maxAmount: 50000 },
+    { id: 15, name: 'Capital One', category: 'Credit', logo: 'assets/biller-logos/capitalone.png', minAmount: 25, maxAmount: 50000 },
+    { id: 16, name: 'Zillow Rent', category: 'Housing', logo: 'assets/biller-logos/zillow.png', minAmount: 100, maxAmount: 10000 },
+    { id: 17, name: 'Rocket Mortgage', category: 'Housing', logo: 'assets/biller-logos/rocketmortgage.png', minAmount: 100, maxAmount: 50000 }
 ];
 
 app.get('/api/bills/billers', (req, res) => {
