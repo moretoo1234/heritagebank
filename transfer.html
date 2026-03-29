@@ -709,7 +709,7 @@
                     <i class="fas fa-university"></i> Heritage Account
                 </button>
                 <button class="tab-btn" onclick="setTransferType('zelle', this)">
-                    <i class="fas fa-bolt"></i> Zelle®
+                    <i class="fas fa-bolt"></i> Zelleï¿½
                 </button>
                 <button class="tab-btn" onclick="setTransferType('ukbank', this)">
                     <i class="fas fa-landmark"></i> UK Bank Transfer
@@ -731,14 +731,14 @@
                     <div class="zelle-badge">
                         <i class="fas fa-bolt"></i>
                         <div>
-                            <strong>Zelle® Instant Send</strong>
-                            <p>Send money in minutes — no fees</p>
+                            <strong>Zelleï¿½ Instant Send</strong>
+                            <p>Send money in minutes ï¿½ no fees</p>
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Recipient Email or Phone</label>
                         <input type="text" id="zelleRecipient" placeholder="email@example.com or (555) 123-4567" oninput="lookupZelleRecipient()">
-                        <small>Enter the email or US mobile number linked to their Zelle® account</small>
+                        <small>Enter the email or US mobile number linked to their Zelleï¿½ account</small>
                     </div>
                 </div>
 
@@ -1047,88 +1047,90 @@
 
         // UK Banks with sort codes
         const UK_BANKS = [
-            { name: 'Barclays', sortCode: '20-00-00', logo: 'https://logo.clearbit.com/barclays.co.uk' },
-            { name: 'HSBC', sortCode: '40-00-00', logo: 'https://logo.clearbit.com/hsbc.co.uk' },
-            { name: 'Lloyds Bank', sortCode: '30-00-00', logo: 'https://logo.clearbit.com/lloydsbank.com' },
-            { name: 'NatWest', sortCode: '60-00-00', logo: 'https://logo.clearbit.com/natwest.com' },
-            { name: 'Santander', sortCode: '09-00-00', logo: 'https://logo.clearbit.com/santander.co.uk' },
-            { name: 'Halifax', sortCode: '11-00-00', logo: 'https://logo.clearbit.com/halifax.co.uk' },
-            { name: 'Nationwide', sortCode: '07-00-00', logo: 'https://logo.clearbit.com/nationwide.co.uk' },
-            { name: 'TSB', sortCode: '77-00-00', logo: 'https://logo.clearbit.com/tsb.co.uk' },
-            { name: 'RBS', sortCode: '83-00-00', logo: 'https://logo.clearbit.com/rbs.co.uk' },
-            { name: 'Metro Bank', sortCode: '23-05-80', logo: 'https://logo.clearbit.com/metrobankonline.co.uk' },
-            { name: 'Monzo', sortCode: '04-00-04', logo: 'https://logo.clearbit.com/monzo.com' },
-            { name: 'Starling', sortCode: '60-83-71', logo: 'https://logo.clearbit.com/starlingbank.com' },
-            { name: 'Revolut', sortCode: '04-00-75', logo: 'https://logo.clearbit.com/revolut.com' },
-            { name: 'Virgin Money', sortCode: '05-00-00', logo: 'https://logo.clearbit.com/virginmoney.com' },
-            { name: 'Co-op Bank', sortCode: '08-90-00', logo: 'https://logo.clearbit.com/co-operativebank.co.uk' },
-            { name: 'Clydesdale', sortCode: '82-60-00', logo: 'https://logo.clearbit.com/cbonline.co.uk' },
-            { name: 'Yorkshire Bank', sortCode: '05-09-00', logo: 'https://logo.clearbit.com/ybonline.co.uk' },
-            { name: 'Bank of Scotland', sortCode: '80-00-00', logo: 'https://logo.clearbit.com/bankofscotland.co.uk' },
-            { name: 'Danske Bank', sortCode: '95-00-00', logo: 'https://logo.clearbit.com/danskebank.co.uk' },
-            { name: 'First Direct', sortCode: '40-47-84', logo: 'https://logo.clearbit.com/firstdirect.com' },
-            { name: 'Tesco Bank', sortCode: '16-33-00', logo: 'https://logo.clearbit.com/tescobank.com' },
-            { name: 'Post Office', sortCode: '60-13-14', logo: 'https://logo.clearbit.com/postoffice.co.uk' },
-            { name: 'Chase UK', sortCode: '04-00-26', logo: 'https://logo.clearbit.com/chase.co.uk' },
-            { name: 'Atom Bank', sortCode: '23-22-28', logo: 'https://logo.clearbit.com/atombank.co.uk' },
+            { name: 'Barclays', sortCode: '20-00-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=barclays.co.uk' },
+            { name: 'HSBC', sortCode: '40-00-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=hsbc.co.uk' },
+            { name: 'Lloyds Bank', sortCode: '30-00-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=lloydsbank.com' },
+            { name: 'NatWest', sortCode: '60-00-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=natwest.com' },
+            { name: 'Santander', sortCode: '09-00-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=santander.co.uk' },
+            { name: 'Halifax', sortCode: '11-00-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=halifax.co.uk' },
+            { name: 'Nationwide', sortCode: '07-00-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=nationwide.co.uk' },
+            { name: 'TSB', sortCode: '77-00-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=tsb.co.uk' },
+            { name: 'RBS', sortCode: '83-00-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=rbs.co.uk' },
+            { name: 'Metro Bank', sortCode: '23-05-80', logo: 'https://www.google.com/s2/favicons?sz=128&domain=metrobankonline.co.uk' },
+            { name: 'Monzo', sortCode: '04-00-04', logo: 'https://www.google.com/s2/favicons?sz=128&domain=monzo.com' },
+            { name: 'Starling', sortCode: '60-83-71', logo: 'https://www.google.com/s2/favicons?sz=128&domain=starlingbank.com' },
+            { name: 'Revolut', sortCode: '04-00-75', logo: 'https://www.google.com/s2/favicons?sz=128&domain=revolut.com' },
+            { name: 'Virgin Money', sortCode: '05-00-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=virginmoney.com' },
+            { name: 'Co-op Bank', sortCode: '08-90-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=co-operativebank.co.uk' },
+            { name: 'Clydesdale', sortCode: '82-60-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=cbonline.co.uk' },
+            { name: 'Yorkshire Bank', sortCode: '05-09-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=ybonline.co.uk' },
+            { name: 'Bank of Scotland', sortCode: '80-00-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=bankofscotland.co.uk' },
+            { name: 'Danske Bank', sortCode: '95-00-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=danskebank.co.uk' },
+            { name: 'First Direct', sortCode: '40-47-84', logo: 'https://www.google.com/s2/favicons?sz=128&domain=firstdirect.com' },
+            { name: 'Tesco Bank', sortCode: '16-33-00', logo: 'https://www.google.com/s2/favicons?sz=128&domain=tescobank.com' },
+            { name: 'Post Office', sortCode: '60-13-14', logo: 'https://www.google.com/s2/favicons?sz=128&domain=postoffice.co.uk' },
+            { name: 'Chase UK', sortCode: '04-00-26', logo: 'https://www.google.com/s2/favicons?sz=128&domain=chase.co.uk' },
+            { name: 'Atom Bank', sortCode: '23-22-28', logo: 'https://www.google.com/s2/favicons?sz=128&domain=atombank.co.uk' },
         ];
 
         // US Banks with routing numbers
         const US_BANKS = [
-            { name: 'Chase', routing: '021000021', logo: 'https://logo.clearbit.com/chase.com' },
-            { name: 'Bank of America', routing: '026009593', logo: 'https://logo.clearbit.com/bankofamerica.com' },
-            { name: 'Wells Fargo', routing: '121000248', logo: 'https://logo.clearbit.com/wellsfargo.com' },
-            { name: 'Citibank', routing: '021000089', logo: 'https://logo.clearbit.com/citibank.com' },
-            { name: 'Capital One', routing: '051405515', logo: 'https://logo.clearbit.com/capitalone.com' },
-            { name: 'PNC Bank', routing: '043000096', logo: 'https://logo.clearbit.com/pnc.com' },
-            { name: 'US Bank', routing: '091000022', logo: 'https://logo.clearbit.com/usbank.com' },
-            { name: 'TD Bank', routing: '031101266', logo: 'https://logo.clearbit.com/td.com' },
-            { name: 'Truist', routing: '053101121', logo: 'https://logo.clearbit.com/truist.com' },
-            { name: 'Goldman Sachs', routing: '124085024', logo: 'https://logo.clearbit.com/goldmansachs.com' },
-            { name: 'Morgan Stanley', routing: '036001808', logo: 'https://logo.clearbit.com/morganstanley.com' },
-            { name: 'Ally Bank', routing: '124003116', logo: 'https://logo.clearbit.com/ally.com' },
-            { name: 'Discover Bank', routing: '031100649', logo: 'https://logo.clearbit.com/discover.com' },
-            { name: 'Charles Schwab', routing: '121202211', logo: 'https://logo.clearbit.com/schwab.com' },
-            { name: 'Fifth Third', routing: '042000314', logo: 'https://logo.clearbit.com/53.com' },
-            { name: 'Regions Bank', routing: '062000019', logo: 'https://logo.clearbit.com/regions.com' },
-            { name: 'KeyBank', routing: '041001039', logo: 'https://logo.clearbit.com/key.com' },
-            { name: 'M&T Bank', routing: '022000046', logo: 'https://logo.clearbit.com/mtb.com' },
-            { name: 'Huntington', routing: '044000024', logo: 'https://logo.clearbit.com/huntington.com' },
-            { name: 'BMO Harris', routing: '071000288', logo: 'https://logo.clearbit.com/bmo.com' },
-            { name: 'USAA', routing: '314074269', logo: 'https://logo.clearbit.com/usaa.com' },
-            { name: 'Navy Federal', routing: '256074974', logo: 'https://logo.clearbit.com/navyfederal.org' },
-            { name: 'SoFi', routing: '084006470', logo: 'https://logo.clearbit.com/sofi.com' },
-            { name: 'Chime', routing: '031101279', logo: 'https://logo.clearbit.com/chime.com' },
+            { name: 'Chase', routing: '021000021', logo: 'https://www.google.com/s2/favicons?sz=128&domain=chase.com' },
+            { name: 'Bank of America', routing: '026009593', logo: 'https://www.google.com/s2/favicons?sz=128&domain=bankofamerica.com' },
+            { name: 'Wells Fargo', routing: '121000248', logo: 'https://www.google.com/s2/favicons?sz=128&domain=wellsfargo.com' },
+            { name: 'Citibank', routing: '021000089', logo: 'https://www.google.com/s2/favicons?sz=128&domain=citibank.com' },
+            { name: 'Capital One', routing: '051405515', logo: 'https://www.google.com/s2/favicons?sz=128&domain=capitalone.com' },
+            { name: 'PNC Bank', routing: '043000096', logo: 'https://www.google.com/s2/favicons?sz=128&domain=pnc.com' },
+            { name: 'US Bank', routing: '091000022', logo: 'https://www.google.com/s2/favicons?sz=128&domain=usbank.com' },
+            { name: 'TD Bank', routing: '031101266', logo: 'https://www.google.com/s2/favicons?sz=128&domain=td.com' },
+            { name: 'Truist', routing: '053101121', logo: 'https://www.google.com/s2/favicons?sz=128&domain=truist.com' },
+            { name: 'Goldman Sachs', routing: '124085024', logo: 'https://www.google.com/s2/favicons?sz=128&domain=goldmansachs.com' },
+            { name: 'Morgan Stanley', routing: '036001808', logo: 'https://www.google.com/s2/favicons?sz=128&domain=morganstanley.com' },
+            { name: 'Ally Bank', routing: '124003116', logo: 'https://www.google.com/s2/favicons?sz=128&domain=ally.com' },
+            { name: 'Discover Bank', routing: '031100649', logo: 'https://www.google.com/s2/favicons?sz=128&domain=discover.com' },
+            { name: 'Charles Schwab', routing: '121202211', logo: 'https://www.google.com/s2/favicons?sz=128&domain=schwab.com' },
+            { name: 'Fifth Third', routing: '042000314', logo: 'https://www.google.com/s2/favicons?sz=128&domain=53.com' },
+            { name: 'Regions Bank', routing: '062000019', logo: 'https://www.google.com/s2/favicons?sz=128&domain=regions.com' },
+            { name: 'KeyBank', routing: '041001039', logo: 'https://www.google.com/s2/favicons?sz=128&domain=key.com' },
+            { name: 'M&T Bank', routing: '022000046', logo: 'https://www.google.com/s2/favicons?sz=128&domain=mtb.com' },
+            { name: 'Huntington', routing: '044000024', logo: 'https://www.google.com/s2/favicons?sz=128&domain=huntington.com' },
+            { name: 'BMO Harris', routing: '071000288', logo: 'https://www.google.com/s2/favicons?sz=128&domain=bmo.com' },
+            { name: 'USAA', routing: '314074269', logo: 'https://www.google.com/s2/favicons?sz=128&domain=usaa.com' },
+            { name: 'Navy Federal', routing: '256074974', logo: 'https://www.google.com/s2/favicons?sz=128&domain=navyfederal.org' },
+            { name: 'SoFi', routing: '084006470', logo: 'https://www.google.com/s2/favicons?sz=128&domain=sofi.com' },
+            { name: 'Chime', routing: '031101279', logo: 'https://www.google.com/s2/favicons?sz=128&domain=chime.com' },
             // Virtual Banks & Fintech
-            { name: 'Venmo', routing: '031101279', logo: 'https://logo.clearbit.com/venmo.com' },
-            { name: 'PayPal', routing: '031101279', logo: 'https://logo.clearbit.com/paypal.com' },
-            { name: 'Cash App', routing: '073923033', logo: 'https://logo.clearbit.com/cash.app' },
-            { name: 'Zelle', routing: '021000021', logo: 'https://logo.clearbit.com/zellepay.com' },
-            { name: 'Varo Bank', routing: '091311229', logo: 'https://logo.clearbit.com/varomoney.com' },
-            { name: 'Current', routing: '021214891', logo: 'https://logo.clearbit.com/current.com' },
-            { name: 'Dave', routing: '091311229', logo: 'https://logo.clearbit.com/dave.com' },
-            { name: 'MoneyLion', routing: '031101279', logo: 'https://logo.clearbit.com/moneylion.com' },
-            { name: 'Aspiration', routing: '021214891', logo: 'https://logo.clearbit.com/aspiration.com' },
-            { name: 'N26', routing: '021214891', logo: 'https://logo.clearbit.com/n26.com' },
-            { name: 'Revolut US', routing: '084009519', logo: 'https://logo.clearbit.com/revolut.com' },
-            { name: 'Wise', routing: '026073150', logo: 'https://logo.clearbit.com/wise.com' },
-            { name: 'Mercury', routing: '091311229', logo: 'https://logo.clearbit.com/mercury.com' },
-            { name: 'Greenlight', routing: '061120084', logo: 'https://logo.clearbit.com/greenlight.com' },
-            { name: 'GO2bank', routing: '124303120', logo: 'https://logo.clearbit.com/go2bank.com' },
-            { name: 'Netspend', routing: '073972181', logo: 'https://logo.clearbit.com/netspend.com' },
-            { name: 'Apple Cash', routing: '021214891', logo: 'https://logo.clearbit.com/apple.com' },
-            { name: 'Google Pay', routing: '021214891', logo: 'https://logo.clearbit.com/pay.google.com' },
+            { name: 'Venmo', routing: '031101279', logo: 'https://www.google.com/s2/favicons?sz=128&domain=venmo.com' },
+            { name: 'PayPal', routing: '031101279', logo: 'https://www.google.com/s2/favicons?sz=128&domain=paypal.com' },
+            { name: 'Cash App', routing: '073923033', logo: 'https://www.google.com/s2/favicons?sz=128&domain=cash.app' },
+            { name: 'Zelle', routing: '021000021', logo: 'https://www.google.com/s2/favicons?sz=128&domain=zellepay.com' },
+            { name: 'Varo Bank', routing: '091311229', logo: 'https://www.google.com/s2/favicons?sz=128&domain=varomoney.com' },
+            { name: 'Current', routing: '021214891', logo: 'https://www.google.com/s2/favicons?sz=128&domain=current.com' },
+            { name: 'Dave', routing: '091311229', logo: 'https://www.google.com/s2/favicons?sz=128&domain=dave.com' },
+            { name: 'MoneyLion', routing: '031101279', logo: 'https://www.google.com/s2/favicons?sz=128&domain=moneylion.com' },
+            { name: 'Aspiration', routing: '021214891', logo: 'https://www.google.com/s2/favicons?sz=128&domain=aspiration.com' },
+            { name: 'N26', routing: '021214891', logo: 'https://www.google.com/s2/favicons?sz=128&domain=n26.com' },
+            { name: 'Revolut US', routing: '084009519', logo: 'https://www.google.com/s2/favicons?sz=128&domain=revolut.com' },
+            { name: 'Wise', routing: '026073150', logo: 'https://www.google.com/s2/favicons?sz=128&domain=wise.com' },
+            { name: 'Mercury', routing: '091311229', logo: 'https://www.google.com/s2/favicons?sz=128&domain=mercury.com' },
+            { name: 'Greenlight', routing: '061120084', logo: 'https://www.google.com/s2/favicons?sz=128&domain=greenlight.com' },
+            { name: 'GO2bank', routing: '124303120', logo: 'https://www.google.com/s2/favicons?sz=128&domain=go2bank.com' },
+            { name: 'Netspend', routing: '073972181', logo: 'https://www.google.com/s2/favicons?sz=128&domain=netspend.com' },
+            { name: 'Apple Cash', routing: '021214891', logo: 'https://www.google.com/s2/favicons?sz=128&domain=apple.com' },
+            { name: 'Google Pay', routing: '021214891', logo: 'https://www.google.com/s2/favicons?sz=128&domain=pay.google.com' },
             { name: 'Other Bank', routing: '', logo: '', isCustom: true },
         ];
 
         function renderBankSelector() {
             const container = document.getElementById('bankSelector');
-            container.innerHTML = UK_BANKS.map((bank, i) => `
-                <div class="bank-option" data-bank-index="${i}" onclick="selectUkBank(${i})">
-                    <img class="bank-logo" src="${bank.logo}" alt="${bank.name}" onerror="this.style.display='none'">
+            container.innerHTML = UK_BANKS.map((bank, i) => {
+                const initial = bank.name.charAt(0).toUpperCase();
+                return `<div class="bank-option" data-bank-index="${i}" onclick="selectUkBank(${i})">
+                    <img class="bank-logo" src="${bank.logo}" alt="${bank.name}" onerror="this.nextElementSibling.style.display='flex';this.style.display='none'">
+                    <span class="bank-logo-fallback" style="display:none">${initial}</span>
                     ${bank.name}
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         }
 
         function selectUkBank(index) {
@@ -1214,11 +1216,11 @@
             const currencySelector = document.querySelector('.currency-selector');
             const currencyGroup = currencySelector ? currencySelector.closest('.form-group') : null;
             if (type === 'zelle' || type === 'usbank' || type === 'account') {
-                // Domestic USD-only transfers — hide currency selector
+                // Domestic USD-only transfers ï¿½ hide currency selector
                 if (currencyGroup) currencyGroup.style.display = 'none';
                 setRecipientCurrency('USD', document.querySelector('.currency-option'));
             } else if (type === 'ukbank') {
-                // UK transfers — auto-select GBP
+                // UK transfers ï¿½ auto-select GBP
                 if (currencyGroup) currencyGroup.style.display = '';
                 const gbpOption = document.querySelectorAll('.currency-option')[1];
                 if (gbpOption) setRecipientCurrency('GBP', gbpOption);
@@ -1311,7 +1313,7 @@
                 const val = document.getElementById('zelleRecipient').value.trim();
                 if (val && (val.includes('@') || val.replace(/\D/g,'').length >= 10)) {
                     preview.classList.add('show');
-                    document.getElementById('recipientName').textContent = 'Zelle® Recipient';
+                    document.getElementById('recipientName').textContent = 'Zelleï¿½ Recipient';
                     document.getElementById('recipientInfo').textContent = val;
                 } else {
                     preview.classList.remove('show');
@@ -1485,13 +1487,13 @@
                         submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Money';
                         return;
                     }
-                    // Detect email vs phone – if contains @, treat as email
+                    // Detect email vs phone ï¿½ if contains @, treat as email
                     if (zelleVal.includes('@')) {
                         body.toEmail = zelleVal;
                     } else {
                         body.toEmail = zelleVal; // Server will look up by email; phone resolves via email match
                     }
-                    body.description = `Zelle® Instant Send | ${document.getElementById('description').value || 'Sent via Zelle'}`;
+                    body.description = `Zelleï¿½ Instant Send | ${document.getElementById('description').value || 'Sent via Zelle'}`;
                 } else if (transferType === 'ukbank') {
                     body.toAccountNumber = document.getElementById('ukAccountNumber').value;
                     body.description = `UK Transfer to ${document.getElementById('ukRecipientName').value} at ${selectedUkBank.name} (${selectedUkBank.sortCode}) | Ref: ${document.getElementById('ukReference').value || 'N/A'}`;
