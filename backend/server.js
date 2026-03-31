@@ -1359,6 +1359,8 @@ async function initializeDatabase() {
         try { await connection.execute("ALTER TABLE transactions ADD COLUMN exchangeRate VARCHAR(50) DEFAULT NULL"); } catch (e) {}
         try { await connection.execute("ALTER TABLE transactions ADD COLUMN recipientCurrency VARCHAR(10) DEFAULT NULL"); } catch (e) {}
         try { await connection.execute("ALTER TABLE transactions ADD COLUMN recipientAmount DECIMAL(15,2) DEFAULT NULL"); } catch (e) {}
+        // Bill payment source account column
+        try { await connection.execute("ALTER TABLE transactions ADD COLUMN fromAccountNumber VARCHAR(50) DEFAULT NULL"); } catch (e) {}
 
         // Check if admin exists
         const [adminCheck] = await connection.execute(
