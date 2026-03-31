@@ -3104,11 +3104,12 @@ app.get('/api/notifications', requireAuth, async (req, res) => {
     try {
         const { unreadOnly = false, limit = 50 } = req.query;
         
+        const safeLimit = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
         let query = `SELECT * FROM notifications WHERE userId = ?`;
         if (unreadOnly === 'true') query += ' AND isRead = FALSE';
-        query += ' ORDER BY createdAt DESC LIMIT ?';
+        query += ` ORDER BY createdAt DESC LIMIT ${safeLimit}`;
         
-        const [notifications] = await pool.execute(query, [req.auth.id, String(parseInt(limit))]);
+        const [notifications] = await pool.execute(query, [req.auth.id]);
         
         // Get unread count
         const [[{ unreadCount }]] = await pool.execute(
