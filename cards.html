@@ -195,12 +195,16 @@
             filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
         }
         .card-number {
-            font-size: 22px;
-            letter-spacing: 3px;
-            margin: 20px 0 16px;
+            font-size: 19px;
+            letter-spacing: 2.5px;
+            margin: 18px 0 14px;
             font-family: 'Courier New', monospace;
             text-align: center;
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .card-info {
             display: flex;
@@ -208,7 +212,8 @@
             align-items: flex-end;
         }
         .card-info div {
-            font-size: 11px;
+            font-size: 12px;
+            font-weight: 700;
         }
         .card-info div:first-child { text-transform: uppercase; }
         .card-info-label {
@@ -216,6 +221,10 @@
             font-size: 9px !important;
             letter-spacing: 0.5px;
             margin-bottom: 2px;
+            font-weight: 600;
+        }
+        @media (max-width: 480px) {
+            .card-number { font-size: 16px; letter-spacing: 1.5px; }
         }
         .card-item {
             display: grid;
