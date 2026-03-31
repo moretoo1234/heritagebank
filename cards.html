@@ -278,6 +278,70 @@
         .btn-secondary:hover {
             background: #ccc;
         }
+        .btn-full-width {
+            width: 100%;
+            display: block;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        .btn-card-submit {
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(26, 71, 42, 0.3);
+        }
+        .btn-card-submit:hover {
+            background: linear-gradient(135deg, #2d5f3f 0%, #3a7a52 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(26, 71, 42, 0.4);
+        }
+        .btn-card-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .cards-apply-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .card-option-box {
+            background: #f8faf8;
+            border: 1px solid #e0e8e0;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .card-option-title {
+            color: #1a472a;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        .card-option-title i {
+            margin-right: 6px;
+            color: #d4af37;
+        }
+        .card-option-desc {
+            color: #64748b;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+        @media (max-width: 768px) {
+            .cards-apply-grid { grid-template-columns: 1fr; }
+        }
         .form-group {
             display: flex;
             flex-direction: column;
