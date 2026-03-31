@@ -147,7 +147,11 @@ app.use(
                 frameSrc: ["'none'"],
                 objectSrc: ["'none'"],
                 baseUri: ["'self'"],
-                formAction: ["'self'"]
+                formAction: ["'self'"],
+                upgradeInsecureRequests: [],
+                workerSrc: ["'self'"],
+                manifestSrc: ["'self'"],
+                childSrc: ["'none'"]
             }
         },
         crossOriginEmbedderPolicy: false,
