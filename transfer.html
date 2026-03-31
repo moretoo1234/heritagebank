@@ -102,6 +102,7 @@
         }
         .tab-btn:hover:not(.active) { border-color: #d4af37; background: rgba(212,175,55,0.04); }
         .tab-btn i { margin-right: 8px; }
+        .tab-btn img.tab-logo { width: 18px; height: 18px; margin-right: 6px; vertical-align: middle; border-radius: 3px; }
 
         /* UK Bank selector */
         .bank-selector {
@@ -492,15 +493,20 @@
         .amount-input span {
             position: absolute;
             left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
+            top: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
             color: #64748b;
             font-size: 1.2rem;
+            pointer-events: none;
+            z-index: 1;
         }
         .amount-input input {
             padding-left: 35px;
             font-size: 1.3rem;
             font-weight: 600;
+            width: 100%;
         }
         
         .quick-amounts {
@@ -710,7 +716,7 @@
                     <i class="fas fa-university"></i> Heritage Account
                 </button>
                 <button class="tab-btn" onclick="setTransferType('zelle', this)">
-                    <i class="fas fa-bolt"></i> Zelle&reg;
+                    <img class="tab-logo" src="assets/bank-logos/zelle.png" alt="Zelle" onerror="this.outerHTML='<i class=\'fas fa-bolt\'></i>'"> Zelle&reg;
                 </button>
                 <button class="tab-btn" onclick="setTransferType('ukbank', this)">
                     <i class="fas fa-landmark"></i> UK Bank Transfer
@@ -730,7 +736,7 @@
                 <!-- Zelle Instant Send -->
                 <div id="zelleGroup" class="initially-hidden">
                     <div class="zelle-badge">
-                        <i class="fas fa-bolt"></i>
+                        <img src="assets/bank-logos/zelle.png" alt="Zelle" style="width:28px;height:28px;border-radius:6px;" onerror="this.outerHTML='<i class=\'fas fa-bolt\'></i>'">
                         <div>
                             <strong>Zelle&reg; Instant Send</strong>
                             <p>Send money in minutes &mdash; no fees</p>
