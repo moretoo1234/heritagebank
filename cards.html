@@ -163,6 +163,37 @@
             opacity: 0.9;
             text-transform: uppercase;
         }
+        /* Bank logo top-left */
+        .card-bank-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-bank-logo img {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            object-fit: contain;
+            background: rgba(255,255,255,0.15);
+            padding: 2px;
+        }
+        .card-bank-logo span {
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 1.5px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        /* Visa SVG logo */
+        .card-visa-logo {
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+        }
+        .card-visa-logo svg {
+            width: 60px;
+            height: auto;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
+        }
         .card-number {
             font-size: 22px;
             letter-spacing: 3px;
@@ -904,7 +935,10 @@
                             <div class="modal-body">
                                 <div class="card-display">
                                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                                        <div style="font-weight:700; font-size:15px; letter-spacing:1px;">HERITAGE BANK</div>
+                                        <div class="card-bank-logo">
+                                            <img src="assets/logo.png" alt="Heritage Bank">
+                                            <span>HERITAGE BANK</span>
+                                        </div>
                                         <div class="card-network">${kindLabel.toUpperCase()}</div>
                                     </div>
                                     <div style="display:flex; align-items:center; margin-top:8px;">
@@ -928,8 +962,8 @@
                                             <div class="card-info-label">STATUS</div>
                                             <div class="${statusClass}" style="font-weight:700; text-transform:uppercase;">${card.status || 'Unknown'}</div>
                                         </div>
-                                        <div style="text-align:right;">
-                                            <div style="font-weight:700; font-size:18px; font-style:italic; letter-spacing:1px;">VISA</div>
+                                        <div class="card-visa-logo">
+                                            <svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><path d="M293.2 348.7l33.4-195.8h53.4l-33.4 195.8zM540.7 157.8c-10.6-4-27.2-8.3-47.9-8.3-52.8 0-90 26.6-90.3 64.7-.3 28.2 26.6 43.9 46.9 53.3 20.8 9.6 27.8 15.7 27.7 24.3-.1 13.1-16.6 19.1-32 19.1-21.4 0-32.7-3-50.3-10.2l-6.9-3.1-7.5 43.8c12.5 5.5 35.6 10.2 59.6 10.5 56.2 0 92.6-26.3 93-68.7.2-22.9-14.4-40.3-46.1-54.7-19.2-9.3-31-15.5-30.8-24.9 0-8.3 9.9-17.2 31.4-17.2 17.9-.3 30.9 3.6 41 7.6l4.9 2.3 7.3-38.5zM661.6 152.9h-41.3c-12.8 0-22.4 3.5-28 16.3l-79.4 179.5h56.2s9.2-24.1 11.2-29.4c6.1 0 60.8.1 68.6.1 1.6 6.9 6.5 29.3 6.5 29.3h49.7l-43.5-195.8zm-65.8 126.3c4.4-11.3 21.4-54.8 21.4-54.8-.3.5 4.4-11.4 7.1-18.8l3.6 17s10.3 47 12.4 56.6h-44.5zM232.8 152.9l-52.3 133.5-5.6-27.2c-9.7-31.2-39.9-65-73.7-81.9l47.9 171.2 56.6-.1 84.2-195.5h-57.1" fill="#fff"/></svg>
                                         </div>
                                     </div>
                                 </div>
@@ -1215,7 +1249,10 @@ Click 'Manage' in the mobile app or call us at 1-800-HERITAGE
                                 </p>
                                 <div class="card-display">
                                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                                        <div style="font-weight:700; font-size:15px; letter-spacing:1px;">HERITAGE BANK</div>
+                                        <div class="card-bank-logo">
+                                            <img src="assets/logo.png" alt="Heritage Bank">
+                                            <span>HERITAGE BANK</span>
+                                        </div>
                                         <div class="card-network">VIRTUAL</div>
                                     </div>
                                     <div style="display:flex; align-items:center; margin-top:8px;">
@@ -1236,8 +1273,8 @@ Click 'Manage' in the mobile app or call us at 1-800-HERITAGE
                                             <div class="card-info-label">CVV</div>
                                             <div style="font-weight:700;">${escapeHtml(c.cvv)}</div>
                                         </div>
-                                        <div style="text-align:right;">
-                                            <div style="font-weight:700; font-size:18px; font-style:italic; letter-spacing:1px;">VISA</div>
+                                        <div class="card-visa-logo">
+                                            <svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><path d="M293.2 348.7l33.4-195.8h53.4l-33.4 195.8zM540.7 157.8c-10.6-4-27.2-8.3-47.9-8.3-52.8 0-90 26.6-90.3 64.7-.3 28.2 26.6 43.9 46.9 53.3 20.8 9.6 27.8 15.7 27.7 24.3-.1 13.1-16.6 19.1-32 19.1-21.4 0-32.7-3-50.3-10.2l-6.9-3.1-7.5 43.8c12.5 5.5 35.6 10.2 59.6 10.5 56.2 0 92.6-26.3 93-68.7.2-22.9-14.4-40.3-46.1-54.7-19.2-9.3-31-15.5-30.8-24.9 0-8.3 9.9-17.2 31.4-17.2 17.9-.3 30.9 3.6 41 7.6l4.9 2.3 7.3-38.5zM661.6 152.9h-41.3c-12.8 0-22.4 3.5-28 16.3l-79.4 179.5h56.2s9.2-24.1 11.2-29.4c6.1 0 60.8.1 68.6.1 1.6 6.9 6.5 29.3 6.5 29.3h49.7l-43.5-195.8zm-65.8 126.3c4.4-11.3 21.4-54.8 21.4-54.8-.3.5 4.4-11.4 7.1-18.8l3.6 17s10.3 47 12.4 56.6h-44.5zM232.8 152.9l-52.3 133.5-5.6-27.2c-9.7-31.2-39.9-65-73.7-81.9l47.9 171.2 56.6-.1 84.2-195.5h-57.1" fill="#fff"/></svg>
                                         </div>
                                     </div>
                                 </div>
