@@ -1,21 +1,4 @@
+# This is a DEMO student project, NOT a real bank.
+# Block all search engine crawling to prevent phishing misclassification.
 User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /admin.html
-Disallow: /dashboard.html
-Disallow: /analytics.html
-Disallow: /settings.html
-Disallow: /messages.html
-Disallow: /statements.html
-Disallow: /transactions.html
-Disallow: /transfer.html
-Disallow: /pay-bills.html
-Disallow: /cards.html
-Disallow: /mobile-deposit.html
-Disallow: /investment.html
-Disallow: /retirement.html
-Disallow: /savings-goals.html
-Disallow: /request-loan.html
-Disallow: /backend/
-
-Sitemap: https://heritagebank-ku1y.onrender.com/sitemap.xml
+Disallow: /
