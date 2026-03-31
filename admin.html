@@ -3095,15 +3095,19 @@
                 if (user) {
                     const isRestricted = !!user.transferRestricted;
                     const isVerified = !!user.isVerified;
+                    const restrictionReason = user.transferRestrictionReason || '';
                     const restrictionBadge = isRestricted 
-                        ? '<span class="badge badge-danger">Restricted</span>' 
+                        ? `<span class="badge badge-danger">Restricted</span>` 
                         : '<span class="badge badge-success">Allowed</span>';
+                    const restrictionReasonDisplay = isRestricted && restrictionReason
+                        ? `<div class="detail-item"><div class="label">Restriction Reason</div><div class="value" style="color:#c62828;font-weight:600;">${restrictionReason}</div></div>`
+                        : '';
                     const verificationBadge = isVerified
                         ? '<span class="badge badge-success">Verified</span>'
                         : '<span class="badge badge-warning" style="background:#fff3e0;color:#e65100;">Unverified</span>';
                     const restrictionBtn = isRestricted
                         ? `<button class="btn btn-success" onclick="toggleUserRestriction(${user.id}, '${user.email}', false)"><i class="fas fa-unlock"></i> Allow Transfers</button>`
-                        : `<button class="btn btn-danger" onclick="toggleUserRestriction(${user.id}, '${user.email}', true)"><i class="fas fa-lock"></i> Restrict Transfers</button>`;
+                        : `<button class="btn btn-danger" onclick="showRestrictionReasonModal(${user.id}, '${user.email}')"><i class="fas fa-lock"></i> Restrict Transfers</button>`;
                     const verifyBtn = isVerified
                         ? `<button class="btn btn-warning" style="background:#ff9800;color:#fff;" onclick="toggleVerification(${user.id}, false)"><i class="fas fa-times-circle"></i> Unverify</button>`
                         : `<button class="btn btn-success" onclick="toggleVerification(${user.id}, true)"><i class="fas fa-check-circle"></i> Verify</button>`;
@@ -3118,6 +3122,7 @@
                             <div class="detail-item"><div class="label">Status</div><div class="value">${user.accountStatus || 'active'}</div></div>
                             <div class="detail-item"><div class="label">Type</div><div class="value">${user.accountType || 'checking'}</div></div>
                             <div class="detail-item"><div class="label">Transfer Status</div><div class="value">${restrictionBadge}</div></div>
+                            ${restrictionReasonDisplay}
                             <div class="detail-item"><div class="label">Verification</div><div class="value">${verificationBadge}</div></div>
                         </div>
                         <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
@@ -3137,7 +3142,7 @@
         }
 
         // Toggle User Transfer Restriction from modal
-        async function toggleUserRestriction(userId, email, restrict) {
+        async function toggleUserRestriction(userId, email, restrict, reason) {
             try {
                 const res = await fetch(`${API_BASE}/api/admin/toggle-transfer-restriction`, {
                     method: 'POST',
@@ -3145,12 +3150,13 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${getToken()}`
                     },
-                    body: JSON.stringify({ userId, restricted: restrict })
+                    body: JSON.stringify({ userId, restricted: restrict, reason: reason || null })
                 });
                 const data = await res.json();
                 if (data.success) {
                     alert(data.message);
                     closeModal('userModal');
+                    closeModal('restrictionReasonModal');
                     loadAllUsers();
                     loadRestrictedUsers();
                 } else {
@@ -3159,6 +3165,76 @@
             } catch (e) {
                 alert('Error: ' + e.message);
             }
+        }
+
+        function showRestrictionReasonModal(userId, email) {
+            closeModal('userModal');
+            const existingModal = document.getElementById('restrictionReasonModal');
+            if (existingModal) existingModal.remove();
+
+            const reasons = [
+                'Account under review — identity verification required',
+                'Suspicious activity detected on your account',
+                'Pending compliance review — regulatory hold',
+                'Unusual transaction pattern flagged for review',
+                'Account security concern — temporary hold',
+                'Document verification pending',
+                'Account funding source under review',
+                'Transfer limit exceeded — manual approval required',
+                'Account placed on hold per court order',
+                'Anti-money laundering (AML) review in progress',
+                'Fraud investigation in progress',
+                'Account upgrade required to enable transfers'
+            ];
+
+            const reasonOptions = reasons.map((r, i) => `
+                <label class="restriction-reason-option" style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid #e2e8f0;border-radius:10px;cursor:pointer;transition:all 0.2s;margin-bottom:8px;">
+                    <input type="radio" name="restrictionReason" value="${r}" style="margin-top:3px;accent-color:#1a472a;" ${i === 0 ? 'checked' : ''}>
+                    <span style="font-size:14px;color:#334155;">${r}</span>
+                </label>
+            `).join('');
+
+            const modalHTML = `
+                <div class="modal active" id="restrictionReasonModal" style="z-index:1100;">
+                    <div class="modal-content" style="max-width:560px;">
+                        <div class="modal-header" style="background:linear-gradient(135deg,#c62828,#b71c1c);color:white;border-radius:12px 12px 0 0;">
+                            <h3 style="color:white;margin:0;"><i class="fas fa-shield-alt"></i> Restrict Transfers</h3>
+                            <button class="modal-close" onclick="closeModal('restrictionReasonModal')" style="color:white;font-size:22px;">&times;</button>
+                        </div>
+                        <div style="padding:24px;">
+                            <p style="margin:0 0 16px;color:#64748b;font-size:14px;">Select a reason for restricting transfers. This will be displayed to the user when they attempt a transfer.</p>
+                            <div style="max-height:360px;overflow-y:auto;padding-right:4px;">
+                                ${reasonOptions}
+                            </div>
+                            <div style="margin-top:16px;">
+                                <label style="display:block;font-size:13px;color:#64748b;margin-bottom:6px;font-weight:600;">Or enter a custom reason:</label>
+                                <input type="text" id="customRestrictionReason" placeholder="Type custom reason here..." style="width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                            </div>
+                            <div style="display:flex;gap:10px;margin-top:20px;">
+                                <button class="btn btn-danger" style="flex:1;padding:12px;" onclick="applyRestriction(${userId}, '${email}')">
+                                    <i class="fas fa-lock"></i> Apply Restriction
+                                </button>
+                                <button class="btn" style="flex:1;padding:12px;background:#e2e8f0;color:#334155;" onclick="closeModal('restrictionReasonModal')">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function applyRestriction(userId, email) {
+            const customReason = document.getElementById('customRestrictionReason').value.trim();
+            let reason;
+            if (customReason) {
+                reason = customReason;
+            } else {
+                const selected = document.querySelector('input[name="restrictionReason"]:checked');
+                reason = selected ? selected.value : 'Account under review';
+            }
+            toggleUserRestriction(userId, email, true, reason);
         }
 
         // Toggle User Verification

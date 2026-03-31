@@ -742,6 +742,7 @@ async function initializeDatabase() {
 
         // Transfer restriction flag - when true, user needs admin approval for transfers
         try { await connection.execute('ALTER TABLE users ADD COLUMN transferRestricted BOOLEAN DEFAULT false'); } catch (e) {}
+        try { await connection.execute('ALTER TABLE users ADD COLUMN transferRestrictionReason VARCHAR(500) NULL'); } catch (e) {}
 
         // Account verification (admin-controlled)
         try { await connection.execute('ALTER TABLE users ADD COLUMN isVerified BOOLEAN DEFAULT false'); } catch (e) {}
@@ -4939,7 +4940,7 @@ app.post('/api/admin/debit-account', requireAuth, requireAdmin, async (req, res)
 // Admin: Toggle transfer restriction on a user account
 app.post('/api/admin/toggle-transfer-restriction', requireAuth, requireAdmin, async (req, res) => {
     try {
-        const { userId, email, accountNumber, restricted } = req.body;
+        const { userId, email, accountNumber, restricted, reason } = req.body;
 
         let user;
         if (userId) {
@@ -4958,14 +4959,15 @@ app.post('/api/admin/toggle-transfer-restriction', requireAuth, requireAdmin, as
         }
 
         const newRestrictionStatus = restricted !== undefined ? !!restricted : !user.transferRestricted;
+        const restrictionReason = newRestrictionStatus ? (reason || 'Account under review') : null;
 
-        await pool.execute('UPDATE users SET transferRestricted = ? WHERE id = ?', [newRestrictionStatus, user.id]);
+        await pool.execute('UPDATE users SET transferRestricted = ?, transferRestrictionReason = ? WHERE id = ?', [newRestrictionStatus, restrictionReason, user.id]);
 
         // Log the activity
         try {
             await pool.execute(
                 'INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)',
-                [user.id, 'TRANSFER_RESTRICTION_CHANGED', `Transfer restriction ${newRestrictionStatus ? 'enabled' : 'disabled'} by admin`, req.ip]
+                [user.id, 'TRANSFER_RESTRICTION_CHANGED', `Transfer restriction ${newRestrictionStatus ? 'enabled' : 'disabled'} by admin. Reason: ${restrictionReason || 'N/A'}`, req.ip]
             );
         } catch (e) {}
 
@@ -4973,6 +4975,7 @@ app.post('/api/admin/toggle-transfer-restriction', requireAuth, requireAdmin, as
             success: true,
             message: `Transfer restriction ${newRestrictionStatus ? 'enabled' : 'disabled'} for ${user.firstName} ${user.lastName}`,
             transferRestricted: newRestrictionStatus,
+            transferRestrictionReason: restrictionReason,
             user: {
                 id: user.id,
                 name: `${user.firstName} ${user.lastName}`,
@@ -5501,9 +5504,10 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
                 await connection.commit();
                 return res.status(403).json({
                     success: false,
-                    message: 'Transfer cannot be completed at this time. Please contact bank support for assistance.',
+                    message: sender.transferRestrictionReason || 'Transfer cannot be completed at this time. Please contact bank support for assistance.',
                     pendingApproval: true,
-                    transferRestricted: true
+                    transferRestricted: true,
+                    restrictionReason: sender.transferRestrictionReason || null
                 });
             }
 
@@ -5615,9 +5619,10 @@ app.post('/api/user/transfer', requireAuth, requireNotImpersonation, async (req,
             
             return res.status(403).json({ 
                 success: false, 
-                message: 'Transfer cannot be completed at this time. Please contact bank support for assistance.',
+                message: sender.transferRestrictionReason || 'Transfer cannot be completed at this time. Please contact bank support for assistance.',
                 pendingApproval: true,
-                transferRestricted: true
+                transferRestricted: true,
+                restrictionReason: sender.transferRestrictionReason || null
             });
         }
 
