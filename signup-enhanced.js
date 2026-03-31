@@ -72,19 +72,10 @@ function validateCurrentStep() {
         const firstName = document.getElementById('firstName').value.trim();
         const lastName = document.getElementById('lastName').value.trim();
         const dob = document.getElementById('dateOfBirth').value;
-        const ssn = document.getElementById('ssn').value.trim();
         
         if (!firstName || !lastName) {
             showAlert('Please fill in all required fields', 'danger');
             return false;
-        }
-        
-        if (ssn) {
-            const ssnDigits = ssn.replace(/\D/g, '');
-            if (ssnDigits.length !== 9) {
-                showAlert('SSN must be exactly 9 digits', 'danger');
-                return false;
-            }
         }
         
         if (dob) {
@@ -179,7 +170,7 @@ function saveStepData() {
         formData.firstName = document.getElementById('firstName').value.trim();
         formData.lastName = document.getElementById('lastName').value.trim();
         formData.dateOfBirth = document.getElementById('dateOfBirth').value;
-        formData.ssn = document.getElementById('ssn').value.trim();
+
     }
     
     if (currentStep === 2) {
@@ -202,7 +193,6 @@ function saveStepData() {
 
 // Show review summary
 function showReviewSummary() {
-    const maskedSSN = formData.ssn ? '***-**-' + formData.ssn.replace(/\D/g, '').slice(-4) : '';
     const summary = `
         <h3 style="color: #1a472a; margin-bottom: 15px;">Account Summary</h3>
         <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; line-height: 1.8;">
@@ -214,7 +204,6 @@ function showReviewSummary() {
             <strong>Account Type:</strong><span style="text-transform: capitalize;">${escapeHtml(formData.accountType)}</span>
             <strong>Initial Deposit:</strong><span>$${escapeHtml(formData.initialDeposit.toFixed(2))}</span>
             ${formData.referralCode ? `<strong>Referral Code:</strong><span>${escapeHtml(formData.referralCode)}</span>` : ''}
-            ${maskedSSN ? `<strong>SSN:</strong><span>${escapeHtml(maskedSSN)}</span>` : ''}
         </div>
     `;
     document.getElementById('reviewSummary').innerHTML = summary;
@@ -316,7 +305,6 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
         
         if (data.success) {
             // Clear sensitive data from memory
-            formData.ssn = '';
             formData.password = '';
 
             localStorage.setItem('token', data.token);
@@ -339,14 +327,6 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Create Account';
     }
-});
-
-// SSN formatting
-document.getElementById('ssn')?.addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 3) value = value.slice(0, 3) + '-' + value.slice(3);
-    if (value.length > 6) value = value.slice(0, 6) + '-' + value.slice(6, 10);
-    e.target.value = value;
 });
 
 // Phone formatting
