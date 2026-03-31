@@ -1003,7 +1003,7 @@ async function initializeDatabase() {
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 userId INT NOT NULL,
                 accountId INT NOT NULL,
-                cardNumber CHAR(16) NOT NULL,
+                cardNumber VARCHAR(255) NOT NULL,
                 cardNumberMasked VARCHAR(19),
                 expirationDate CHAR(5) NOT NULL,
                 cvv VARCHAR(255) NOT NULL,
@@ -1057,6 +1057,9 @@ async function initializeDatabase() {
                 "ALTER TABLE cards MODIFY COLUMN deliveryStatus ENUM('not_applicable','processing','shipped','in_transit','out_for_delivery','delivered') DEFAULT 'not_applicable'"
             );
         } catch (e) {}
+
+        // Expand cardNumber column to hold encrypted data (AES-256-GCM IV:ciphertext:tag)
+        try { await connection.execute('ALTER TABLE cards MODIFY COLUMN cardNumber VARCHAR(255) NOT NULL'); } catch (e) {}
 
         // Notifications table
         await connection.execute(`
@@ -6130,29 +6133,8 @@ app.post('/api/bills/pay', requireAuth, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Insufficient funds' });
         }
 
-        // Look up the card used for payment
-        let cardLastFour = null;
-        if (cardId) {
-            const [cards] = await pool.execute(
-                'SELECT cardNumberMasked FROM cards WHERE id = ? AND userId = ?',
-                [cardId, req.auth.id]
-            );
-            if (cards[0]?.cardNumberMasked) {
-                cardLastFour = String(cards[0].cardNumberMasked).slice(-4);
-            }
-        }
-        if (!cardLastFour) {
-            // Fallback: pick most recent active virtual card
-            const [cards] = await pool.execute(
-                "SELECT cardNumberMasked FROM cards WHERE userId = ? AND cardType = 'virtual' AND status = 'active' ORDER BY issuedAt DESC LIMIT 1",
-                [req.auth.id]
-            );
-            if (cards[0]?.cardNumberMasked) {
-                cardLastFour = String(cards[0].cardNumberMasked).slice(-4);
-            }
-        }
-        // Use account number as final fallback
-        const fromAcctNum = cardLastFour || (user.accountNumber ? String(user.accountNumber).slice(-4) : null);
+        // Use account number as the payment source (bill payments are from balance)
+        const fromAcctNum = user.accountNumber ? String(user.accountNumber) : null;
 
         await pool.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amtValue, user.id]);
 

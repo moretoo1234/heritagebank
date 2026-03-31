@@ -355,7 +355,7 @@
                             if (isBillPayment(tx)) {
                                 const lastFour = tx.fromAccountNumber ? String(tx.fromAccountNumber).slice(-4) : '7890';
                                 const billerName = tx.recipientName || desc.replace(/Bill payment to\s*/i, '').split('(')[0].trim() || 'Biller';
-                                fromTo = `<i class="fas fa-credit-card" style="color:#1a472a;margin-right:4px;"></i> Paid via Virtual Debit Card ****${lastFour} &bull; To: ${billerName}`;
+                                fromTo = `<i class="fas fa-university" style="color:#1a472a;margin-right:4px;"></i> Paid from Account Balance ****${lastFour} &bull; To: ${billerName}`;
                             } else if (ukMatch) {
                                 const bankName = ukMatch[1].trim();
                                 const recipientName = ukMatch[2].trim();
@@ -486,7 +486,7 @@
                 </div>
                 <div class="txn-detail-row">
                     <span class="txn-detail-label">Payment Method</span>
-                    <span class="txn-detail-value"><i class="fas fa-credit-card" style="color:#1a472a;margin-right:4px;"></i> Virtual Debit Card ****${lastFour}</span>
+                    <span class="txn-detail-value"><i class="fas fa-university" style="color:#1a472a;margin-right:4px;"></i> Account Balance ****${lastFour}</span>
                 </div>`;
             } else {
                 html += `
