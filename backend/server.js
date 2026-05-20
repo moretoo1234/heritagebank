@@ -11406,7 +11406,7 @@ async function ensureRetirementTables() {
                 apy DECIMAL(5,2) NOT NULL,
                 annual_limit DECIMAL(15,2) NOT NULL DEFAULT 7000,
                 contributed_this_year DECIMAL(15,2) NOT NULL DEFAULT 0,
-                contribution_year INT NOT NULL DEFAULT (YEAR(CURDATE())),
+                contribution_year INT NOT NULL DEFAULT 0,
                 beneficiary VARCHAR(200),
                 target_retirement_age INT DEFAULT 65,
                 status ENUM('active', 'closed', 'withdrawn') DEFAULT 'active',
@@ -11417,7 +11417,7 @@ async function ensureRetirementTables() {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         `);
         // Add contribution_year column for existing tables
-        await pool.execute(`ALTER TABLE retirement_accounts ADD COLUMN IF NOT EXISTS contribution_year INT NOT NULL DEFAULT (YEAR(CURDATE()))`).catch(() => {});
+        await pool.execute(`ALTER TABLE retirement_accounts ADD COLUMN IF NOT EXISTS contribution_year INT NOT NULL DEFAULT 0`).catch(() => {});
     } catch (e) {
         if (!e.message.includes('already exists')) {
             console.error('Error creating retirement_accounts table:', e.message);
