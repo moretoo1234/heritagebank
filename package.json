@@ -2,7 +2,7 @@
   "name": "heritage-bank",
   "version": "1.0.0",
   "description": "Heritage Bank - Digital Banking Application",
-  "main": "server.js",
+  "main": "backend/server.js",
   "scripts": {
     "start": "node backend/server.js",
     "dev": "node backend/server.js",

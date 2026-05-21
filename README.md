@@ -19,6 +19,8 @@ A modern digital banking application.
 - **Build Command**: `cd backend && npm install`
 - **Start Command**: `node backend/server.js`
 
+> Note: production deploys must use `backend/server.js`. The root `server.js` file exists only for legacy compatibility and is not the intended deployment entrypoint.
+
 ### Step 3: Add Environment Variables
 Click **Advanced** → **Add Environment Variable** for each:
 
