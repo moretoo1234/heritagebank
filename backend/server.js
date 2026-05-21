@@ -1647,8 +1647,10 @@ async function initializeDatabase() {
 
         connection.release();
         DB_READY = true;
+        console.log('✅ Database initialized and schema synced');
     } catch (error) {
-        console.error('? Database error:', error.message);
+        console.error('? Database initialization failed:', error.message);
+        DB_READY = false;
     }
 }
 
@@ -3531,7 +3533,8 @@ app.get('/api/health', (req, res) => {
             adminDebitAccount: true,
             adminTransfer: true
         },
-        database: 'Ready',
+        database: DB_READY ? 'Ready' : 'Unavailable',
+        databaseReady: DB_READY,
         timestamp: new Date().toISOString()
     });
 });
