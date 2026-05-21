@@ -11385,9 +11385,9 @@ async function ensureLoanTables() {
                 status ENUM('pending', 'under_review', 'approved', 'rejected', 'disbursed') DEFAULT 'pending',
                 admin_notes TEXT,
                 reviewed_by INT,
-                reviewed_at DATETIME,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                reviewed_at TIMESTAMP NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 INDEX idx_user_id (user_id),
                 INDEX idx_status (status)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -11415,8 +11415,8 @@ async function ensureInvestmentTables() {
                 estimated_return DECIMAL(15,2),
                 maturity_date DATE,
                 status ENUM('active', 'matured', 'withdrawn', 'cancelled') DEFAULT 'active',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 INDEX idx_user_id (user_id),
                 INDEX idx_status (status)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -11451,8 +11451,8 @@ async function ensureRetirementTables() {
                 beneficiary VARCHAR(200),
                 target_retirement_age INT DEFAULT 65,
                 status ENUM('active', 'closed', 'withdrawn') DEFAULT 'active',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 INDEX idx_user_id (user_id),
                 INDEX idx_status (status)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -11478,7 +11478,7 @@ async function ensureChatTables() {
                 sender_type ENUM('user', 'agent', 'system') NOT NULL,
                 agent_id INT,
                 is_read BOOLEAN DEFAULT FALSE,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_user_id (user_id),
                 INDEX idx_session_id (session_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -11491,7 +11491,7 @@ async function ensureChatTables() {
                 session_id VARCHAR(100) UNIQUE NOT NULL,
                 status ENUM('active', 'waiting', 'closed') DEFAULT 'waiting',
                 agent_id INT,
-                started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 ended_at DATETIME,
                 INDEX idx_user_id (user_id),
                 INDEX idx_status (status)
