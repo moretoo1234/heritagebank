@@ -78,7 +78,7 @@ const CTR_THRESHOLD = parseFloat(process.env.CTR_THRESHOLD || '10000');
 const MAX_TXN_PER_HOUR = parseInt(process.env.MAX_TXN_PER_HOUR || '10', 10);
 const FEE_WAIVER_MIN_BALANCE = parseFloat(process.env.FEE_WAIVER_MIN_BALANCE || '1500');
 const DORMANT_DAYS = parseInt(process.env.DORMANT_DAYS || '365', 10);
-const PRODUCTION_ORIGIN = process.env.PRODUCTION_ORIGIN || 'https://heritagebank-ku1y.onrender.com';
+const PRODUCTION_ORIGIN = process.env.PRODUCTION_ORIGIN || 'https://heritage-bank-13vo.onrender.com';
 
 // Process-level diagnostics to help catch unexpected exits during local/dev runs.
 // (Useful when the server starts and immediately quits due to missing env, port binding errors, etc.)
