@@ -3607,6 +3607,24 @@ app.post('/api/auth/login', async (req, res) => {
                 JWT_SECRET,
                 { expiresIn: '5m' }
             );
+            // Log this pre-auth login attempt so it appears in login history/activity.
+            try {
+                await pool.execute(
+                    `INSERT INTO login_history (userId, ipAddress, userAgent, loginStatus) VALUES (?, ?, ?, ?)`,
+                    [user.id, req.ip || null, req.get('user-agent') || null, 'preauth']
+                );
+            } catch (e) {
+                // best-effort: don't block 2FA flow if logging fails
+                console.warn('Failed to record preauth login history:', e?.message || e);
+            }
+
+            try {
+                await pool.execute(
+                    `INSERT INTO activity_logs (user_id, action_type, action_details, ip_address) VALUES (?, ?, ?, ?)`,
+                    [user.id, 'login', 'Pre-auth (2FA required)', req.ip || null]
+                ).catch(() => {});
+            } catch (e) {}
+
             return res.json({
                 success: true,
                 requires2FA: true,
