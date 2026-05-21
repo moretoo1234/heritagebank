@@ -531,6 +531,18 @@ function requireNotImpersonation(req, res, next) {
     return next();
 }
 
+// Detect common DB/unavailable errors so we can return 503 instead of 500
+function isDbUnavailableError(err) {
+    if (!err) return false;
+    const code = String(err.code || '').toUpperCase();
+    const msg = String(err.message || '');
+    // Common MySQL/TiDB/node mysql2 error codes and connection problems
+    const dbCodes = ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'PROTOCOL_CONNECTION_LOST', 'ER_ACCESS_DENIED_ERROR', 'ER_BAD_DB_ERROR'];
+    if (dbCodes.includes(code)) return true;
+    if (/getaddrinfo ENOTFOUND|connect ECONN|Connection refused|ER_/i.test(msg)) return true;
+    return false;
+}
+
 async function requireAdmin(req, res, next) {
     try {
         if (!req.auth?.id) {
@@ -3630,8 +3642,15 @@ app.post('/api/auth/login', async (req, res) => {
             }
         });
     } catch (error) {
+        // Log internal error for debugging but avoid returning error details to clients.
         console.error('Login error:', error);
-        console.error('Server error:', error); res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
+
+        // If this was a database connectivity/execute failure, return 503 Service Unavailable
+        if (isDbUnavailableError(error)) {
+            return res.status(503).json({ success: false, message: 'Service unavailable. Please try again later.' });
+        }
+
+        return res.status(500).json({ success: false, message: 'An internal error occurred. Please try again later.' });
     }
 });
 
