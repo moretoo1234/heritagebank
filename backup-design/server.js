@@ -415,9 +415,10 @@ function verifyOTP(email, otp) {
 // ACCOUNT NUMBER GENERATION
 // ============================================
 function getNextAccountNumber() {
-    const accountNumber = accountNumberCounter.toString();
-    accountNumberCounter++;
-    return accountNumber;
+    // Backwards-compatible wrapper: use the random generator to
+    // avoid a missing `accountNumberCounter` ReferenceError and
+    // ensure unique account numbers across runs.
+    return generateAccountNumber();
 }
 
 // ============================================
@@ -726,8 +727,15 @@ app.post('/api/auth/resend-otp', (req, res) => {
 
 
 
-        // Send OTP email
-        sendOTPEmail(email, otp);
+// Generate, store and send a fresh OTP (best-effort)
+        try {
+            const otp = generateOTP();
+            storeOTP(email, otp);
+            sendOTPEmail(email, otp);
+        } catch (e) {
+            console.error('Failed to generate/store/send OTP:', e?.message || e);
+            return res.status(500).json({ success: false, message: 'Failed to resend OTP' });
+        }
 
         res.status(200).json({
             success: true,

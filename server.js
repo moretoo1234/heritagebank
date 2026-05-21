@@ -416,9 +416,10 @@ function verifyOTP(email, otp) {
 // ACCOUNT NUMBER GENERATION
 // ============================================
 function getNextAccountNumber() {
-    const accountNumber = accountNumberCounter.toString();
-    accountNumberCounter++;
-    return accountNumber;
+    // Backwards-compatible wrapper: use the random generator to
+    // avoid a missing `accountNumberCounter` ReferenceError and
+    // ensure unique account numbers across runs.
+    return generateAccountNumber();
 }
 
 // ============================================
