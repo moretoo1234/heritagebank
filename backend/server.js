@@ -474,14 +474,18 @@ const pool = mysql.createPool({
 // Tracks whether DB schema initialization has completed.
 let DB_READY = false;
 
-// JWT Secret - Must be set in environment
-const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? crypto.randomBytes(32).toString('hex') : null);
+// JWT Secret - must be provided in production. In development we may generate
+// a per-run ephemeral secret so tests/dev use works but tokens are invalidated
+// on restart. This avoids any hardcoded deterministic fallback.
+let JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-    console.error('? JWT_SECRET environment variable is required (set it in your environment or backend/.env)');
-    process.exit(1);
-}
-if (!process.env.JWT_SECRET && process.env.NODE_ENV !== 'production') {
-    console.warn('?️ JWT_SECRET is not set; using an insecure development default. Set JWT_SECRET in backend/.env for proper local auth testing.');
+    if (process.env.NODE_ENV !== 'production') {
+        JWT_SECRET = crypto.randomBytes(32).toString('hex');
+        console.warn('⚠️ JWT_SECRET is not set. Generated a per-run ephemeral JWT secret for development. Tokens will be invalidated on restart. Set JWT_SECRET in your environment to persist sessions.');
+    } else {
+        console.error('❌ JWT_SECRET environment variable is required in production. Set JWT_SECRET in your service environment.');
+        process.exit(1);
+    }
 }
 
 // Auth helpers
