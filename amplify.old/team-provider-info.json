@@ -1,0 +1,19 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "UniqueS3BucketPrefix": "heritage-bank-dev-20250517-",
+      "AuthRoleName": "heritage-bank-dev-20250517-authRole",
+      "UnauthRoleName": "heritage-bank-dev-20250517-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::123456789012:role/heritage-bank-dev-20250517-authRole",
+      "UnauthRoleArn": "arn:aws:iam::123456789012:role/heritage-bank-dev-20250517-unauthRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "heritage-bank-dev-20250517-deployment",
+      "S3Key": "amplify/heritage-bank-dev-20250517/amplify-meta.json"
+    },
+    "categories": {
+      "auth": {
+        "heritageauth": {}
+      }
+    }
+  }
+}

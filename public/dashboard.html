@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="assets/logo.png">
+    <link rel="apple-touch-icon" href="assets/logo.png">
+    <link rel="stylesheet" href="loading.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="description" content="View your Heritage Bank account dashboard with balances, recent transactions, and quick actions.">
+    <meta property="og:title" content="Dashboard - Heritage Bank">
+    <meta property="og:description" content="Access your Heritage Bank account dashboard with balances, transactions, and quick actions.">
+    <meta property="og:type" content="website">
+    <title>Dashboard - Heritage Bank</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="dashboard-page.css">
+</head>
+<body>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-ring"><div class="loader-logo"><img src="assets/logo.png" alt="Heritage Bank"></div></div><div class="loader-text">Loading</div></div></div>
+    <div class="dashboard">
+        <!-- SIDEBAR -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <img src="assets/logo.png" alt="Heritage Bank" onerror="this.style.display='none'">
+                <span>Heritage Bank</span>
+            </div>
+            <div class="sidebar-user-avatar" id="sidebarUserAvatar">
+                <div class="sidebar-avatar-circle">
+                    <i class="fas fa-user" id="sidebarUserAvatarIcon"></i>
+                    <img id="sidebarUserAvatarImg" src="" alt="User avatar" class="initially-hidden">
+                </div>
+                <span class="sidebar-user-name" id="sidebarUserName"></span>
+            </div>
+            <div class="sidebar-section">Main Menu</div>
+            <ul class="sidebar-menu">
+                <li class="active"><i class="fas fa-th-large"></i> Dashboard</li>
+                <li onclick="location.href='transfer.html'"><i class="fas fa-paper-plane"></i> Transfer</li>
+                <li onclick="location.href='pay-bills.html'"><i class="fas fa-file-invoice-dollar"></i> Pay Bills</li>
+                <li onclick="location.href='bulk-payments.html'"><i class="fas fa-money-check-alt"></i> Bulk Payments</li>
+                <li onclick="location.href='mobile-deposit.html'"><i class="fas fa-camera"></i> Mobile Deposit</li>
+                <li onclick="location.href='transactions.html'"><i class="fas fa-exchange-alt"></i> Transactions</li>
+            </ul>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">Products</div>
+            <ul class="sidebar-menu">
+                <li onclick="location.href='cards.html'"><i class="fas fa-credit-card"></i> Cards</li>
+                <li onclick="location.href='investment.html'"><i class="fas fa-chart-line"></i> Investments</li>
+                <li onclick="location.href='request-loan.html'"><i class="fas fa-hand-holding-usd"></i> Loans</li>
+                <li onclick="location.href='savings-goals.html'"><i class="fas fa-piggy-bank"></i> Savings Goals</li>
+            </ul>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">Others</div>
+            <ul class="sidebar-menu">
+                <li onclick="location.href='analytics.html'"><i class="fas fa-chart-pie"></i> Analytics</li>
+                <li onclick="location.href='messages.html'"><i class="fas fa-envelope"></i> Messages</li>
+                <li onclick="location.href='support.html'"><i class="fas fa-headset"></i> Support</li>
+                <li onclick="location.href='settings.html'"><i class="fas fa-cog"></i> Settings</li>
+                <li onclick="location.href='faq.html'"><i class="fas fa-question-circle"></i> Help & FAQ</li>
+            </ul>
+            <div class="sidebar-bottom">
+                <button class="logout-sidebar-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Log Out</button>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <div class="main-header">
+                <div class="header-left">
+                    <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <div>
+                        <p class="greeting-text">Welcome back,</p>
+                        <h1 class="page-title" id="userName">User</h1>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="notification-btn" onclick="toggleNotifications()" id="notifBtn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notifBadge">0</span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown">
+                        <div class="notif-dropdown-header">
+                            <span><i class="fas fa-bell"></i> Notifications</span>
+                            <button onclick="markAllRead()" class="notif-mark-read-btn">Mark all read</button>
+                        </div>
+                        <div id="notifList" class="notif-list">
+                            <p class="notif-empty">No notifications</p>
+                        </div>
+                    </div>
+                    <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </div>
+
+            <!-- Metric Cards -->
+            <div class="metric-cards">
+                <div class="metric-card primary">
+                    <div class="metric-icon"><i class="fas fa-wallet"></i></div>
+                    <div class="metric-info">
+                        <span class="metric-label">Available Balance</span>
+                        <h2 class="metric-value" id="balance">$0.00</h2>
+                        <span class="metric-sub" id="accountType">Savings Account</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon savings"><i class="fas fa-piggy-bank"></i></div>
+                    <div class="metric-info">
+                        <span class="metric-label">Savings Goal</span>
+                        <h2 class="metric-value" id="savingsGoal">Loading...</h2>
+                        <span class="metric-sub"><span id="savingsProgress">0%</span> achieved</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon status"><i class="fas fa-shield-alt"></i></div>
+                    <div class="metric-info">
+                        <span class="metric-label">Account Status</span>
+                        <h2 class="metric-value status-active" id="accountStatus">Active</h2>
+                        <span class="metric-sub" id="accountStatusSub">All systems normal</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Details -->
+            <div class="card account-info">
+                <div class="card-header">
+                    <h3><i class="fas fa-university"></i> Account Details</h3>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Account Number</label>
+                        <div class="info-value-row">
+                            <strong id="accountNumber">-</strong>
+                            <button class="icon-btn" onclick="copyToClipboard('accountNumber')" title="Copy account number"><i class="fas fa-copy"></i></button>
+                            <button class="icon-btn" id="toggleAcctBtn" onclick="toggleAccountNumber()" title="Show/hide account number"><i class="fas fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <label>Routing Number</label>
+                        <div class="info-value-row">
+                            <strong id="routingNumber">091238946</strong>
+                            <button class="icon-btn" onclick="copyToClipboard('routingNumber')" title="Copy routing number"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <label>SWIFT Code</label>
+                        <div class="info-value-row">
+                            <strong id="swiftCode">HERBANKUS</strong>
+                            <button class="icon-btn" onclick="copyToClipboard('swiftCode')" title="Copy SWIFT code"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <label>Account Type</label>
+                        <strong id="accType">Savings</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <h3 class="section-title"><i class="fas fa-bolt"></i> Quick Actions</h3>
+            <div class="quick-actions">
+                <div class="action-card" onclick="location.href='transfer.html'">
+                    <i class="fas fa-paper-plane"></i>
+                    <h4>Send Money</h4>
+                </div>
+                <div class="action-card" onclick="location.href='mobile-deposit.html'">
+                    <i class="fas fa-camera"></i>
+                    <h4>Deposit Check</h4>
+                </div>
+                <div class="action-card" onclick="location.href='pay-bills.html'">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <h4>Pay Bills</h4>
+                </div>
+                <div class="action-card" onclick="location.href='bulk-payments.html'">
+                    <i class="fas fa-money-check-alt"></i>
+                    <h4>Bulk Payments</h4>
+                </div>
+                <div class="action-card" onclick="location.href='savings-goals.html'">
+                    <i class="fas fa-piggy-bank"></i>
+                    <h4>Savings Goals</h4>
+                </div>
+                <div class="action-card" onclick="location.href='analytics.html'">
+                    <i class="fas fa-chart-pie"></i>
+                    <h4>Analytics</h4>
+                </div>
+                <div class="action-card" onclick="location.href='statements.html'">
+                    <i class="fas fa-file-invoice"></i>
+                    <h4>Statements</h4>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="card transactions-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-history"></i> Recent Transactions</h3>
+                    <a href="transactions.html" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div id="transactionsList">
+                    <div class="no-transactions">
+                        <i class="fas fa-receipt"></i>
+                        <p>No recent transactions</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Session Timeout Warning Modal -->
+    <div class="session-warning" id="sessionWarning">
+        <div class="session-warning-content">
+            <i class="fas fa-clock"></i>
+            <h3>Session Expiring Soon</h3>
+            <p>Your session will expire due to inactivity.</p>
+            <div class="session-timer" id="sessionTimer">2:00</div>
+            <button class="btn btn-primary session-extend-btn" onclick="extendSession()">
+                <i class="fas fa-redo"></i> Stay Logged In
+            </button>
+            <button class="btn btn-secondary session-logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3001' 
+            : window.location.origin;
+        let userId = null;
+        
+        // Session timeout variables (15 minutes idle = warning, 2 more minutes = logout)
+        const IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+        const WARNING_DURATION = 2 * 60 * 1000; // 2 minutes warning
+        let idleTimer = null;
+        let warningTimer = null;
+        let countdownInterval = null;
+        
+        // Initialize dark mode
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+        
+        // Session management
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            clearTimeout(warningTimer);
+            clearInterval(countdownInterval);
+            document.getElementById('sessionWarning').classList.remove('active');
+            
+            idleTimer = setTimeout(showSessionWarning, IDLE_TIMEOUT);
+        }
+        
+        function showSessionWarning() {
+            const warning = document.getElementById('sessionWarning');
+            warning.classList.add('active');
+            
+            let timeLeft = WARNING_DURATION / 1000;
+            updateTimerDisplay(timeLeft);
+            
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay(timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    logout();
+                }
+            }, 1000);
+            
+            warningTimer = setTimeout(logout, WARNING_DURATION);
+        }
+        
+        function updateTimerDisplay(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            document.getElementById('sessionTimer').textContent = 
+                `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function extendSession() {
+            resetIdleTimer();
+            // Optionally refresh token here
+        }
+        
+        // Track user activity
+        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
+            document.addEventListener(event, resetIdleTimer, { passive: true });
+        });
+        
+        // Start idle timer on page load
+        resetIdleTimer();
+        
+        async function loadDashboard() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'signin.html';
+                return;
+            }
+            
+            try {
+                // Load user profile
+                const res = await fetch(`${API_URL}/api/auth/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success && data.user) {
+                    userId = data.user.id;
+                    document.getElementById('userName').textContent = data.user.firstName || 'User';
+
+                    // Sidebar avatar
+                    var sNameEl = document.getElementById('sidebarUserName');
+                    if (sNameEl) sNameEl.textContent = (data.user.firstName || '') + ' ' + (data.user.lastName || '');
+                    var sAvatarImg = document.getElementById('sidebarUserAvatarImg');
+                    var sAvatarIcon = document.getElementById('sidebarUserAvatarIcon');
+                    if (data.user.profileImage) {
+                        if (sAvatarImg) { sAvatarImg.src = API_URL + '/backend/' + data.user.profileImage; sAvatarImg.style.display = 'block'; }
+                        if (sAvatarIcon) sAvatarIcon.style.display = 'none';
+                    } else {
+                        var defAvatar = (data.user.gender === 'female') ? 'assets/avatar-female.jpg' : 'assets/avatar-male.jpg';
+                        if (sAvatarImg) { sAvatarImg.src = defAvatar; sAvatarImg.style.display = 'block'; }
+                        if (sAvatarIcon) sAvatarIcon.style.display = 'none';
+                    }
+
+                    document.getElementById('balance').textContent = '$' + (data.user.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('accountNumber').textContent = data.user.accountNumber ? ('****' + data.user.accountNumber.slice(-4)) : '-';
+                    document.getElementById('accountNumber').dataset.full = data.user.accountNumber || '';
+                    document.getElementById('accountNumber').dataset.masked = 'true';
+                    var routingEl = document.getElementById('routingNumber');
+                    if (routingEl && data.user.routingNumber) routingEl.textContent = data.user.routingNumber;
+                    var swiftEl = document.getElementById('swiftCode');
+                    if (swiftEl && data.user.swiftCode) swiftEl.textContent = data.user.swiftCode;
+                    document.getElementById('accountType').textContent = (data.user.accountType || 'Savings') + ' Account';
+                    document.getElementById('accType').textContent = data.user.accountType || 'Savings';
+                    
+                    // Update account status dynamically from admin settings
+                    const status = (data.user.accountStatus || 'active').toLowerCase();
+                    const statusEl = document.getElementById('accountStatus');
+                    const statusSubEl = document.getElementById('accountStatusSub');
+                    if (statusEl) {
+                        const statusLabels = { active: 'Active', frozen: 'Frozen', suspended: 'Suspended', closed: 'Closed' };
+                        const statusSubs = { active: 'All systems normal', frozen: 'Account temporarily frozen', suspended: 'Account suspended', closed: 'Account closed' };
+                        const statusClasses = { active: 'status-active', frozen: 'status-frozen', suspended: 'status-suspended', closed: 'status-closed' };
+                        statusEl.textContent = statusLabels[status] || status.charAt(0).toUpperCase() + status.slice(1);
+                        statusEl.className = 'metric-value ' + (statusClasses[status] || 'status-active');
+                        if (statusSubEl) statusSubEl.textContent = statusSubs[status] || '';
+                    }
+                    
+                    // Load savings goals from API to calculate progress
+                    const balance = data.user.balance || 0;
+                    loadSavingsGoalProgress(balance, token);
+                    
+                    // Load transactions and activity
+                    loadTransactions();
+                    // Activity section moved to settings page
+                    loadNotifications();
+                } else {
+                    window.location.href = 'signin.html';
+                }
+            } catch (e) {
+                console.error('Dashboard load error:', e);
+                showAlertToast('Connection Error', 'Could not load your account data. Please refresh the page.');
+            }
+        }
+
+        async function loadNotifications() {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/api/notifications?limit=10`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const unread = data.unreadCount || 0;
+                    const badge = document.getElementById('notifBadge');
+                    const notifBtn = document.getElementById('notifBtn');
+                    badge.textContent = unread;
+                    badge.style.display = unread > 0 ? 'flex' : 'none';
+                    // Animate bell when there are unread notifications
+                    if (notifBtn) {
+                        if (unread > 0) notifBtn.classList.add('has-unread');
+                        else notifBtn.classList.remove('has-unread');
+                    }
+                    const list = document.getElementById('notifList');
+                    if (data.notifications && data.notifications.length > 0) {
+                        list.innerHTML = data.notifications.map(n => `
+                            <div style="padding:12px 15px; border-bottom:1px solid #f0f0f0; ${n.read ? '' : 'background:#f0f8ff;'}">
+                                <div style="font-size:0.9rem; color:#333;">${escapeHtmlDash(n.message || n.title || 'Notification')}</div>
+                                <div style="font-size:0.75rem; color:#999; margin-top:4px;">${new Date(n.createdAt).toLocaleDateString()}</div>
+                            </div>
+                        `).join('');
+
+                        // Show toast for new unread notifications
+                        if (typeof window._lastNotifCheck !== 'undefined') {
+                            const newOnes = data.notifications.filter(n => !n.read && new Date(n.createdAt) > window._lastNotifCheck);
+                            newOnes.forEach(n => showAlertToast(n.title || 'New Alert', n.message || n.title));
+                        }
+                        window._lastNotifCheck = new Date();
+                    }
+                }
+            } catch (e) {
+                console.error('Notifications load error:', e);
+            }
+        }
+
+        // Real-time alert toast system
+        function showAlertToast(title, message) {
+            let container = document.getElementById('alertToastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'alertToastContainer';
+                container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:10px;max-width:380px;';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.style.cssText = 'background:#fff;border-left:4px solid #1a472a;border-radius:10px;padding:14px 18px;box-shadow:0 8px 30px rgba(0,0,0,0.15);animation:slideInRight 0.4s ease;display:flex;align-items:flex-start;gap:12px;';
+            toast.innerHTML = `
+                <div style="background:#ecfdf5;color:#059669;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:0.88rem;color:#1e293b;">${escapeHtmlDash(title)}</div>
+                    <div style="font-size:0.82rem;color:#64748b;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtmlDash(message)}</div>
+                </div>
+                <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1rem;padding:0;line-height:1;">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => { if (toast.parentElement) toast.remove(); }, 6000);
+        }
+
+        // Poll notifications every 30 seconds for real-time alerts
+        window._lastNotifCheck = new Date();
+        setInterval(() => { loadNotifications(); }, 30000);
+
+        function escapeHtmlDash(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        function toggleNotifications() {
+            const dd = document.getElementById('notifDropdown');
+            dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function markAllRead() {
+            const token = localStorage.getItem('token');
+            try {
+                await fetch(`${API_URL}/api/notifications/read-all`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                document.getElementById('notifBadge').textContent = '0';
+                document.getElementById('notifBadge').style.display = 'none';
+                var notifBtn = document.getElementById('notifBtn');
+                if (notifBtn) notifBtn.classList.remove('has-unread');
+                document.querySelectorAll('#notifList > div').forEach(d => d.style.background = '');
+            } catch (e) { console.error(e); }
+        }
+
+        // Close notification dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('notifDropdown');
+            const btn = document.getElementById('notifBtn');
+            if (dd && dd.style.display !== 'none' && !dd.contains(e.target) && !btn.contains(e.target)) {
+                dd.style.display = 'none';
+            }
+        });
+
+        async function loadSavingsGoalProgress(balance, token) {
+            try {
+                const res = await fetch(`${API_URL}/api/savings-goals`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                let totalGoal = 0;
+                let totalSaved = 0;
+                if (data.success && data.goals && data.goals.length > 0) {
+                    data.goals.forEach(g => {
+                        totalGoal += parseFloat(g.targetAmount || 0);
+                        totalSaved += parseFloat(g.currentAmount || 0);
+                    });
+                    document.getElementById('savingsGoal').textContent = '$' + totalGoal.toLocaleString(undefined, {minimumFractionDigits: 0});
+                    const progress = totalGoal > 0 ? Math.min(100, Math.round((totalSaved / totalGoal) * 100)) : 0;
+                    document.getElementById('savingsProgress').textContent = progress + '%';
+                } else {
+                    // No goals set — show balance-based default
+                    document.getElementById('savingsGoal').textContent = 'No Goal Set';
+                    document.getElementById('savingsProgress').textContent = '-';
+                }
+            } catch (e) {
+                console.error('Savings goal load error:', e);
+                document.getElementById('savingsGoal').textContent = '$0';
+                document.getElementById('savingsProgress').textContent = '-';
+            }
+        }
+        
+        async function loadTransactions() {
+            const token = localStorage.getItem('token');
+            if (!userId) return;
+            
+            try {
+                // Avoid cached 304 responses hiding new transactions.
+                const res = await fetch(`${API_URL}/api/user/${userId}/transactions?ts=${Date.now()}`, {
+                    cache: 'no-store',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (!res.ok || !data?.success) {
+                    const msg = data?.message || `Failed to load transactions (HTTP ${res.status})`;
+                    displayTransactionsError(msg);
+                    return;
+                }
+
+                if (Array.isArray(data.transactions)) {
+                    displayTransactions(data.transactions.slice(0, 5));
+                } else {
+                    displayTransactionsError('Transactions response was not in the expected format.');
+                }
+            } catch (e) {
+                console.error('Transactions load error:', e);
+                displayTransactionsError('Could not load transactions. Please refresh and try again.');
+            }
+        }
+
+        function displayTransactionsError(message) {
+            const container = document.getElementById('transactionsList');
+            container.innerHTML = `
+                <div class="no-transactions">
+                    <i class="fas fa-exclamation-triangle" style="color:#d9534f;"></i>
+                    <p style="color:#d9534f;">${escapeHtml(message)}</p>
+                </div>
+            `;
+        }
+
+        function escapeHtml(value) {
+            const s = String(value ?? '');
+            return s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatNameAcct(firstName, lastName, accountNumber) {
+            const f = firstName ? firstName.charAt(0) + '.' : '';
+            const l = lastName || '';
+            const name = [f, l].filter(Boolean).join(' ') || '-';
+            if (accountNumber) return `${name} (...${String(accountNumber).slice(-5)})`;
+            return name;
+        }
+
+        const COUNTRY_MAP = {
+            US: { flag: '\ud83c\uddfa\ud83c\uddf8', name: 'United States' },
+            GB: { flag: '\ud83c\uddec\ud83c\udde7', name: 'United Kingdom' },
+            CA: { flag: '\ud83c\udde8\ud83c\udde6', name: 'Canada' },
+            MX: { flag: '\ud83c\uddf2\ud83c\uddfd', name: 'Mexico' },
+            DE: { flag: '\ud83c\udde9\ud83c\uddea', name: 'Germany' },
+            FR: { flag: '\ud83c\uddeb\ud83c\uddf7', name: 'France' },
+            ES: { flag: '\ud83c\uddea\ud83c\uddf8', name: 'Spain' },
+            IT: { flag: '\ud83c\uddee\ud83c\uddf9', name: 'Italy' },
+            CH: { flag: '\ud83c\udde8\ud83c\udded', name: 'Switzerland' },
+            NG: { flag: '\ud83c\uddf3\ud83c\uddec', name: 'Nigeria' },
+            GH: { flag: '\ud83c\uddec\ud83c\udded', name: 'Ghana' },
+            IN: { flag: '\ud83c\uddee\ud83c\uddf3', name: 'India' },
+            CN: { flag: '\ud83c\udde8\ud83c\uddf3', name: 'China' },
+            JP: { flag: '\ud83c\uddef\ud83c\uddf5', name: 'Japan' },
+            AU: { flag: '\ud83c\udde6\ud83c\uddfa', name: 'Australia' },
+            BR: { flag: '\ud83c\udde7\ud83c\uddf7', name: 'Brazil' },
+            AE: { flag: '\ud83c\udde6\ud83c\uddea', name: 'United Arab Emirates' },
+            PH: { flag: '\ud83c\uddf5\ud83c\udded', name: 'Philippines' },
+            JM: { flag: '\ud83c\uddef\ud83c\uddf2', name: 'Jamaica' },
+            KR: { flag: '\ud83c\uddf0\ud83c\uddf7', name: 'South Korea' }
+        };
+
+        function getCountryFlag(tx) {
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return COUNTRY_MAP[code].flag;
+            const d = String((tx && tx.description) || '').toLowerCase();
+            if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return COUNTRY_MAP.GB.flag;
+            return COUNTRY_MAP.US.flag;
+        }
+
+        function getCountryCode(tx) {
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return code;
+            const d = String((tx && tx.description) || '').toLowerCase();
+            if (d.includes('uk bank transfer') || d.includes('uk transfer') || d.includes('united kingdom')) return 'GB';
+            return 'US';
+        }
+
+        function flagImg(code) {
+            const c = (code || 'US').toUpperCase();
+            const entry = COUNTRY_MAP[c] || COUNTRY_MAP.US;
+            return `<img src="https://flagcdn.com/w40/${c.toLowerCase()}.png" alt="${entry.name}" style="width:20px;height:14px;vertical-align:middle;margin-right:4px;border-radius:2px;">`;
+        }
+
+        function getCountryName(tx) {
+            const code = tx && tx.destinationCountry;
+            if (code && COUNTRY_MAP[code]) return COUNTRY_MAP[code].name;
+            return null;
+        }
+
+        function txnTimestamp(tx) {
+            return tx?.date || tx?.createdAt || tx?.created_at || tx?.created || tx?.timestamp || null;
+        }
+
+        function txnDirectionLabel(tx) {
+            const fromId = Number(tx?.fromUserId);
+            const toId = Number(tx?.toUserId);
+            const me = Number(userId);
+
+            const fromName = [tx?.fromFirstName, tx?.fromLastName].filter(Boolean).join(' ').trim();
+            const toName = [tx?.toFirstName, tx?.toLastName].filter(Boolean).join(' ').trim();
+
+            const t = String(tx?.type || '').toLowerCase();
+            const incomingTypeLabel = {
+                direct_deposit: 'Direct deposit',
+                ach: 'ACH credit',
+                wire: 'Wire transfer',
+                income: 'Income',
+                salary: 'Salary payment',
+                admin_transfer: 'Incoming transfer'
+            };
+
+            if (Number.isFinite(fromId) && Number.isFinite(toId) && Number.isFinite(me)) {
+                if (toId === me && fromId !== me) {
+                    // Prefer realistic banking labels over "Received from Admin Account".
+                    if (incomingTypeLabel[t]) return incomingTypeLabel[t];
+                    return fromName ? `Received from ${fromName}` : 'Incoming transfer';
+                }
+                if (fromId === me && toId !== me) {
+                    const destCode = getCountryCode(tx);
+                    const destName = getCountryName(tx);
+                    const toAcct = tx.toAccountNumber ? ` (...${String(tx.toAccountNumber).slice(-4)})` : '';
+                    if (destCode !== 'US' && destName) return `Sent to ${toName || destName}${toAcct} — ${destName}`;
+                    return `Sent to ${toName || 'another account'}${toAcct}`;
+                }
+            }
+
+            if (t === 'bill_payment') {
+                const biller = tx.recipientName || (tx.description || '').replace(/Bill payment to\s*/i, '').replace(/AT&T Phone Payment.*/i, 'AT&T').split('(')[0].trim() || 'Biller';
+                return `Paid to ${biller}`;
+            }
+            if (t === 'credit' || t === 'deposit') return 'Credit';
+            if (t === 'debit' || t === 'withdrawal') return 'Debit';
+            if (t) return t.charAt(0).toUpperCase() + t.slice(1);
+            return 'Transaction';
+        }
+        
+        function displayTransactions(transactions) {
+            const container = document.getElementById('transactionsList');
+            
+            if (!transactions || transactions.length === 0) {
+                container.innerHTML = `
+                    <div class="no-transactions">
+                        <i class="fas fa-receipt"></i>
+                        <p>No recent transactions</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = transactions.map(tx => {
+                const me = Number(userId);
+                const fromId = Number(tx?.fromUserId);
+                const toId = Number(tx?.toUserId);
+
+                // Prefer direction-based credit/debit for transfers.
+                let isCredit = false;
+                if (Number.isFinite(me) && Number.isFinite(toId) && toId === me) {
+                    isCredit = true;
+                } else if (Number.isFinite(me) && Number.isFinite(fromId) && fromId === me) {
+                    isCredit = false;
+                } else {
+                    const t = String(tx?.type || '').toLowerCase();
+                    isCredit = (t === 'credit' || t === 'deposit' || t === 'received' || t === 'transfer_in');
+                }
+                const icon = isCredit ? 'fa-arrow-down' : 'fa-arrow-up';
+                const amountClass = isCredit ? 'credit' : 'debit';
+                const amountPrefix = isCredit ? '+' : '-';
+
+                const ts = txnTimestamp(tx);
+                const d = ts ? new Date(ts) : null;
+                const date = d && !isNaN(d.getTime())
+                    ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : '-';
+
+                const subtitle = txnDirectionLabel(tx);
+                // Clean up description - remove "Admin" references for cleaner display
+                let title = tx.description ? String(tx.description) : subtitle;
+                title = title.replace(/Admin\s*/gi, '').trim() || subtitle;
+                const statusBadge = tx.status === 'pending' ? '<span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px;">Pending</span>' : (tx.status === 'rejected' ? '<span style="background:#f8d7da;color:#721c24;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px;">Denied</span>' : '');
+                
+                const isBillRow = (tx.type || '').toLowerCase() === 'bill_payment';
+                const rowIcon = isBillRow ? 'fa-credit-card' : icon;
+
+                return `
+                    <div class="transaction-item" onclick="showTransactionDetail(${tx.id})">
+                        <div class="transaction-icon ${amountClass}">
+                            <i class="fas ${rowIcon}"></i>
+                        </div>
+                        <div class="transaction-details">
+                            <h4>${escapeHtml(title)}${statusBadge}</h4>
+                            <span>${escapeHtml(subtitle)} • ${escapeHtml(date)}</span>
+                        </div>
+                        <div class="transaction-amount ${amountClass}">
+                            ${amountPrefix}$${Math.abs(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        </div>
+                        <button class="btn-receipt" onclick="event.stopPropagation(); downloadReceipt(${tx.id})" title="Download Receipt">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function downloadReceipt(transactionId) {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_URL}/api/transactions/${transactionId}/receipt`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `receipt_${transactionId}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Error downloading receipt');
+                }
+            } catch (err) {
+                console.error('Receipt download error:', err);
+                alert('Error downloading receipt');
+            }
+        }
+        
+        async function loadActivity() {
+            const token = localStorage.getItem('token');
+            if (!userId) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/user/${userId}/activity?ts=${Date.now()}`, {
+                    cache: 'no-store',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success && Array.isArray(data.activities)) {
+                    displayActivity(data.activities.slice(0, 5));
+                    return;
+                }
+                displayActivity([]);
+            } catch (e) {
+                console.error('Activity load error:', e);
+                displayActivity([]);
+            }
+        }
+        
+        function displayActivity(activities) {
+            const container = document.getElementById('activityList');
+
+            if (!activities || activities.length === 0) {
+                container.innerHTML = `
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div class="activity-content">
+                            <p>No recent activity yet</p>
+                            <span>New logins and transactions will appear here</span>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = activities.map(activity => {
+                const date = new Date(activity.timestamp || activity.createdAt);
+                const timeAgo = (!isNaN(date.getTime())) ? getTimeAgo(date) : '-';
+
+                const actionText = activity.action || activity.title || activity.description || 'Activity';
+                const descText = (activity.action && activity.description)
+                    ? String(activity.description)
+                    : '';
+
+                const meta = [descText, timeAgo].filter(Boolean).join(' • ');
+                
+                return `
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div class="activity-content">
+                            <p>${escapeHtml(actionText)}</p>
+                            <span>${escapeHtml(meta || timeAgo)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+            
+            if (diff < 60) return 'Just now';
+            if (diff < 3600) return Math.floor(diff / 60) + ' minutes ago';
+            if (diff < 86400) return Math.floor(diff / 3600) + ' hours ago';
+            if (diff < 604800) return Math.floor(diff / 86400) + ' days ago';
+            
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        
+        function copyToClipboard(elementId) {
+            const el = document.getElementById(elementId);
+            const text = el.dataset.full || el.textContent;
+            copyText(text);
+        }
+        
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied to clipboard!');
+            });
+        }
+
+        function toggleAccountNumber() {
+            const el = document.getElementById('accountNumber');
+            const btn = document.getElementById('toggleAcctBtn');
+            if (el.dataset.masked === 'true') {
+                el.textContent = el.dataset.full;
+                el.dataset.masked = 'false';
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            } else {
+                el.textContent = '****' + el.dataset.full.slice(-4);
+                el.dataset.masked = 'true';
+                btn.innerHTML = '<i class="fas fa-eye"></i>';
+            }
+        }
+        
+        function showAllTransactions() {
+            location.href = 'transactions.html';
+        }
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+        
+        function logout() {
+            const consent = localStorage.getItem('cookieConsent');
+            localStorage.clear();
+            if (consent) localStorage.setItem('cookieConsent', consent);
+            window.location.href = 'signin.html';
+        }
+        
+        // Initialize
+        loadDashboard();
+    </script>
+
+    <!-- Transaction Detail Modal -->
+    <div class="txn-modal-overlay" id="txnModal" onclick="if(event.target===this)closeTxnModal()">
+        <div class="txn-modal">
+            <div class="txn-modal-header">
+                <h3><i class="fas fa-receipt"></i> Transaction Details</h3>
+                <button class="txn-modal-close" onclick="closeTxnModal()">&times;</button>
+            </div>
+            <div class="txn-modal-body" id="txnModalBody"></div>
+            <div class="txn-modal-footer">
+                <button class="txn-btn-receipt" id="txnModalReceiptBtn" onclick=""><i class="fas fa-download"></i> Download Receipt</button>
+                <button class="txn-btn-close-modal" onclick="closeTxnModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let _cachedTransactions = [];
+
+        // Override displayTransactions to cache data
+        const _origDisplayTransactions = displayTransactions;
+        displayTransactions = function(txns) {
+            _cachedTransactions = txns;
+            _origDisplayTransactions(txns);
+        };
+
+        function showTransactionDetail(txId) {
+            const tx = _cachedTransactions.find(t => t.id == txId);
+            if (!tx) return;
+
+            const me = Number(userId);
+            const fromId = Number(tx?.fromUserId);
+            const toId = Number(tx?.toUserId);
+            let isCredit = false;
+            if (Number.isFinite(me) && Number.isFinite(toId) && toId === me) isCredit = true;
+            else if (Number.isFinite(me) && Number.isFinite(fromId) && fromId === me) isCredit = false;
+            else {
+                const t = String(tx?.type || '').toLowerCase();
+                isCredit = (t === 'credit' || t === 'deposit' || t === 'received' || t === 'transfer_in');
+            }
+
+            const amountClass = isCredit ? 'credit' : 'debit';
+            const sign = isCredit ? '+' : '-';
+            const fee = parseFloat(tx.fee) || 0;
+            const totalAmount = Math.abs(parseFloat(tx.amount)) + (isCredit ? 0 : fee);
+
+            const ts = tx.createdAt || tx.date || tx.created_at;
+            const d = ts ? new Date(ts) : null;
+            const dateStr = d && !isNaN(d.getTime()) ? d.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+
+            let desc = tx.description ? String(tx.description) : (tx.type || 'Transaction');
+            desc = desc.replace(/Admin\s*/gi, '').trim() || tx.type || 'Transaction';
+
+            const statusClass = (tx.status || 'completed').toLowerCase();
+            const statusLabel = statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
+
+            const TYPE_MAP = { 'direct_deposit': 'Direct Deposit', 'admin_transfer': 'Transfer', 'admin_debit': 'Debit', 'admin_credit': 'Credit', 'wire_transfer': 'Wire Transfer', 'bank_transfer': 'Bank Transfer', 'bill_payment': 'Bill Payment', 'credit': 'Credit', 'debit': 'Debit', 'deposit': 'Deposit', 'transfer': 'Transfer', 'withdrawal': 'Withdrawal' };
+            const typeLabel = TYPE_MAP[(tx.type || '').toLowerCase()] || (tx.type || 'Transfer').replace(/_/g, ' ').replace(/\badmin\b\s*/gi, '').replace(/\b\w/g, c => c.toUpperCase()).trim() || 'Transfer';
+
+            const fromDisplay = formatNameAcct(tx.fromFirstName, tx.fromLastName, tx.fromAccountNumber);
+            let toDisplay = formatNameAcct(tx.toFirstName, tx.toLastName, tx.toAccountNumber);
+            if (toDisplay === '-' && tx.recipientName) toDisplay = tx.recipientName;
+            const rawDesc = String(tx.description || '');
+            const toCode = getCountryCode(tx);
+            const toCountryName = getCountryName(tx);
+            const ukDetailMatch = rawDesc.match(/UK Bank Transfer to ([^|]+)\s*\|\s*Recipient:\s*([^|]+)/);
+            if (ukDetailMatch) toDisplay = ukDetailMatch[2].trim() + ' via ' + ukDetailMatch[1].trim();
+
+            const isBill = (tx.type || '').toLowerCase() === 'bill_payment';
+            const lastFour = tx.fromAccountNumber ? String(tx.fromAccountNumber).slice(-4) : '7890';
+            const billerName = tx.recipientName || desc.replace(/Bill payment to\s*/i, '').replace(/AT&T Phone Payment.*/i, 'AT&T').split('(')[0].trim() || 'Biller';
+
+            let html = `
+                <div class="txn-modal-amount">
+                    <div class="amount-value ${amountClass}">${sign}$${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</div>
+                    <div class="amount-label">${escapeHtml(typeLabel)}</div>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Description</span>
+                    <span class="txn-detail-value">${escapeHtml(desc)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Date & Time</span>
+                    <span class="txn-detail-value">${escapeHtml(dateStr)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Status</span>
+                    <span class="txn-detail-value"><span class="txn-status-badge ${statusClass}">${escapeHtml(statusLabel)}</span></span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Type</span>
+                    <span class="txn-detail-value">${escapeHtml(typeLabel)}</span>
+                </div>`;
+
+            if (isBill) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Paid To</span>
+                    <span class="txn-detail-value">${escapeHtml(billerName)}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Payment Method</span>
+                    <span class="txn-detail-value"><i class="fas fa-credit-card" style="color:#1a472a;margin-right:4px;"></i> Virtual Debit Card ****${lastFour}</span>
+                </div>`;
+            } else {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">From</span>
+                    <span class="txn-detail-value">${flagImg('US')} ${escapeHtml(fromDisplay)} &mdash; Heritage Bank, USA</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">To</span>
+                    <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toDisplay)}${toCode !== 'US' ? ' &mdash; ' + escapeHtml(toCountryName || 'International') : ' &mdash; Heritage Bank, USA'}</span>
+                </div>`;
+            }
+
+            html += `
+                ${!isBill && toCode !== 'US' ? `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Destination Country</span>
+                    <span class="txn-detail-value">${flagImg(toCode)} ${escapeHtml(toCountryName || 'International')}</span>
+                </div>` : ''}`;
+
+            // Recipient address (skip for bill payments)
+            if (tx.recipientAddress && !isBill) {
+                html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Recipient Address</span>
+                    <span class="txn-detail-value" style="white-space:pre-line;">${escapeHtml(tx.recipientAddress)}</span>
+                </div>`;
+            }
+
+            // Recipient bank information
+            if (tx.bankName || tx.swiftCode || tx.iban) {
+                html += `<div class="txn-detail-row" style="margin-top:8px;border-top:1px solid var(--border-color,#eee);padding-top:8px;">
+                    <span class="txn-detail-label" style="font-weight:700;">Recipient Bank</span>
+                    <span class="txn-detail-value"></span>
+                </div>`;
+                if (tx.bankName) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Bank Name</span>
+                    <span class="txn-detail-value">${escapeHtml(tx.bankName)}</span>
+                </div>`;
+                if (tx.swiftCode) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Bank ID (SWIFT)</span>
+                    <span class="txn-detail-value" style="font-family:monospace;">${escapeHtml(tx.swiftCode)}</span>
+                </div>`;
+                if (tx.iban) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Account / IBAN</span>
+                    <span class="txn-detail-value" style="font-family:monospace;font-size:0.85rem;">${escapeHtml(tx.iban)}</span>
+                </div>`;
+            }
+
+            // Exchange rate & recipient amount
+            if (tx.exchangeRate || tx.recipientAmount) {
+                html += `<div class="txn-detail-row" style="margin-top:8px;border-top:1px solid var(--border-color,#eee);padding-top:8px;">
+                    <span class="txn-detail-label" style="font-weight:700;">Exchange</span>
+                    <span class="txn-detail-value"></span>
+                </div>`;
+                if (tx.exchangeRate) html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Exchange Rate</span>
+                    <span class="txn-detail-value">${escapeHtml(tx.exchangeRate)}</span>
+                </div>`;
+                if (tx.recipientAmount) {
+                    const cur = tx.recipientCurrency || '';
+                    const sym = {'GBP':'£','EUR':'€','JPY':'¥','CNY':'¥','INR':'₹','BRL':'R$','KRW':'₩','AED':'AED','NGN':'₦','GHS':'₵','CAD':'C$','MXN':'MX$','AUD':'A$','CHF':'CHF','PHP':'₱','JMD':'J$'}[cur] || cur;
+                    html += `<div class="txn-detail-row">
+                    <span class="txn-detail-label">Recipient Receives</span>
+                    <span class="txn-detail-value" style="font-weight:700;">${sym ? sym : ''}${parseFloat(tx.recipientAmount).toLocaleString(undefined, {minimumFractionDigits:2})} ${cur}</span>
+                </div>`;
+                }
+            }
+
+            if (tx.reference) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Reference</span>
+                    <span class="txn-detail-value" style="font-family:monospace; font-size:0.8rem;">${escapeHtml(tx.reference)}</span>
+                </div>`;
+            }
+
+            html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Amount</span>
+                    <span class="txn-detail-value">${sign}$${Math.abs(parseFloat(tx.amount)).toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>`;
+
+            if (fee > 0) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Fee</span>
+                    <span class="txn-detail-value">$${fee.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Total</span>
+                    <span class="txn-detail-value" style="font-weight:700;">${sign}$${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>`;
+            }
+
+            if (tx.category) {
+                html += `
+                <div class="txn-detail-row">
+                    <span class="txn-detail-label">Category</span>
+                    <span class="txn-detail-value">${escapeHtml(tx.category)}</span>
+                </div>`;
+            }
+
+            document.getElementById('txnModalBody').innerHTML = html;
+            document.getElementById('txnModalReceiptBtn').onclick = function() { downloadReceipt(tx.id); };
+            document.getElementById('txnModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeTxnModal() {
+            document.getElementById('txnModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeTxnModal();
+        });
+    </script>
+
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
+            </div>
+            <p class="app-footer-copy">&copy; 2026 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+        </div>
+    </footer>
+    <script src="cookie-consent.js"></script>
+<script>window.addEventListener('load',function(){var l=document.getElementById('pageLoader');if(l)l.classList.add('hidden');setTimeout(function(){if(l)l.remove()},500)});</script>
+</body>
+</html>

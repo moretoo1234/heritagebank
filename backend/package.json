@@ -1,11 +1,12 @@
 {
   "name": "heritage-bank-backend",
-  "version": "1.0.0",
-  "description": "Heritage Bank Backend API",
-  "main": "server.js",
+  "version": "2.0.0",
+  "description": "Heritage Bank Backend API - Firebase Edition",
+  "main": "server-firestore.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server-firestore.js",
+    "dev": "node server-firestore.js",
+    "legacy": "node server.js"
   },
   "dependencies": {
     "@simplewebauthn/server": "^10.0.1",
@@ -17,6 +18,8 @@
     "express": "^4.18.2",
     "express-rate-limit": "^8.2.1",
     "fast-xml-parser": "^5.5.9",
+    "firebase": "^12.14.0",
+    "firebase-admin": "^12.7.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.1.1",

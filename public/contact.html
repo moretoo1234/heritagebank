@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="assets/logo.png">
+    <link rel="apple-touch-icon" href="assets/logo.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="description" content="Contact Heritage Bank by phone, email, or visit a branch for assistance with your account.">
+    <title>Contact Us - Heritage Bank</title>
+    <meta property="og:title" content="Contact Us - Heritage Bank">
+    <meta property="og:description" content="Get in touch with Heritage Bank. Visit our branches, call us, or send a message.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="assets/og-image.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="loading.css">
+    <style>html{scroll-behavior:smooth}</style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-solid" id="mainNav">
+        <div class="container">
+            <div class="navbar-wrapper">
+                <div class="logo-section">
+                    <a href="index.html"><img src="./assets/logo.png" alt="Heritage Bank" class="logo"></a>
+                </div>
+                <button class="hamburger" id="hamburger" title="Toggle Navigation"><span></span><span></span><span></span></button>
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="index.html#services">Services</a></li>
+                    <li><a href="contact.html" class="active">Contact</a></li>
+                    <li><a href="branches.html">Branches</a></li>
+                    <li><a href="signin.html" class="signin-link"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
+                    <li class="cta-button"><a href="open-account.html">Open Account</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="page-hero">
+        <div class="container">
+            <span class="section-tag"><i class="fas fa-envelope"></i> Get in Touch</span>
+            <h1>Contact Us</h1>
+            <p>We're here to help. Reach out to us through any of the channels below.</p>
+        </div>
+    </section>
+
+    <!-- Content -->
+    <section class="page-content">
+        <div class="page-container">
+
+            <!-- Emergency Banner -->
+            <div class="emergency-banner">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p><strong>Report fraud or unauthorized activity?</strong> Call us immediately at <strong>1-800-HERITAGE</strong> (available 24/7) or visit your nearest branch. Do not share your PIN or password with anyone.</p>
+            </div>
+
+            <!-- Contact Cards -->
+            <div class="contact-grid">
+                <div class="contact-card">
+                    <i class="fas fa-phone card-icon"></i>
+                    <h3>Call Us</h3>
+                    <p><strong>General Inquiries</strong><br>1-800-HERITAGE<br>(1-800-437-4824)</p>
+                    <p class="contact-extra-info"><strong>International</strong><br>+1-212-438-0199</p>
+                </div>
+                <div class="contact-card">
+                    <i class="fas fa-envelope card-icon"></i>
+                    <h3>Email Us</h3>
+                    <p><strong>General Support</strong><br><a href="mailto:support@heritagebank.com">support@heritagebank.com</a></p>
+                    <p class="contact-extra-info"><strong>Account Issues</strong><br><a href="mailto:accounts@heritagebank.com">accounts@heritagebank.com</a></p>
+                </div>
+                <div class="contact-card">
+                    <i class="fas fa-map-marker-alt card-icon"></i>
+                    <h3>Visit Us</h3>
+                    <p><strong>Main Office</strong><br>350 Fifth Avenue<br>New York, NY 10118</p>
+                    <p class="contact-extra-info"><a href="branches.html"><i class="fas fa-search"></i> Find a Branch</a></p>
+                </div>
+            </div>
+
+            <!-- Contact Form -->
+            <div class="form-card">
+                <h2><i class="fas fa-pen"></i> Send Us a Message</h2>
+                <form id="contactForm" onsubmit="submitContactForm(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name *</label>
+                            <input type="text" id="cfFirstName" required placeholder="Your first name">
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name *</label>
+                            <input type="text" id="cfLastName" required placeholder="Your last name">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email Address *</label>
+                            <input type="email" id="cfEmail" required placeholder="you@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" id="cfPhone" placeholder="(555) 123-4567">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Subject *</label>
+                        <select id="cfSubject" required title="Subject">
+                            <option value="">Select a topic</option>
+                            <option value="general">General Inquiry</option>
+                            <option value="account">Account Question</option>
+                            <option value="loan">Loan Inquiry</option>
+                            <option value="card">Card Services</option>
+                            <option value="transfer">Transfer Issue</option>
+                            <option value="complaint">File a Complaint</option>
+                            <option value="feedback">Feedback / Suggestion</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Message *</label>
+                        <textarea id="cfMessage" required placeholder="How can we help you?"></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn"><i class="fas fa-paper-plane"></i> Send Message</button>
+                    <div class="alert alert-success" id="cfSuccess">Thank you for your message! We'll get back to you within 1-2 business days.</div>
+                    <div class="alert alert-danger" id="cfError">Something went wrong. Please try again or contact us by phone.</div>
+                </form>
+            </div>
+
+            <!-- Business Hours -->
+            <div class="page-card">
+                <h2><i class="fas fa-clock"></i> Business Hours</h2>
+                <table class="hours-table">
+                    <tr><td>Monday - Friday</td><td>8:00 AM - 6:00 PM EST</td></tr>
+                    <tr><td>Saturday</td><td>9:00 AM - 2:00 PM EST</td></tr>
+                    <tr><td>Sunday</td><td>Closed</td></tr>
+                    <tr><td>Phone Support</td><td>24/7</td></tr>
+                    <tr><td>Online Banking</td><td>24/7</td></tr>
+                </table>
+                <p class="contact-hours-note">* Branch hours may vary. <a href="branches.html">Find your nearest branch</a> for specific hours.</p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <img src="./assets/logo.png" alt="Heritage Bank" class="footer-logo">
+                    <p>Building financial legacies since 1999.</p>
+                    <div class="social-links">
+                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" title="Instagram"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="terms.html">Terms of Service</a></li>
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                        <li><a href="cookie-policy.html">Cookie Policy</a></li>
+                        <li><a href="accessibility.html">Accessibility</a></li>
+                        <li><a href="disclosures.html">Disclosures</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-phone"></i> 1-800-HERITAGE</li>
+                        <li><i class="fas fa-envelope"></i> support@heritagebank.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top -->
+    <button class="back-to-top" id="backToTop" title="Back to top"><i class="fas fa-arrow-up"></i></button>
+
+    <script src="script.js"></script>
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3001' 
+            : window.location.origin;
+
+        async function submitContactForm(e) {
+            e.preventDefault();
+            const successEl = document.getElementById('cfSuccess');
+            const errorEl = document.getElementById('cfError');
+            successEl.style.display = 'none';
+            errorEl.style.display = 'none';
+
+            const data = {
+                firstName: document.getElementById('cfFirstName').value,
+                lastName: document.getElementById('cfLastName').value,
+                email: document.getElementById('cfEmail').value,
+                phone: document.getElementById('cfPhone').value,
+                subject: document.getElementById('cfSubject').value,
+                message: document.getElementById('cfMessage').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/api/contact`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    successEl.style.display = 'block';
+                    document.getElementById('contactForm').reset();
+                    setTimeout(() => { successEl.style.display = 'none'; }, 5000);
+                } else {
+                    errorEl.textContent = result.message || 'Something went wrong. Please try again.';
+                    errorEl.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorEl.style.display = 'block';
+            }
+        }
+        const backBtn = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => { backBtn.classList.toggle('visible', window.scrollY > 400); });
+        backBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    </script>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>

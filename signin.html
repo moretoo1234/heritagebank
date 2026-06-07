@@ -201,9 +201,10 @@
         </div>
     </div>
     <script>
+// Heritage Bank API URL
         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:3001' 
-            : window.location.origin;
+            : 'https://heritage-bank-13vo.onrender.com';
 
         // Redirect authenticated users to dashboard
         (function() {

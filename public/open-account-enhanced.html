@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="assets/logo.png">
+    <link rel="apple-touch-icon" href="assets/logo.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="Open a checking or savings account online with Heritage Bank in minutes.">
+    <title>Open Account - Heritage Bank</title>
+    <meta property="og:title" content="Open Account - Heritage Bank">
+    <meta property="og:description" content="Open a new Heritage Bank account in minutes. Checking, savings, and more.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="assets/og-image.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="open-account-enhanced.css">
+</head>
+<body>
+    <div class="auth-bg-orb"></div>
+    <div class="auth-bg-orb"></div>
+    <div class="auth-bg-orb"></div>
+    <div class="auth-bg-orb"></div>
+    <div class="auth-bg-orb"></div>
+    <div class="signup-container">
+        <div class="signup-header">
+            <div class="signup-logo">
+                <a href="index.html"><img src="./assets/logo.png" alt="Heritage Bank"></a>
+            </div>
+            <h1>Heritage Bank</h1>
+            <p>Open Your New Account in Minutes</p>
+        </div>
+
+        <div class="progress-steps">
+            <div class="progress-step active" data-step="1">
+                <div class="progress-step-circle">1</div>
+                <div class="progress-step-label">Personal Info</div>
+            </div>
+            <div class="progress-step" data-step="2">
+                <div class="progress-step-circle">2</div>
+                <div class="progress-step-label">Contact Details</div>
+            </div>
+            <div class="progress-step" data-step="3">
+                <div class="progress-step-circle">3</div>
+                <div class="progress-step-label">Account Setup</div>
+            </div>
+            <div class="progress-step" data-step="4">
+                <div class="progress-step-circle">4</div>
+                <div class="progress-step-label">Review & Confirm</div>
+            </div>
+        </div>
+
+        <div id="alertBox"></div>
+
+        <form id="signupForm">
+            <!-- Step 1: Personal Information -->
+            <div class="form-step active" data-step="1">
+                <h2 class="form-step-heading">Personal Information</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>First Name <span class="required">*</span></label>
+                        <input type="text" id="firstName" title="First Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name <span class="required">*</span></label>
+                        <input type="text" id="lastName" title="Last Name" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date of Birth <span class="required">*</span></label>
+                        <input type="date" id="dateOfBirth" title="Date of Birth" required>
+                        <div class="help-text">You must be 18 years or older</div>
+                    </div>
+
+                </div>
+
+                <div class="btn-row">
+                    <button type="button" class="btn btn-primary" onclick="nextStep()">Next <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Step 2: Contact Details -->
+            <div class="form-step" data-step="2">
+                <h2 class="form-step-heading">Contact Information</h2>
+                
+                <div class="form-group">
+                    <label>Email Address <span class="required">*</span></label>
+                    <input type="email" id="email" required>
+                    <div class="help-text">We'll send a verification code to this email</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Phone Number <span class="required">*</span></label>
+                    <input type="tel" id="phone" placeholder="+1 (555) 123-4567" required>
+                    <div class="help-text">For account verification and security alerts</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Street Address <span class="required">*</span></label>
+                    <input type="text" id="address" placeholder="123 Main Street" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>City <span class="required">*</span></label>
+                        <input type="text" id="city" required>
+                    </div>
+                    <div class="form-group">
+                        <label>State <span class="required">*</span></label>
+                        <select id="state" required>
+                            <option value="">Select State</option>
+                            <option value="AL">Alabama</option>
+                            <option value="AK">Alaska</option>
+                            <option value="AZ">Arizona</option>
+                            <option value="CA">California</option>
+                            <option value="FL">Florida</option>
+                            <option value="NY">New York</option>
+                            <option value="TX">Texas</option>
+                            <!-- Add more states as needed -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>ZIP Code <span class="required">*</span></label>
+                        <input type="text" id="zipCode" placeholder="12345" maxlength="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Country</label>
+                        <input type="text" id="country" value="United States" readonly>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep()"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep()">Next <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Step 3: Account Setup -->
+            <div class="form-step" data-step="3">
+                <h2 class="form-step-heading">Account Setup</h2>
+                
+                <div class="form-group">
+                    <label>Select Account Type <span class="required">*</span></label>
+                    <div class="account-type-cards">
+                        <div class="account-type-card" onclick="selectAccountType('checking', this)">
+                            <input type="radio" name="accountType" value="checking" id="typeChecking">
+                            <i class="fas fa-wallet"></i>
+                            <h3>Checking Account</h3>
+                            <p>For everyday transactions</p>
+                        </div>
+                        <div class="account-type-card" onclick="selectAccountType('savings', this)">
+                            <input type="radio" name="accountType" value="savings" id="typeSavings">
+                            <i class="fas fa-piggy-bank"></i>
+                            <h3>Savings Account</h3>
+                            <p>Earn interest on deposits</p>
+                        </div>
+                        <div class="account-type-card" onclick="selectAccountType('business', this)">
+                            <input type="radio" name="accountType" value="business" id="typeBusiness">
+                            <i class="fas fa-briefcase"></i>
+                            <h3>Business Account</h3>
+                            <p>For business transactions</p>
+                        </div>
+                        <div class="account-type-card" onclick="selectAccountType('premium', this)">
+                            <input type="radio" name="accountType" value="premium" id="typePremium">
+                            <i class="fas fa-crown"></i>
+                            <h3>Premium Account</h3>
+                            <p>Premium features & benefits</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Initial Deposit Amount <span class="required">*</span></label>
+                    <input type="number" id="initialDeposit" placeholder="0.00" min="50" required>
+                    <div class="help-text">Minimum deposit: $50.00</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Create Password <span class="required">*</span></label>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" minlength="8" required>
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword('password', this)"></i>
+                    </div>
+                    <div class="password-strength">
+                        <div class="password-strength-fill" id="passwordStrength"></div>
+                    </div>
+                    <div class="password-strength-text" id="passwordStrengthText"></div>
+                    <div class="help-text">Min 8 characters, include uppercase, lowercase, number & symbol</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Confirm Password <span class="required">*</span></label>
+                    <div class="password-wrapper">
+                        <input type="password" id="confirmPassword" minlength="8" required>
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword('confirmPassword', this)"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Referral Code (Optional)</label>
+                    <input type="text" id="referralCode" placeholder="Enter referral code if you have one">
+                </div>
+
+                <div class="btn-row">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep()"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep()">Next <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Step 4: Review & Terms -->
+            <div class="form-step" data-step="4">
+                <h2 class="form-step-heading">Review & Confirm</h2>
+                
+                <div id="reviewSummary" class="review-summary-box"></div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="agreeTerms" required>
+                    <label>I have read and agree to the <a href="terms.html" target="_blank">Terms and Conditions</a> <span class="required">*</span></label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="agreePrivacy" required>
+                    <label>I have read and agree to the <a href="privacy.html" target="_blank">Privacy Policy</a> <span class="required">*</span></label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="ageConfirm" required>
+                    <label>I confirm that I am 18 years of age or older <span class="required">*</span></label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="marketingConsent">
+                    <label>I agree to receive marketing communications and offers (Optional)</label>
+                </div>
+
+                <div class="btn-row">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep()"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn"><i class="fas fa-check-circle"></i> Create Account</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="back-link">
+            <p>Already have an account? <a href="signin.html">Sign In</a></p>
+            <p class="signin-back-link"><a href="index.html">← Back to Home</a></p>
+        </div>
+    </div>
+
+    <script src="signup-enhanced.js"></script>
+    <script>
+    // Set DOB max date dynamically (must be 18+)
+    (function() {
+        var d = new Date();
+        d.setFullYear(d.getFullYear() - 18);
+        var el = document.getElementById('dateOfBirth');
+        if (el) el.max = d.toISOString().split('T')[0];
+    })();
+    </script>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
+            </div>
+            <p class="app-footer-copy">&copy; 2026 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+        </div>
+    </footer>
+    <script src="cookie-consent.js"></script>
+</body>
+</html>

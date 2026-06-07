@@ -1,0 +1,188 @@
+/* Heritage Bank - Page Loading States */
+
+/* Full page loader */
+.page-loader {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, #0a1f14 0%, #1a472a 50%, #0d3320 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+.page-loader.hidden {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+}
+.loader-content {
+    text-align: center;
+    position: relative;
+}
+
+/* Logo + spinner wrapper — logo sits inside the ring */
+.loader-ring {
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 24px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Outer spinning ring */
+.loader-ring::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid rgba(212, 175, 55, 0.15);
+    border-top-color: #d4af37;
+    border-right-color: rgba(212, 175, 55, 0.4);
+    animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Inner glow ring */
+.loader-ring::after {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.06);
+    border-top-color: rgba(255, 255, 255, 0.2);
+    animation: spin 2s linear infinite reverse;
+}
+
+/* Logo centered inside the ring */
+.loader-logo {
+    width: 68px;
+    height: 68px;
+    position: relative;
+    z-index: 1;
+    animation: pulse-logo 2s ease-in-out infinite;
+}
+.loader-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    border-radius: 10px;
+}
+
+/* Legacy spinner — hidden when .loader-ring wraps the logo */
+.loader-ring + .loader-spinner {
+    display: none;
+}
+/* Standalone spinner (pages without .loader-ring wrapper) */
+.loader-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #d4af37;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+}
+
+/* Loading text with animated dots */
+.loader-text {
+    margin-top: 0;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.88rem;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+.loader-text::after {
+    content: '';
+    animation: loadingDots 1.5s steps(4, end) infinite;
+}
+
+/* Subtle particles */
+.loader-content::before,
+.loader-content::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(212, 175, 55, 0.4);
+    animation: float-particle 3s ease-in-out infinite;
+}
+.loader-content::before {
+    top: 10px; left: -20px;
+    animation-delay: 0s;
+}
+.loader-content::after {
+    bottom: 20px; right: -15px;
+    animation-delay: -1.5s;
+}
+
+/* Skeleton placeholders */
+.skeleton {
+    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 8px;
+}
+.skeleton-text {
+    height: 14px;
+    margin-bottom: 8px;
+    width: 100%;
+}
+.skeleton-text.short { width: 60%; }
+.skeleton-text.medium { width: 80%; }
+.skeleton-title {
+    height: 22px;
+    width: 40%;
+    margin-bottom: 16px;
+}
+.skeleton-card {
+    height: 120px;
+    border-radius: 16px;
+    margin-bottom: 16px;
+}
+.skeleton-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+.skeleton-button {
+    height: 44px;
+    width: 140px;
+    border-radius: 12px;
+}
+
+/* Animations */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+@keyframes pulse-logo {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.85; }
+}
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+@keyframes loadingDots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+}
+@keyframes float-particle {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+    50% { transform: translateY(-12px) scale(1.5); opacity: 0.8; }
+}
+
+/* Content fade-in after load */
+.content-loaded {
+    animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
