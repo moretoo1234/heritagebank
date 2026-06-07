@@ -1,0 +1,51 @@
+{
+  "resourceName": "heritageauth",
+  "authSelections": "userPoolOnly",
+  "userPoolName": "heritage_userpool",
+  "autoVerifiedAttributes": [
+    "email"
+  ],
+  "mfaConfiguration": "OFF",
+  "mfaTypes": [
+    "SMS"
+  ],
+  "emailAuthenticationWitheEmailLink": false,
+  "enableProgressiveMfa": false,
+  "aliasAttributes": [],
+  "userPoolPlusEnabled": false,
+  "adminQuery": false,
+  "usernameAliases": [
+    "email"
+  ],
+  "useDefault": "default",
+  "allowUnauthenticatedIdentities": false,
+  "streamingEmail": false,
+  "verificationWithEmail": true,
+  "emailLength": 6,
+  "emailSubject": "Your Heritage Bank Verification Code",
+  "emailMessage": "Your verification code is {####}",
+  "defaultPassword": "",
+  "passwordPolicyRequired": false,
+  "passwordPolicyMinLength": 8,
+  "passwordPolicyCharacters": [
+    "Requires Lowercase",
+    "Requires Uppercase",
+    "Requires Numbers",
+    "Requires Symbols"
+  ],
+  "requiredAttributes": [
+    "email"
+  ],
+  "passwordRecovery": true,
+  "verificationMessage": "Code",
+  "userPoolId": "heritage-userpool",
+  "triggers": {},
+  "enableDefaultUsernameSelection": false,
+  "usernameSettings": {
+    "usernameRequiredAttributes": [],
+    "verifiedAttributes": []
+  },
+  "authFlowUserSrp": false,
+  "enableUserProactiveModeration": false,
+  "userPoolAppMetadata": {}
+}

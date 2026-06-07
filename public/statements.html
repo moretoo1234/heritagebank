@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="assets/logo.png">
+    <link rel="apple-touch-icon" href="assets/logo.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="description" content="Download and view your Heritage Bank monthly account statements.">
+    <meta property="og:title" content="Account Statements - Heritage Bank">
+    <meta property="og:description" content="Download and view your Heritage Bank monthly account statements.">
+    <meta property="og:type" content="website">
+    <title>Account Statements - Heritage Bank</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="app-layout.css">
+    <link rel="stylesheet" href="loading.css">
+    <style>
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 30px;
+        }
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 0;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.06);
+            margin-bottom: 24px;
+            border: 1px solid rgba(0,0,0,0.04);
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%);
+            padding: 28px 30px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .card-header h1 {
+            color: white;
+            margin: 0;
+            font-size: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        .card-header h1 i {
+            color: #d4af37;
+            margin-right: 8px;
+        }
+        .card-header .page-subtitle {
+            color: rgba(255,255,255,0.8);
+            margin: 6px 0 0;
+            position: relative;
+            z-index: 1;
+        }
+        .card-body {
+            padding: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1a472a;
+            font-size: 14px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 13px 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 15px;
+            background: #f8faf9;
+            transition: all 0.3s ease;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.12);
+            background: white;
+        }
+        .btn {
+            padding: 13px 24px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary, .btn:not(.btn-secondary) {
+            background: linear-gradient(135deg, #d4af37 0%, #c19b2e 100%);
+            color: #1a472a;
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+        }
+        .btn-primary:hover, .btn:not(.btn-secondary):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #1a472a, #2d5f3f);
+            color: white;
+            box-shadow: 0 2px 8px rgba(26, 71, 42, 0.2);
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(26, 71, 42, 0.3);
+        }
+        .statement-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 24px;
+        }
+        @media (max-width: 768px) {
+            .statement-options {
+                grid-template-columns: 1fr;
+            }
+            .container { margin: 20px auto; padding: 15px; }
+            .card { padding: 20px; }
+            h1 { font-size: 1.3rem !important; }
+        }
+
+        @media (max-width: 480px) {
+            .container { margin: 10px auto; padding: 10px; }
+            .card { padding: 15px; }
+            .form-group input, .form-group select { padding: 10px; font-size: 14px; }
+            .btn { padding: 10px 18px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-loader" id="pageLoader"><div class="loader-content"><div class="loader-ring"><div class="loader-logo"><img src="assets/logo.png" alt="Heritage Bank"></div></div><div class="loader-text">Loading</div></div></div>
+    <div class="container">
+        <a href="dashboard.html" class="back-link" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:white;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid rgba(0,0,0,0.04);text-decoration:none;transition:all 0.3s ease;">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <div class="card">
+            <div class="card-header">
+                <h1>
+                    <i class="fas fa-file-invoice"></i> Account Statements
+                </h1>
+                <p class="page-subtitle">Download your account statement for any period</p>
+            </div>
+            <div class="card-body">
+            <form id="statementForm" class="form-mt">
+                <div class="form-group">
+                    <label>Statement Period</label>
+                    <select id="period" onchange="toggleCustomDates()" title="Statement Period">
+                        <option value="month">Last Month</option>
+                        <option value="quarter">Last Quarter (3 months)</option>
+                        <option value="year">Last Year</option>
+                        <option value="custom">Custom Date Range</option>
+                    </select>
+                </div>
+
+                <div id="customDates" class="initially-hidden">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="startDate" title="Start Date">
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" id="endDate" title="End Date">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Format</label>
+                    <select id="format" title="Statement Format">
+                        <option value="pdf">PDF (Recommended)</option>
+                        <option value="csv">CSV (Spreadsheet)</option>
+                    </select>
+                </div>
+
+                <div class="statement-options">
+                    <button type="submit" class="btn">
+                        <i class="fas fa-download"></i> Download Statement
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="viewPreview()">
+                        <i class="fas fa-eye"></i> Preview Online
+                    </button>
+                </div>
+            </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h1 style="font-size:1.2rem;"><i class="fas fa-history"></i> Previous Statements</h1>
+                <p class="page-subtitle">Quick access to recent statements</p>
+            </div>
+            <div class="card-body">
+            <div id="previousStatements" class="prev-statements-list">
+                <!-- Will be populated dynamically -->
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3001' 
+            : window.location.origin;
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            window.location.href = 'signin.html';
+        }
+
+        function toggleCustomDates() {
+            const period = document.getElementById('period').value;
+            document.getElementById('customDates').style.display = period === 'custom' ? 'block' : 'none';
+        }
+
+        document.getElementById('statementForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const period = document.getElementById('period').value;
+            const format = document.getElementById('format').value;
+            let startDate, endDate;
+
+            const today = new Date();
+            
+            if (period === 'custom') {
+                startDate = document.getElementById('startDate').value;
+                endDate = document.getElementById('endDate').value;
+                if (!startDate || !endDate) {
+                    alert('Please select both start and end dates');
+                    return;
+                }
+            } else if (period === 'month') {
+                const lastMonth = new Date(today);
+                lastMonth.setMonth(lastMonth.getMonth() - 1);
+                startDate = lastMonth.toISOString().split('T')[0];
+                endDate = today.toISOString().split('T')[0];
+            } else if (period === 'quarter') {
+                const threeMonthsAgo = new Date(today);
+                threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+                startDate = threeMonthsAgo.toISOString().split('T')[0];
+                endDate = today.toISOString().split('T')[0];
+            } else if (period === 'year') {
+                const lastYear = new Date(today);
+                lastYear.setFullYear(lastYear.getFullYear() - 1);
+                startDate = lastYear.toISOString().split('T')[0];
+                endDate = today.toISOString().split('T')[0];
+            }
+
+            const btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+            try {
+                const response = await fetch(`${API_URL}/api/statements/download?format=${format}&startDate=${startDate}&endDate=${endDate}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `statement_${startDate}_${endDate}.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    alert('Statement downloaded successfully!');
+                } else {
+                    alert('Error generating statement');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-download"></i> Download Statement';
+            }
+        });
+
+        function viewPreview() {
+            // Get the current form values
+            const period = document.getElementById('period').value;
+            const today = new Date();
+            let startDate, endDate;
+            
+            if (period === 'custom') {
+                startDate = document.getElementById('startDate').value;
+                endDate = document.getElementById('endDate').value;
+                if (!startDate || !endDate) {
+                    alert('Please select both start and end dates');
+                    return;
+                }
+            } else if (period === 'month') {
+                const lastMonth = new Date(today);
+                lastMonth.setMonth(lastMonth.getMonth() - 1);
+                startDate = lastMonth.toISOString().split('T')[0];
+                endDate = today.toISOString().split('T')[0];
+            } else if (period === 'quarter') {
+                const threeMonthsAgo = new Date(today);
+                threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+                startDate = threeMonthsAgo.toISOString().split('T')[0];
+                endDate = today.toISOString().split('T')[0];
+            } else if (period === 'year') {
+                const lastYear = new Date(today);
+                lastYear.setFullYear(lastYear.getFullYear() - 1);
+                startDate = lastYear.toISOString().split('T')[0];
+                endDate = today.toISOString().split('T')[0];
+            }
+            
+            // Show preview modal
+            showPreviewModal(startDate, endDate);
+        }
+        
+        async function showPreviewModal(startDate, endDate) {
+            const modal = document.getElementById('previewModal');
+            const previewContent = document.getElementById('previewContent');
+            const downloadBtn = document.getElementById('previewDownloadBtn');
+            
+            modal.classList.add('active');
+            previewContent.innerHTML = '<div style="text-align: center; padding: 50px;"><i class="fas fa-spinner fa-spin" style="font-size: 40px; color: #1a472a;"></i><p>Generating preview...</p></div>';
+            
+            try {
+                // Fetch statement as PDF blob
+                const response = await fetch(`${API_URL}/api/statements/download?format=pdf&startDate=${startDate}&endDate=${endDate}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    
+                    // Try to display PDF using object tag (works in most browsers)
+                    previewContent.innerHTML = `
+                        <object data="${url}" type="application/pdf" width="100%" height="100%" style="min-height: 500px;">
+                            <iframe src="${url}" width="100%" height="500px" style="border: none;">
+                                <p>Your browser doesn't support PDF preview. <a href="${url}" download="statement.pdf">Download the PDF</a> instead.</p>
+                            </iframe>
+                        </object>
+                    `;
+                    
+                    // Store URL for download button
+                    downloadBtn.onclick = function() {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `statement_${startDate}_${endDate}.pdf`;
+                        a.click();
+                    };
+                } else {
+                    previewContent.innerHTML = '<div style="text-align: center; padding: 50px; color: #dc3545;"><i class="fas fa-exclamation-triangle" style="font-size: 40px;"></i><p>Unable to generate preview. Please try downloading instead.</p></div>';
+                }
+            } catch (err) {
+                previewContent.innerHTML = '<div style="text-align: center; padding: 50px; color: #dc3545;"><i class="fas fa-exclamation-triangle" style="font-size: 40px;"></i><p>Error loading preview: ' + err.message + '</p></div>';
+            }
+        }
+        
+        function closePreviewModal() {
+            document.getElementById('previewModal').classList.remove('active');
+        }
+
+        // Load previous statements
+        async function loadPreviousStatements() {
+            const container = document.getElementById('previousStatements');
+            const periods = [
+                { label: 'Current Month', days: 30 },
+                { label: 'Last Month', days: 60 },
+                { label: 'Last Quarter', days: 90 }
+            ];
+
+            container.innerHTML = periods.map(p => `
+                <div style="padding: 15px; background: #f0f2f5; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>${p.label}</strong>
+                        <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Last ${p.days} days</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn" style="padding: 8px 16px; font-size: 14px;" onclick="quickDownload('${p.days}', 'pdf')">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                        <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;" onclick="quickDownload('${p.days}', 'csv')">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function quickDownload(days, format) {
+            const today = new Date();
+            const startDate = new Date(today);
+            startDate.setDate(startDate.getDate() - days);
+
+            const response = await fetch(`${API_URL}/api/statements/download?format=${format}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${today.toISOString().split('T')[0]}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `statement_${days}days.${format}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }
+        }
+
+        loadPreviousStatements();
+    </script>
+    
+    <!-- Statement Preview Modal -->
+    <div id="previewModal" class="preview-modal">
+        <div class="preview-container">
+            <div class="preview-header">
+                <h3><i class="fas fa-file-pdf"></i> Statement Preview</h3>
+                <button class="preview-close" onclick="closePreviewModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="preview-content" id="previewContent">
+                <!-- PDF will be loaded here -->
+            </div>
+            <div class="preview-footer">
+                <button class="btn btn-secondary" onclick="closePreviewModal()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button class="btn" id="previewDownloadBtn">
+                    <i class="fas fa-download"></i> Download PDF
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        .preview-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .preview-modal.active {
+            display: flex;
+        }
+        .preview-container {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .preview-header {
+            background: #1a472a;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .preview-header h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .preview-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .preview-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .preview-content {
+            flex: 1;
+            overflow: auto;
+            background: #f0f2f5;
+            min-height: 400px;
+        }
+        .preview-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="app-footer-links">
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="cookie-policy.html">Cookies</a>
+                <a href="accessibility.html">Accessibility</a>
+                <a href="disclosures.html">Disclosures</a>
+                <a href="security.html">Security</a>
+            </div>
+            <p class="app-footer-copy">&copy; 2026 Heritage Bank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+        </div>
+    </footer>
+    <script src="cookie-consent.js"></script>
+<script src="app-sidebar.js"></script>
+<script>window.addEventListener('load',function(){var l=document.getElementById('pageLoader');if(l)l.classList.add('hidden');setTimeout(function(){if(l)l.remove()},500)});</script>
+</body>
+</html>

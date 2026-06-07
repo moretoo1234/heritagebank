@@ -25,3 +25,12 @@ Thumbs.db
 # Build
 dist/
 build/
+
+# Firebase Credentials (NEVER commit these)
+functions/serviceAccountKey.json
+*.json.bak
+
+# amplify
+.amplify
+amplify_outputs*
+amplifyconfiguration*

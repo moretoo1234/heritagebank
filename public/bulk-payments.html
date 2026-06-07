@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="assets/logo.png">
+    <link rel="apple-touch-icon" href="assets/logo.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="Upload ISO 20022 pain.001 files for bulk payments through Heritage Bank.">
+    <meta property="og:title" content="Bulk Payments - Heritage Bank">
+    <meta property="og:description" content="Upload ISO 20022 pain.001 files for bulk payments through Heritage Bank.">
+    <meta property="og:type" content="website">
+    <title>Bulk Payments - Heritage Bank</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="app-layout.css">
+    <link rel="stylesheet" href="loading.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f0f2f5; font-family: 'Inter', 'Segoe UI', sans-serif; min-height: 100vh; }
+
+        .container { max-width: 800px; margin: 30px auto; padding: 20px; }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .back-btn {
+            width: 42px; height: 42px; border-radius: 12px;
+            background: white; border: 1px solid rgba(26,71,42,0.08);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 0.3s ease;
+        }
+        .back-btn:hover { background: #1a472a; border-color: #1a472a; box-shadow: 0 4px 12px rgba(26,71,42,0.2); }
+        .back-btn:hover i { color: white; }
+        .back-btn i { color: #1a472a; transition: color 0.3s ease; }
+        .header h1 { color: #1a472a; }
+        .header h1::after { content: ''; display: block; width: 40px; height: 3px; background: linear-gradient(90deg, #d4af37, transparent); border-radius: 2px; margin-top: 6px; }
+
+        .balance-card {
+            background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%);
+            color: white; padding: 28px; border-radius: 16px; margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(26,71,42,0.25);
+            position: relative; overflow: hidden;
+        }
+        .balance-card::before { content: ''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; border-radius: 50%; background: rgba(212,175,55,0.1); }
+        .balance-label { font-size: 0.85rem; opacity: 0.85; margin-bottom: 6px; }
+        .balance-amount { font-size: 2rem; font-weight: 700; }
+        .account-number { font-size: 0.8rem; opacity: 0.7; margin-top: 8px; }
+
+        .card {
+            background: white; border-radius: 16px; padding: 28px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 20px;
+        }
+        .card h3 { color: #1a472a; margin-bottom: 6px; font-size: 1.1rem; }
+        .card p.subtitle { color: #6b7280; font-size: 0.85rem; margin-bottom: 18px; }
+
+        /* Upload zone */
+        .upload-zone {
+            border: 2px dashed #d1d5db; border-radius: 14px; padding: 40px 20px;
+            text-align: center; cursor: pointer; transition: all 0.3s ease;
+            background: #fafbfc;
+        }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #1a472a; background: rgba(26,71,42,0.03); }
+        .upload-zone i { font-size: 2.5rem; color: #1a472a; margin-bottom: 12px; }
+        .upload-zone h4 { color: #1a472a; margin-bottom: 6px; }
+        .upload-zone p { color: #9ca3af; font-size: 0.85rem; }
+        .upload-zone input[type="file"] { display: none; }
+        .upload-zone .file-selected { color: #1a472a; font-weight: 600; margin-top: 10px; }
+
+        .upload-actions { display: flex; gap: 10px; margin-top: 18px; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            padding: 12px 24px; border-radius: 10px; border: none;
+            font-weight: 600; font-size: 0.9rem; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s ease;
+        }
+        .btn-primary { background: linear-gradient(135deg, #1a472a, #2d5f3f); color: white; }
+        .btn-primary:hover { box-shadow: 0 4px 15px rgba(26,71,42,0.3); transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-outline { background: white; color: #1a472a; border: 1.5px solid #1a472a; }
+        .btn-outline:hover { background: #1a472a; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-sm { padding: 8px 16px; font-size: 0.82rem; }
+
+        /* Preview table */
+        .preview-section { display: none; }
+        .preview-summary {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px; margin-bottom: 18px;
+        }
+        .summary-stat {
+            background: #f0fdf4; border-radius: 10px; padding: 14px; text-align: center;
+        }
+        .summary-stat .stat-value { font-size: 1.3rem; font-weight: 700; color: #1a472a; }
+        .summary-stat .stat-label { font-size: 0.78rem; color: #6b7280; margin-top: 2px; }
+
+        .preview-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #e5e7eb; }
+        .preview-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .preview-table th { background: #f9fafb; color: #374151; font-weight: 600; padding: 10px 14px; text-align: left; white-space: nowrap; }
+        .preview-table td { padding: 10px 14px; border-top: 1px solid #f3f4f6; color: #4b5563; }
+        .preview-table tr:hover td { background: #f9fafb; }
+
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px;
+            border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+        }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-processing { background: #dbeafe; color: #1e40af; }
+        .status-completed { background: #d1fae5; color: #065f46; }
+        .status-failed { background: #fee2e2; color: #991b1b; }
+        .status-cancelled { background: #f3f4f6; color: #6b7280; }
+
+        /* Batch history */
+        .batch-history { margin-top: 20px; }
+        .batch-card {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb;
+            margin-bottom: 10px; transition: all 0.2s ease; cursor: pointer; flex-wrap: wrap; gap: 10px;
+        }
+        .batch-card:hover { border-color: #1a472a; box-shadow: 0 2px 8px rgba(26,71,42,0.08); }
+        .batch-info h4 { font-size: 0.95rem; color: #1a472a; margin-bottom: 3px; }
+        .batch-info p { font-size: 0.8rem; color: #9ca3af; }
+        .batch-meta { text-align: right; }
+        .batch-meta .batch-amount { font-size: 1.1rem; font-weight: 700; color: #1a472a; }
+        .batch-meta .batch-count { font-size: 0.78rem; color: #6b7280; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: #9ca3af; }
+        .empty-state i { font-size: 2.5rem; margin-bottom: 12px; color: #d1d5db; }
+        .empty-state h4 { color: #6b7280; margin-bottom: 6px; }
+
+        .alert { padding: 14px 18px; border-radius: 10px; margin-bottom: 16px; font-size: 0.88rem; display: flex; align-items: flex-start; gap: 10px; }
+        .alert-info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .alert-success { background: #f0fdf4; color: #065f46; border: 1px solid #bbf7d0; }
+        .alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert i { margin-top: 2px; }
+
+        .loading-spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Batch detail modal */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 1000; align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white; border-radius: 16px; max-width: 700px; width: 100%;
+            max-height: 80vh; overflow-y: auto; padding: 28px; position: relative;
+        }
+        .modal-close {
+            position: absolute; top: 16px; right: 16px; background: none; border: none;
+            font-size: 1.2rem; color: #9ca3af; cursor: pointer;
+        }
+        .modal-close:hover { color: #1a472a; }
+        .modal h3 { color: #1a472a; margin-bottom: 18px; }
+
+        .app-footer { text-align: center; padding: 20px; color: #9ca3af; font-size: 0.8rem; margin-top: 20px; }
+        .app-footer a { color: #1a472a; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <button class="back-btn" onclick="location.href='dashboard.html'">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1>Bulk Payments</h1>
+    </div>
+
+    <div class="balance-card">
+        <div class="balance-label">Available Balance</div>
+        <div class="balance-amount" id="balanceAmount">$0.00</div>
+        <div class="account-number" id="accountNumber">Loading...</div>
+    </div>
+
+    <!-- Upload Card -->
+    <div class="card" id="uploadCard">
+        <h3><i class="fas fa-file-upload" style="margin-right:8px;"></i>Upload Payment File</h3>
+        <p class="subtitle">Upload an ISO 20022 pain.001 XML file to initiate bulk payments</p>
+
+        <div class="upload-zone" id="uploadZone">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <h4>Drag & drop your XML file here</h4>
+            <p>or click to browse &bull; pain.001 format &bull; Max 5MB</p>
+            <input type="file" id="fileInput" accept=".xml,application/xml,text/xml">
+            <div class="file-selected" id="fileSelectedName" style="display:none;"></div>
+        </div>
+
+        <div class="upload-actions">
+            <button class="btn btn-primary" id="uploadBtn" disabled>
+                <i class="fas fa-upload"></i> Upload & Parse
+            </button>
+            <button class="btn btn-outline btn-sm" id="downloadSampleBtn">
+                <i class="fas fa-download"></i> Download Sample
+            </button>
+        </div>
+
+        <div id="uploadAlert" style="display:none; margin-top:16px;"></div>
+    </div>
+
+    <!-- Preview Card (shown after upload) -->
+    <div class="card preview-section" id="previewCard">
+        <h3><i class="fas fa-list-check" style="margin-right:8px;"></i>Payment Preview</h3>
+        <p class="subtitle" id="previewSubtitle">Review payments before executing</p>
+
+        <div class="preview-summary" id="previewSummary"></div>
+
+        <div class="preview-table-wrap">
+            <table class="preview-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Recipient</th>
+                        <th>Account</th>
+                        <th>Bank</th>
+                        <th>Amount</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody id="previewTableBody"></tbody>
+            </table>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
+            <button class="btn btn-primary" id="executeBtn">
+                <i class="fas fa-paper-plane"></i> Execute All Payments
+            </button>
+            <button class="btn btn-danger btn-sm" id="cancelBatchBtn">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </div>
+
+        <div id="executeAlert" style="display:none; margin-top:16px;"></div>
+    </div>
+
+    <!-- Batch History -->
+    <div class="card">
+        <h3><i class="fas fa-history" style="margin-right:8px;"></i>Batch History</h3>
+        <p class="subtitle">Your recent bulk payment batches</p>
+        <div id="batchHistory">
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h4>No batches yet</h4>
+                <p>Upload a pain.001 file to get started</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Format Info -->
+    <div class="card">
+        <h3><i class="fas fa-info-circle" style="margin-right:8px;"></i>About pain.001 Format</h3>
+        <p class="subtitle">ISO 20022 Customer Credit Transfer Initiation</p>
+        <div style="font-size:0.88rem; color:#4b5563; line-height:1.7;">
+            <p>The <strong>pain.001</strong> format is an international standard for initiating credit transfers. It supports:</p>
+            <ul style="margin:10px 0 10px 20px;">
+                <li>Bulk wire transfers and ACH payments</li>
+                <li>Payroll processing for multiple employees</li>
+                <li>Vendor and supplier payments</li>
+                <li>Cross-border payment instructions</li>
+            </ul>
+            <p>Your XML file should contain a <code>&lt;CstmrCdtTrfInitn&gt;</code> root element with payment instructions in <code>&lt;CdtTrfTxInf&gt;</code> blocks. Download the sample template for an example.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Batch Detail Modal -->
+<div class="modal-overlay" id="batchDetailModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeBatchModal()"><i class="fas fa-times"></i></button>
+        <h3 id="modalTitle">Batch Details</h3>
+        <div class="preview-summary" id="modalSummary"></div>
+        <div class="preview-table-wrap">
+            <table class="preview-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Recipient</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Reference</th>
+                    </tr>
+                </thead>
+                <tbody id="modalTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<footer class="app-footer">
+    &copy; 2025 Heritage Bank. All rights reserved. |
+    <a href="privacy.html">Privacy</a> |
+    <a href="terms.html">Terms</a>
+</footer>
+
+<script src="cookie-consent.js"></script>
+<script>
+        if(localStorage.getItem('darkMode')==='true')document.body.classList.add('dark-mode');
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3001' : window.location.origin;
+
+let currentBatchId = null;
+let currentBatchPayments = [];
+
+function escapeHtml(str) {
+    if (!str) return '';
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+function formatCurrency(amount) {
+    return '$' + parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function showAlert(containerId, type, message) {
+    const icons = { info: 'fa-info-circle', success: 'fa-check-circle', error: 'fa-exclamation-circle' };
+    const el = document.getElementById(containerId);
+    el.innerHTML = `<div class="alert alert-${type}"><i class="fas ${icons[type] || icons.info}"></i><span>${escapeHtml(message)}</span></div>`;
+    el.style.display = 'block';
+}
+
+// Auth check
+const token = localStorage.getItem('token');
+if (!token) { window.location.href = 'signin.html'; }
+
+async function init() {
+    try {
+        const res = await fetch(API_URL + '/api/auth/profile', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error('Not authenticated');
+
+        document.getElementById('balanceAmount').textContent = formatCurrency(data.user.balance);
+        document.getElementById('accountNumber').textContent = 'Account: ' + (data.user.accountNumber || '');
+
+        loadBatchHistory();
+    } catch (e) {
+        window.location.href = 'signin.html';
+    }
+}
+
+// ==================== FILE UPLOAD ====================
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const uploadBtn = document.getElementById('uploadBtn');
+let selectedFile = null;
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFileSelect(fileInput.files[0]); });
+
+function handleFileSelect(file) {
+    if (!file.name.toLowerCase().endsWith('.xml')) {
+        showAlert('uploadAlert', 'error', 'Please select an XML file');
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        showAlert('uploadAlert', 'error', 'File exceeds 5MB limit');
+        return;
+    }
+    selectedFile = file;
+    document.getElementById('fileSelectedName').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+    document.getElementById('fileSelectedName').style.display = 'block';
+    uploadBtn.disabled = false;
+    document.getElementById('uploadAlert').style.display = 'none';
+}
+
+uploadBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<span class="loading-spinner"></span> Parsing...';
+
+    try {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        const res = await fetch(API_URL + '/api/bulk-payments/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            showAlert('uploadAlert', 'error', data.message || 'Upload failed');
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload & Parse';
+            return;
+        }
+
+        currentBatchId = data.batch.id;
+        currentBatchPayments = data.payments;
+        showPreview(data);
+
+    } catch (e) {
+        showAlert('uploadAlert', 'error', 'Network error. Please try again.');
+    }
+
+    uploadBtn.disabled = false;
+    uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload & Parse';
+});
+
+// Download sample template
+document.getElementById('downloadSampleBtn').addEventListener('click', async () => {
+    try {
+        const res = await fetch(API_URL + '/api/bulk-payments/template/sample', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'pain001-sample.xml';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        showAlert('uploadAlert', 'error', 'Could not download sample');
+    }
+});
+
+// ==================== PREVIEW ====================
+function showPreview(data) {
+    const previewCard = document.getElementById('previewCard');
+    previewCard.style.display = 'block';
+
+    document.getElementById('previewSubtitle').textContent =
+        data.batch.fileName + ' — ' + data.batch.totalPayments + ' payments';
+
+    // Summary stats
+    const summaryHtml = `
+        <div class="summary-stat">
+            <div class="stat-value">${data.batch.totalPayments}</div>
+            <div class="stat-label">Total Payments</div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-value">${formatCurrency(data.batch.totalAmount)}</div>
+            <div class="stat-label">Total Amount</div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-value">${data.batch.currency}</div>
+            <div class="stat-label">Currency</div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-value"><span class="status-badge ${data.batch.sufficientFunds ? 'status-completed' : 'status-failed'}">${data.batch.sufficientFunds ? 'Sufficient' : 'Insufficient'}</span></div>
+            <div class="stat-label">Funds</div>
+        </div>
+    `;
+    document.getElementById('previewSummary').innerHTML = summaryHtml;
+
+    // Table rows
+    const tbody = document.getElementById('previewTableBody');
+    tbody.innerHTML = data.payments.map(p => `
+        <tr>
+            <td>${p.index}</td>
+            <td>${escapeHtml(p.recipientName)}</td>
+            <td>${escapeHtml(p.recipientAccount)}</td>
+            <td>${escapeHtml(p.bankName)}</td>
+            <td><strong>${formatCurrency(p.amount)}</strong></td>
+            <td>${escapeHtml(p.description)}</td>
+        </tr>
+    `).join('');
+
+    document.getElementById('executeBtn').disabled = !data.batch.sufficientFunds;
+
+    // Scroll to preview
+    previewCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ==================== EXECUTE BATCH ====================
+document.getElementById('executeBtn').addEventListener('click', async () => {
+    if (!currentBatchId) return;
+    if (!confirm('Execute all ' + currentBatchPayments.length + ' payments? This action cannot be undone.')) return;
+
+    const btn = document.getElementById('executeBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Processing...';
+
+    try {
+        const res = await fetch(API_URL + '/api/bulk-payments/' + currentBatchId + '/execute', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            showAlert('executeAlert', 'error', data.message || 'Execution failed');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Execute All Payments';
+            return;
+        }
+
+        showAlert('executeAlert', 'success',
+            `Batch processed: ${data.batch.processedCount} completed` +
+            (data.batch.failedCount > 0 ? `, ${data.batch.failedCount} failed` : '') +
+            `. Total: ${formatCurrency(data.batch.totalAmount)}`
+        );
+
+        btn.style.display = 'none';
+        document.getElementById('cancelBatchBtn').style.display = 'none';
+
+        // Refresh balance and history
+        const profileRes = await fetch(API_URL + '/api/auth/profile', { headers: { 'Authorization': 'Bearer ' + token } });
+        const profileData = await profileRes.json();
+        if (profileData.success) {
+            document.getElementById('balanceAmount').textContent = formatCurrency(profileData.user.balance);
+        }
+
+        loadBatchHistory();
+        currentBatchId = null;
+
+    } catch (e) {
+        showAlert('executeAlert', 'error', 'Network error. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Execute All Payments';
+    }
+});
+
+// Cancel batch
+document.getElementById('cancelBatchBtn').addEventListener('click', async () => {
+    if (!currentBatchId) return;
+    if (!confirm('Cancel this batch?')) return;
+
+    try {
+        const res = await fetch(API_URL + '/api/bulk-payments/' + currentBatchId, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            document.getElementById('previewCard').style.display = 'none';
+            selectedFile = null;
+            fileInput.value = '';
+            document.getElementById('fileSelectedName').style.display = 'none';
+            uploadBtn.disabled = true;
+            currentBatchId = null;
+            showAlert('uploadAlert', 'info', 'Batch cancelled');
+            loadBatchHistory();
+        } else {
+            showAlert('executeAlert', 'error', data.message || 'Could not cancel');
+        }
+    } catch (e) {
+        showAlert('executeAlert', 'error', 'Network error');
+    }
+});
+
+// ==================== BATCH HISTORY ====================
+async function loadBatchHistory() {
+    try {
+        const res = await fetch(API_URL + '/api/bulk-payments', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+
+        const container = document.getElementById('batchHistory');
+        if (!data.success || !data.batches.length) {
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h4>No batches yet</h4><p>Upload a pain.001 file to get started</p></div>';
+            return;
+        }
+
+        container.innerHTML = data.batches.map(b => `
+            <div class="batch-card" onclick="viewBatchDetails(${b.id})">
+                <div class="batch-info">
+                    <h4>${escapeHtml(b.fileName || 'Batch #' + b.id)}</h4>
+                    <p>${new Date(b.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
+                <div style="flex:1;"></div>
+                <span class="status-badge status-${b.status}">${b.status.charAt(0).toUpperCase() + b.status.slice(1)}</span>
+                <div class="batch-meta">
+                    <div class="batch-amount">${formatCurrency(b.totalAmount)}</div>
+                    <div class="batch-count">${b.processedCount}/${b.totalPayments} payments</div>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('Error loading batches:', e);
+    }
+}
+
+// ==================== BATCH DETAIL MODAL ====================
+async function viewBatchDetails(batchId) {
+    try {
+        const res = await fetch(API_URL + '/api/bulk-payments/' + batchId, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (!data.success) return;
+
+        const batch = data.batch;
+        const items = data.items;
+
+        document.getElementById('modalTitle').textContent = 'Batch #' + batch.id + ' — ' + escapeHtml(batch.fileName || '');
+
+        document.getElementById('modalSummary').innerHTML = `
+            <div class="summary-stat">
+                <div class="stat-value">${batch.totalPayments}</div>
+                <div class="stat-label">Total</div>
+            </div>
+            <div class="summary-stat">
+                <div class="stat-value" style="color:#065f46;">${batch.processedCount}</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="summary-stat">
+                <div class="stat-value" style="color:#991b1b;">${batch.failedCount}</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="summary-stat">
+                <div class="stat-value">${formatCurrency(batch.totalAmount)}</div>
+                <div class="stat-label">Total Amount</div>
+            </div>
+        `;
+
+        document.getElementById('modalTableBody').innerHTML = items.map((item, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td>${escapeHtml(item.recipientName)}</td>
+                <td><strong>${formatCurrency(item.amount)}</strong></td>
+                <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+                <td>${escapeHtml(item.reference || '—')}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('batchDetailModal').classList.add('active');
+    } catch (e) {
+        console.error('Error loading batch details:', e);
+    }
+}
+
+function closeBatchModal() {
+    document.getElementById('batchDetailModal').classList.remove('active');
+}
+
+// Close modal on overlay click
+document.getElementById('batchDetailModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('batchDetailModal')) closeBatchModal();
+});
+
+init();
+</script>
+<script src="app-sidebar.js"></script>
+<script>
+    // Loader
+    document.addEventListener('DOMContentLoaded', function() {
+        const loader = document.getElementById('loadingOverlay');
+        if (loader) { setTimeout(function() { loader.classList.add('hidden'); }, 600); }
+    });
+</script>
+</body>
+</html>
