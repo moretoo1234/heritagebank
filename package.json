@@ -2,10 +2,10 @@
   "name": "heritage-bank",
   "version": "1.0.0",
   "description": "Heritage Bank - Digital Banking Application",
-  "main": "backend/server.js",
+  "main": "backend/server-firestore.js",
   "scripts": {
-    "start": "node backend/server.js",
-    "dev": "node backend/server.js",
+    "start": "node backend/server-firestore.js",
+    "dev": "node backend/server-firestore.js",
     "build": "npm --prefix backend install",
     "postinstall": "npm --prefix backend install"
   },
