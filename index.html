@@ -857,7 +857,30 @@
 
 <script src="script.js"></script>
     <script src="cookie-consent.js"></script>
-    <!-- Firebase SDK -->
+    <!-- Hide page loader when content is ready -->
+    <script>
+        // Hide loader immediately - we're using backend API, not Firebase
+        document.addEventListener('DOMContentLoaded', function() {
+            const loader = document.getElementById('pageLoader');
+            if (loader) {
+                loader.style.display = 'none';
+                console.log('[LOADER] Page loaded - hiding loader');
+            }
+        });
+        
+        // Also hide after a short timeout to ensure it's gone
+        window.addEventListener('load', function() {
+            const loader = document.getElementById('pageLoader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    if (loader) loader.style.display = 'none';
+                }, 300);
+            }
+        });
+    </script>
+    <!-- Firebase SDK - DISABLED: using backend API instead -->
+    <!-- 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
         
@@ -874,6 +897,7 @@
         const app = initializeApp(firebaseConfig);
         console.log('Firebase initialized:', app.name || 'Default');
     </script>
+    -->
     <script>
         // --- Testimonials marquee: duplicate content for seamless infinite scroll ---
         (function() {

@@ -1,6 +1,7 @@
 // Heritage Bank - Main JavaScript
 
-const API_URL = 'https://heritagebank-production.up.railway.app';
+// Use relative paths for API - works on any domain
+const API_URL = '';  // Empty string means use current domain
 
 // Mobile Menu Toggle
 document.addEventListener('DOMContentLoaded', function() {
