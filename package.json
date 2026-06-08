@@ -2,31 +2,14 @@
   "name": "heritage-bank",
   "version": "1.0.0",
   "description": "Heritage Bank - Digital Banking Application",
-  "main": "backend/server-firestore.js",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server-firestore.js",
-    "dev": "node backend/server-firestore.js",
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
     "build": "npm ci --prefix backend || npm install --prefix backend"
   },
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {
-    "@simplewebauthn/server": "^10.0.1",
-    "bcryptjs": "^2.4.3",
-    "body-parser": "^1.20.2",
-    "cors": "^2.8.5",
-    "csv-writer": "^1.6.0",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "express-rate-limit": "^8.2.1",
-    "fast-xml-parser": "^5.5.9",
-    "firebase": "^12.14.0",
-    "firebase-admin": "^12.7.0",
-    "helmet": "^8.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "multer": "^2.1.1",
-    "nodemailer": "^8.0.4",
-    "pdfkit": "^0.17.2"
-  }
+  "dependencies": {}
 }
