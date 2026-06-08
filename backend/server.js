@@ -4,14 +4,42 @@
  * Works with both Vercel and Railway
  */
 
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+// ============ STARTUP DIAGNOSTICS ============
+const fs = require('fs');
 const path = require('path');
+
+console.log('[STARTUP] Starting server initialization...');
+console.log(`[STARTUP] Current working directory: ${process.cwd()}`);
+console.log(`[STARTUP] Script directory: ${__dirname}`);
+console.log(`[STARTUP] Node version: ${process.version}`);
+console.log(`[STARTUP] NODE_ENV: ${process.env.NODE_ENV || 'not set (defaulting to development)'}`);
+
+// Check if node_modules exists and list structure
+const backendNodeModules = path.join(__dirname, 'node_modules');
+const rootNodeModules = path.join(__dirname, '..', 'node_modules');
+console.log(`[STARTUP] Checking backend node_modules: ${backendNodeModules}`);
+console.log(`[STARTUP] Backend node_modules exists: ${fs.existsSync(backendNodeModules)}`);
+console.log(`[STARTUP] Checking root node_modules: ${rootNodeModules}`);
+console.log(`[STARTUP] Root node_modules exists: ${fs.existsSync(rootNodeModules)}`);
+
+// Try to load dependencies
+console.log('[STARTUP] Attempting to load dependencies...');
+const express = require('express');
+console.log('[STARTUP] ✓ express loaded');
+const cors = require('cors');
+console.log('[STARTUP] ✓ cors loaded');
+const bodyParser = require('body-parser');
+console.log('[STARTUP] ✓ body-parser loaded');
+const helmet = require('helmet');
+console.log('[STARTUP] ✓ helmet loaded');
+const rateLimit = require('express-rate-limit');
+console.log('[STARTUP] ✓ express-rate-limit loaded');
+const bcrypt = require('bcryptjs');
+console.log('[STARTUP] ✓ bcryptjs loaded');
+const jwt = require('jsonwebtoken');
+console.log('[STARTUP] ✓ jsonwebtoken loaded');
+
+console.log('[STARTUP] All dependencies loaded successfully!');
 
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
@@ -19,21 +47,31 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
 
+console.log(`[STARTUP] Port configured: ${PORT}`);
+console.log('[STARTUP] JWT_SECRET: ' + (process.env.JWT_SECRET ? 'set' : 'using default'));
+
 // In-memory user storage (replace with database in production)
 const users = new Map();
+
+console.log('[STARTUP] Setting up middleware...');
 
 // Middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
+console.log('[MIDDLEWARE] ✓ helmet configured');
+
 app.use(cors({
   origin: '*',
   credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+console.log('[MIDDLEWARE] ✓ CORS configured');
+
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+console.log('[MIDDLEWARE] ✓ Body parser configured');
 
 // Rate limiting
 const apiLimiter = rateLimit({
@@ -42,6 +80,9 @@ const apiLimiter = rateLimit({
   message: 'Too many requests, please try again later'
 });
 app.use('/api/', apiLimiter);
+console.log('[MIDDLEWARE] ✓ Rate limiting configured');
+
+console.log('[STARTUP] Setting up routes...');
 
 // ============ ROUTES ============
 
@@ -231,11 +272,19 @@ app.get('/api/dashboard', authenticateToken, (req, res) => {
 
 // Serve static files from root directory
 const rootPath = path.join(__dirname, '..');
+console.log(`[STARTUP] Static files root path: ${rootPath}`);
+console.log(`[STARTUP] Root directory exists: ${fs.existsSync(rootPath)}`);
+
+const indexHtmlPath = path.join(rootPath, 'index.html');
+console.log(`[STARTUP] index.html path: ${indexHtmlPath}`);
+console.log(`[STARTUP] index.html exists: ${fs.existsSync(indexHtmlPath)}`);
+
 app.use(express.static(rootPath, {
   maxAge: '1d',
   etag: false,
   index: ['index.html']
 }));
+console.log('[MIDDLEWARE] ✓ Static file serving configured');
 
 // SPA fallback - serve index.html for non-API routes
 app.get('*', (req, res, next) => {
@@ -246,6 +295,7 @@ app.get('*', (req, res, next) => {
   // Serve index.html for all other requests (SPA routing)
   res.sendFile(path.join(rootPath, 'index.html'));
 });
+console.log('[MIDDLEWARE] ✓ SPA fallback configured');
 
 // ============ MIDDLEWARE ============
 
@@ -289,10 +339,18 @@ app.use((err, req, res, next) => {
 // ============ START SERVER ============
 
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`✓ Server running on port ${PORT}`);
-    console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`✓ Health check: GET /api/health`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log('\n========================================');
+    console.log('[SERVER] ✓ Server started successfully!');
+    console.log(`[SERVER] Listening on port: ${PORT}`);
+    console.log(`[SERVER] Address: 0.0.0.0:${PORT}`);
+    console.log(`[SERVER] Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log('[SERVER] Health check: GET /api/health');
+    console.log(`[SERVER] Timestamp: ${new Date().toISOString()}`);
+    console.log('========================================\n');
+  }).on('error', (err) => {
+    console.error('[SERVER] ✗ Failed to start server:', err);
+    process.exit(1);
   });
 }
 
