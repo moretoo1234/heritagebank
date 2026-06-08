@@ -1,0 +1,12 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacks]
+node = "20"
+buildCommands = ["bash backend/render-build.sh"]
+
+[deploy]
+startCommand = "node backend/server.js"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+healthCheckPath = "/api/health"
