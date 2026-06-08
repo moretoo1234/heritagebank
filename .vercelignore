@@ -1,0 +1,10 @@
+backend/
+node_modules/
+.git/
+.env
+.env.local
+railway.toml
+package-lock.json
+README.md
+MIGRATION-PLAN.md
+RENDER-SETUP.md
