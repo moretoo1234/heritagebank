@@ -45,6 +45,15 @@ app.use('/api/', apiLimiter);
 
 // ============ ROUTES ============
 
+// Favicon - simple transparent PNG (prevents 404 errors)
+app.get('/favicon.ico', (req, res) => {
+  const favicon = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    'base64'
+  );
+  res.type('image/png').send(favicon);
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
