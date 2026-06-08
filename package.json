@@ -6,8 +6,7 @@
   "scripts": {
     "start": "node backend/server-firestore.js",
     "dev": "node backend/server-firestore.js",
-    "build": "npm install && npm --prefix backend install",
-    "postinstall": "npm --prefix backend install"
+    "build": "npm --prefix backend install"
   },
   "engines": {
     "node": ">=18.0.0"
