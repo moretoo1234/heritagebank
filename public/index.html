@@ -18,7 +18,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="loading.css">
     <link rel="stylesheet" href="styles.css">
-    <style>html { scroll-behavior: smooth; }</style>
+    <style>
+        html { scroll-behavior: smooth; }
+        /* Hide loader immediately */
+        #pageLoader { display: none !important; visibility: hidden !important; opacity: 0 !important; }
+    </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body>
@@ -859,25 +863,14 @@
     <script src="cookie-consent.js"></script>
     <!-- Hide page loader when content is ready -->
     <script>
-        // Hide loader immediately - we're using backend API, not Firebase
-        document.addEventListener('DOMContentLoaded', function() {
-            const loader = document.getElementById('pageLoader');
-            if (loader) {
-                loader.style.display = 'none';
-                console.log('[LOADER] Page loaded - hiding loader');
-            }
-        });
-        
-        // Also hide after a short timeout to ensure it's gone
-        window.addEventListener('load', function() {
-            const loader = document.getElementById('pageLoader');
-            if (loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => {
-                    if (loader) loader.style.display = 'none';
-                }, 300);
-            }
-        });
+        // Loader hidden by CSS in head. This is just for logging.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('[LOADER] Page loaded successfully');
+            });
+        } else {
+            console.log('[LOADER] Page already loaded');
+        }
     </script>
     <!-- Firebase SDK - DISABLED: using backend API instead -->
     <!-- 
