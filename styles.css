@@ -260,6 +260,14 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
 }
 
 .text-gradient {
+    color: var(--gold);
+    font-weight: inherit;
+    animation: none;
+}
+
+/* Old gradient version - disabled for better visibility */
+/*
+.text-gradient {
     background: linear-gradient(135deg, var(--gold), #f0d060, var(--gold));
     background-size: 200% 200%;
     -webkit-background-clip: text;
@@ -267,6 +275,7 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
     background-clip: text;
     animation: gradientShift 4s ease-in-out infinite;
 }
+*/
 
 @keyframes gradientShift {
     0%, 100% { background-position: 0% 50%; }
