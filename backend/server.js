@@ -2,6 +2,7 @@
  * Heritage Bank Backend API
  * Simple Express server without Firebase
  * Works with both Vercel and Railway
+ * Build deployment marker: 2026-06-09T17:15:00Z - CSP with unsafe-inline enabled
  */
 
 // ============ STARTUP DIAGNOSTICS ============
