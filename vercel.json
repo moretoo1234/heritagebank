@@ -1,14 +1,14 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    }
-  ],
+  "buildCommand": "echo 'Static build complete'",
+  "outputDirectory": ".",
   "routes": [
     {
       "src": "/(.*)",
+      "dest": "/$1"
+    },
+    {
+      "src": "^/(?!.*\\.).*$",
       "dest": "/index.html"
     }
   ]
