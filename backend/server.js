@@ -362,10 +362,38 @@ app.use((err, req, res, next) => {
   });
 });
 
+// ============ SEED DATA ============
+// Initialize default admin account for production
+async function initializeSeedData() {
+  try {
+    const adminEmail = 'admin@heritage.com';
+    if (!users.has(adminEmail)) {
+      const adminPassword = 'Admin123!@';
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      users.set(adminEmail, {
+        id: 'admin-001',
+        email: adminEmail,
+        firstName: 'Admin',
+        lastName: 'Account',
+        passwordHash: hashedPassword,
+        balance: 10000,
+        createdAt: new Date().toISOString()
+      });
+      console.log('[SEED] ✓ Admin account initialized: admin@heritage.com / Admin123!@');
+    } else {
+      console.log('[SEED] ℹ Admin account already exists');
+    }
+  } catch (err) {
+    console.error('[SEED] ✗ Failed to initialize seed data:', err);
+  }
+}
+
 // ============ START SERVER ============
 
 if (require.main === module) {
-  app.listen(PORT, '0.0.0.0', () => {
+  // Initialize seed data, then start server
+  initializeSeedData().then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
     console.log('\n========================================');
     console.log('[SERVER] ✓ Server started successfully!');
     console.log(`[SERVER] Listening on port: ${PORT}`);
@@ -374,12 +402,14 @@ if (require.main === module) {
     console.log('[SERVER] Health check: GET /api/health');
     console.log(`[SERVER] Timestamp: ${new Date().toISOString()}`);
     console.log('========================================\n');
-  }).on('error', (err) => {
-    console.error('[SERVER] ✗ Failed to start server:', err);
+    }).on('error', (err) => {
+      console.error('[SERVER] ✗ Failed to start server:', err);
+      process.exit(1);
+    });
+  }).catch((err) => {
+    console.error('[SEED] ✗ Failed to initialize seed data, aborting startup:', err);
     process.exit(1);
   });
 }
 
 module.exports = app;
-// Force redeploy at 06/08/2026 20:53:50
-// Production redeploy trigger
