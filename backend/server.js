@@ -139,6 +139,8 @@ app.get('/api/health', (req, res) => {
 
 // Register endpoint
 app.post('/api/auth/register', async (req, res) => {
+  const REGISTRATION_MARKER = `[REGISTER_ENDPOINT_v${Date.now()}]`;
+  console.log(REGISTRATION_MARKER, 'ENDPOINT CALLED - START');
   try {
     console.log('[API] ====== REGISTER START ======');
     const { email, password, firstName, lastName, phone, gender } = req.body;
