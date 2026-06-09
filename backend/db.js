@@ -173,6 +173,7 @@ async function createUser(id, email, firstName, lastName, passwordHash, isAdmin 
   const connection = await pool.getConnection();
   try {
     const actualPasswordColumn = await detectPasswordColumn();
+    console.log(`[DB] Creating user: ${email}, passwordColumn: ${actualPasswordColumn}`);
     const columns = ['email', 'firstName', 'lastName', actualPasswordColumn, 'balance', 'isAdmin'];
     const values = [email, firstName, lastName, passwordHash, 1000, isAdmin ? 1 : 0];
 
@@ -183,12 +184,16 @@ async function createUser(id, email, firstName, lastName, passwordHash, isAdmin 
 
     const placeholders = columns.map(() => '?').join(', ');
     const sql = `INSERT INTO users (${columns.join(', ')}) VALUES (${placeholders})`;
+    console.log(`[DB] SQL: ${sql}`);
     const [result] = await connection.execute(sql, values);
 
     if (result.insertId) {
       return getUserById(result.insertId);
     }
     return getUserByEmail(email);
+  } catch (err) {
+    console.error(`[DB] createUser failed for ${email}:`, err.message);
+    throw err;
   } finally {
     await connection.release();
   }

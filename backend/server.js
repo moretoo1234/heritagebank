@@ -155,8 +155,7 @@ app.post('/api/auth/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Store user in database
-    const userId = `user_${Date.now()}`;
-    const user = await db.createUser(userId, email, firstName, lastName, hashedPassword, false);
+    const user = await db.createUser(null, email, firstName, lastName, hashedPassword, false);
 
     // Generate JWT
     const token = jwt.sign(
@@ -178,11 +177,13 @@ app.post('/api/auth/register', async (req, res) => {
       token
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('[API] Registration error for', req.body.email || 'unknown', ':', error.message);
+    console.error('[API] Stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Registration failed',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Server error during registration',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -221,7 +222,8 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Check password
-    const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+    const passwordHash = user.passwordHash || user.password;
+    const passwordMatch = await bcrypt.compare(password, passwordHash);
     if (!passwordMatch) {
       console.log('[API] Password mismatch for:', email);
       return res.status(401).json({
@@ -307,7 +309,9 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
       data: {
         accountBalance: parseFloat(user.balance),
         accountType: 'Checking',
-        accountNumber: '****' + user.id.slice(-4),
+        accountNumber: user.accountNumber
+          ? '****' + String(user.accountNumber).slice(-4)
+          : '****' + String(user.id).slice(-4),
         recentTransactions: transactions.map(tx => ({
           id: tx.id,
           type: tx.type,
@@ -405,7 +409,7 @@ async function initializeSeedData() {
     if (!existingAdmin) {
       const adminPassword = ADMIN_PASSWORD;
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
-      await db.createUser('admin-001', adminEmail, 'Admin', 'Account', hashedPassword, true);
+      await db.createUser(null, adminEmail, 'Admin', 'Account', hashedPassword, true);
       console.log(`[SEED] ✓ Admin account initialized: ${adminEmail}`);
     } else {
       console.log('[SEED] ℹ Admin account already exists');
