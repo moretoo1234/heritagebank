@@ -688,7 +688,7 @@
         // Get user info on load
         async function checkAuth() {
             try {
-                const res = await fetch(`${API_URL}/api/auth/profile`, {
+                const res = await fetch(`${API_URL}/api/user/profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 

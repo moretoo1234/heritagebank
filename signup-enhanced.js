@@ -12,7 +12,7 @@ function escapeHtml(str) {
 (function() {
     const token = localStorage.getItem('token');
     if (token) {
-        fetch(`${API_URL}/api/auth/profile`, {
+        fetch(`${API_URL}/api/user/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         }).then(r => r.json()).then(data => {
             if (data.success && data.user) {

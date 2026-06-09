@@ -190,7 +190,7 @@
         (function() {
             var token = localStorage.getItem('token');
             if (token) {
-                fetch(API_URL + '/api/auth/profile', { headers: { 'Authorization': 'Bearer ' + token } })
+                fetch(API_URL + '/api/user/profile', { headers: { 'Authorization': 'Bearer ' + token } })
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
                         if (data.success && data.user) {

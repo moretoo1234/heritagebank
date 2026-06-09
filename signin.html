@@ -201,16 +201,20 @@
         </div>
     </div>
     <script>
-// Heritage Bank API URL
-        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:3001' 
-            : 'https://heritage-bank-13vo.onrender.com';
+// Heritage Bank API URL - dynamic detection
+        const API_URL = (function() {
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return 'http://localhost:3001';
+            }
+            // Production: use current domain
+            return `${window.location.protocol}//${window.location.host}`;
+        })();
 
         // Redirect authenticated users to dashboard
         (function() {
             const token = localStorage.getItem('token');
             if (token) {
-                fetch(`${API_URL}/api/auth/profile`, {
+                fetch(`${API_URL}/api/user/profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }).then(r => r.json()).then(data => {
                     if (data.success && data.user) {
