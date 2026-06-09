@@ -202,25 +202,15 @@ app.post('/api/auth/register', async (req, res) => {
     console.log('[API] ====== REGISTER END (SUCCESS) ======');
   } catch (error) {
     console.error('[API] ======= REGISTRATION ERROR =======');
-    console.error('[API] Error at step unknown');
-    console.error('[API] Email:', req.body?.email);
     console.error('[API] Error message:', error.message);
-    console.error('[API] Error name:', error.name);
-    console.error('[API] Error code:', error.code);
-    console.error('[API] Full stack:', error.stack);
-    console.error('[API] ===================================');
+    console.error('[API] Stack:', error.stack);
     
-    // Return comprehensive error
-    const errorResponse = {
+    res.status(500).json({
       success: false,
-      message: 'Registration failed',
-      error: error.message,
-      errorName: error.name,
-      errorCode: error.code
-    };
-    
-    console.error('[API] Sending error response:', JSON.stringify(errorResponse));
-    res.status(500).json(errorResponse);
+      message: 'Error_' + error.message.substring(0, 50),
+      errno: error.errno,
+      code: error.code
+    });
     console.log('[API] ====== REGISTER END (ERROR) ======');
   }
 });
