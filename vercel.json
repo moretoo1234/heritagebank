@@ -1,14 +1,12 @@
 {
   "version": 2,
-  "buildCommand": "echo 'Static build complete'",
-  "outputDirectory": ".",
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/(.*\\..*)",
       "dest": "/$1"
     },
     {
-      "src": "^/(?!.*\\.).*$",
+      "src": "/(.*)",
       "dest": "/index.html"
     }
   ]
