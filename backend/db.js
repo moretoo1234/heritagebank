@@ -168,15 +168,23 @@ async function getUserById(id) {
 /**
  * Create user
  */
-async function createUser(id, email, firstName, lastName, passwordHash, isAdmin = false) {
+async function createUser(id, email, firstName, lastName, passwordHash, isAdmin = false, phone = null, gender = null) {
   const pool = await initializePool();
   const connection = await pool.getConnection();
   try {
     const actualPasswordColumn = await detectPasswordColumn();
-    console.log(`[DB] Creating user: ${email}, passwordColumn: ${actualPasswordColumn}`);
+    console.log(`[DB] Creating user: ${email}, passwordColumn: ${actualPasswordColumn}, phone: ${phone}, gender: ${gender}`);
     const columns = ['email', 'firstName', 'lastName', actualPasswordColumn, 'balance', 'isAdmin'];
     const values = [email, firstName, lastName, passwordHash, 1000, isAdmin ? 1 : 0];
 
+    if (phone) {
+      columns.push('phone');
+      values.push(phone);
+    }
+    if (gender) {
+      columns.push('gender');
+      values.push(gender);
+    }
     if (id) {
       columns.unshift('id');
       values.unshift(id);

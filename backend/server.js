@@ -132,7 +132,7 @@ app.get('/api/health', (req, res) => {
 // Register endpoint
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName, phone, gender } = req.body;
 
     // Validation
     if (!email || !password || !firstName || !lastName) {
@@ -155,7 +155,7 @@ app.post('/api/auth/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Store user in database
-    const user = await db.createUser(null, email, firstName, lastName, hashedPassword, false);
+    const user = await db.createUser(null, email, firstName, lastName, hashedPassword, false, phone, gender);
 
     // Generate JWT
     const token = jwt.sign(
