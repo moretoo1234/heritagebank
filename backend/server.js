@@ -140,38 +140,53 @@ app.get('/api/health', (req, res) => {
 // Register endpoint
 app.post('/api/auth/register', async (req, res) => {
   try {
+    console.log('[API] ====== REGISTER START ======');
     const { email, password, firstName, lastName, phone, gender } = req.body;
+    console.log('[API] Step 1: Received request for', email);
 
     // Validation
     if (!email || !password || !firstName || !lastName) {
+      console.log('[API] Step 1: Missing required fields');
       return res.status(400).json({
         success: false,
         message: 'Missing required fields: email, password, firstName, lastName'
       });
     }
+    console.log('[API] Step 2: Validation passed');
 
     // Check if user exists
+    console.log('[API] Step 3: Checking if user exists...');
     const existingUser = await db.getUserByEmail(email);
+    console.log('[API] Step 4: getUserByEmail returned:', existingUser ? 'user found' : 'no user');
     if (existingUser) {
+      console.log('[API] User already exists');
       return res.status(409).json({
         success: false,
         message: 'Email already registered'
       });
     }
+    console.log('[API] Step 5: User does not exist, proceeding');
 
     // Hash password
+    console.log('[API] Step 6: Hashing password...');
     const hashedPassword = await bcrypt.hash(password, 10);
+    console.log('[API] Step 7: Password hashed');
 
     // Store user in database
+    console.log('[API] Step 8: Creating user in database...');
     const user = await db.createUser(null, email, firstName, lastName, hashedPassword, false, phone, gender);
+    console.log('[API] Step 9: User created, id:', user?.id);
 
     // Generate JWT
+    console.log('[API] Step 10: Generating JWT...');
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
+    console.log('[API] Step 11: JWT generated');
 
+    console.log('[API] Step 12: Sending success response');
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
@@ -184,25 +199,29 @@ app.post('/api/auth/register', async (req, res) => {
       },
       token
     });
+    console.log('[API] ====== REGISTER END (SUCCESS) ======');
   } catch (error) {
     console.error('[API] ======= REGISTRATION ERROR =======');
-    console.error('[API] Email:', req.body.email);
+    console.error('[API] Error at step unknown');
+    console.error('[API] Email:', req.body?.email);
     console.error('[API] Error message:', error.message);
     console.error('[API] Error name:', error.name);
     console.error('[API] Error code:', error.code);
-    console.error('[API] Error errno:', error.errno);
-    console.error('[API] Full error:', JSON.stringify(error, null, 2));
-    console.error('[API] Stack:', error.stack);
-    console.error('[API] Request body:', req.body);
+    console.error('[API] Full stack:', error.stack);
     console.error('[API] ===================================');
-    res.status(500).json({
+    
+    // Return comprehensive error
+    const errorResponse = {
       success: false,
       message: 'Registration failed',
       error: error.message,
-      code: error.code,
-      details: error.stack,
-      body: req.body
-    });
+      errorName: error.name,
+      errorCode: error.code
+    };
+    
+    console.error('[API] Sending error response:', JSON.stringify(errorResponse));
+    res.status(500).json(errorResponse);
+    console.log('[API] ====== REGISTER END (ERROR) ======');
   }
 });
 
