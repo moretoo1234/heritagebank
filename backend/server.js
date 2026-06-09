@@ -133,8 +133,14 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    version: 'fb1609f'  // Latest commit for tracking deployed version
   });
+});
+
+// Test endpoint
+app.get('/api/test-register', (req, res) => {
+  res.json({ message: 'Test endpoint works - code deployed at version fb1609f' });
 });
 
 // Register endpoint
