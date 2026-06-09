@@ -39,6 +39,8 @@ const bcrypt = require('bcryptjs');
 console.log('[STARTUP] ✓ bcryptjs loaded');
 const jwt = require('jsonwebtoken');
 console.log('[STARTUP] ✓ jsonwebtoken loaded');
+const db = require('./db');
+console.log('[STARTUP] ✓ database module loaded');
 
 console.log('[STARTUP] All dependencies loaded successfully!');
 
@@ -54,8 +56,8 @@ console.log(`[STARTUP] Port configured: ${PORT}`);
 console.log('[STARTUP] JWT_SECRET: ' + (process.env.JWT_SECRET ? 'set' : 'using default'));
 console.log('[STARTUP] Admin email: ' + (process.env.ADMIN_EMAIL ? 'set from env' : 'using default'));
 
-// In-memory user storage (replace with database in production)
-const users = new Map();
+// Database initialization (replaces in-memory Map)
+console.log('[STARTUP] Database will be initialized on server start');
 
 console.log('[STARTUP] Setting up middleware...');
 
@@ -141,7 +143,8 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Check if user exists
-    if (users.has(email)) {
+    const existingUser = await db.getUserByEmail(email);
+    if (existingUser) {
       return res.status(409).json({
         success: false,
         message: 'Email already registered'
@@ -151,18 +154,9 @@ app.post('/api/auth/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Store user
-    const user = {
-      id: `user_${Date.now()}`,
-      email,
-      firstName,
-      lastName,
-      passwordHash: hashedPassword,
-      createdAt: new Date(),
-      balance: 1000 // Starting balance
-    };
-
-    users.set(email, user);
+    // Store user in database
+    const userId = `user_${Date.now()}`;
+    const user = await db.createUser(userId, email, firstName, lastName, hashedPassword, false);
 
     // Generate JWT
     const token = jwt.sign(
@@ -207,13 +201,22 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
 
-    // Find user
-    const user = users.get(email);
+    // Find user in database
+    const user = await db.getUserByEmail(email);
     if (!user) {
       console.log('[API] User not found:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
+      });
+    }
+
+    // Check if user is locked
+    if (user.isLocked) {
+      console.log('[API] User account is locked:', email);
+      return res.status(403).json({
+        success: false,
+        message: 'Account is locked. Please contact support.'
       });
     }
 
@@ -244,7 +247,7 @@ app.post('/api/auth/login', async (req, res) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        balance: user.balance,
+        balance: parseFloat(user.balance),
         isAdmin: user.isAdmin || false
       },
       token
@@ -260,44 +263,68 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Get user profile (requires auth)
-app.get('/api/user/profile', authenticateToken, (req, res) => {
-  const user = users.get(req.user.email);
-  if (!user) {
-    return res.status(404).json({ success: false, message: 'User not found' });
-  }
-
-  res.json({
-    success: true,
-    user: {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      balance: user.balance,
-      isAdmin: user.isAdmin || false,
-      createdAt: user.createdAt
+app.get('/api/user/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
-  });
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        balance: parseFloat(user.balance),
+        isAdmin: user.isAdmin || false,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('[API] Profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 });
 
 // Get dashboard data
-app.get('/api/dashboard', authenticateToken, (req, res) => {
-  const user = users.get(req.user.email);
-  if (!user) {
-    return res.status(404).json({ success: false, message: 'User not found' });
-  }
-
-  res.json({
-    success: true,
-    data: {
-      accountBalance: user.balance,
-      accountType: 'Checking',
-      accountNumber: '****' + user.id.slice(-4),
-      recentTransactions: [
-        { id: 1, type: 'deposit', amount: 500, date: new Date(), description: 'Initial deposit' }
-      ]
+app.get('/api/dashboard', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
-  });
+
+    const transactions = await db.getUserTransactions(user.id, 10);
+
+    res.json({
+      success: true,
+      data: {
+        accountBalance: parseFloat(user.balance),
+        accountType: 'Checking',
+        accountNumber: '****' + user.id.slice(-4),
+        recentTransactions: transactions.map(tx => ({
+          id: tx.id,
+          type: tx.type,
+          amount: parseFloat(tx.amount),
+          date: tx.createdAt,
+          description: tx.description
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('[API] Dashboard error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch dashboard data',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 });
 
 // ============ STATIC FILES & SPA ============
@@ -373,50 +400,65 @@ app.use((err, req, res, next) => {
 async function initializeSeedData() {
   try {
     const adminEmail = ADMIN_EMAIL;
-    if (!users.has(adminEmail)) {
+    const existingAdmin = await db.getUserByEmail(adminEmail);
+    
+    if (!existingAdmin) {
       const adminPassword = ADMIN_PASSWORD;
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
-      users.set(adminEmail, {
-        id: 'admin-001',
-        email: adminEmail,
-        firstName: 'Admin',
-        lastName: 'Account',
-        passwordHash: hashedPassword,
-        balance: 10000,
-        isAdmin: true,
-        createdAt: new Date().toISOString()
-      });
+      await db.createUser('admin-001', adminEmail, 'Admin', 'Account', hashedPassword, true);
       console.log(`[SEED] ✓ Admin account initialized: ${adminEmail}`);
     } else {
       console.log('[SEED] ℹ Admin account already exists');
     }
   } catch (err) {
     console.error('[SEED] ✗ Failed to initialize seed data:', err);
+    throw err;
   }
 }
 
 // ============ START SERVER ============
 
 if (require.main === module) {
-  // Initialize seed data, then start server
-  initializeSeedData().then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
-    console.log('\n========================================');
-    console.log('[SERVER] ✓ Server started successfully!');
-    console.log(`[SERVER] Listening on port: ${PORT}`);
-    console.log(`[SERVER] Address: 0.0.0.0:${PORT}`);
-    console.log(`[SERVER] Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log('[SERVER] Health check: GET /api/health');
-    console.log(`[SERVER] Timestamp: ${new Date().toISOString()}`);
-    console.log('========================================\n');
-    }).on('error', (err) => {
-      console.error('[SERVER] ✗ Failed to start server:', err);
+  // Initialize database, then seed data, then start server
+  async function startup() {
+    try {
+      console.log('\n[STARTUP] *** DATABASE INITIALIZATION SEQUENCE ***\n');
+      
+      // Initialize database connection pool
+      await db.initializePool();
+      console.log('[STARTUP] ✓ Database connection pool ready');
+      
+      // Create tables if they don't exist
+      await db.initializeSchema();
+      console.log('[STARTUP] ✓ Database schema initialized');
+      
+      // Initialize seed data (admin account)
+      await initializeSeedData();
+      console.log('[STARTUP] ✓ Seed data initialized');
+      
+      console.log('[STARTUP] *** DATABASE INITIALIZATION COMPLETE ***\n');
+      
+      // Start server
+      app.listen(PORT, '0.0.0.0', () => {
+        console.log('\n========================================');
+        console.log('[SERVER] ✓ Server started successfully!');
+        console.log(`[SERVER] Listening on port: ${PORT}`);
+        console.log(`[SERVER] Address: 0.0.0.0:${PORT}`);
+        console.log(`[SERVER] Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log('[SERVER] Health check: GET /api/health');
+        console.log(`[SERVER] Timestamp: ${new Date().toISOString()}`);
+        console.log('========================================\n');
+      }).on('error', (err) => {
+        console.error('[SERVER] ✗ Failed to start server:', err);
+        process.exit(1);
+      });
+    } catch (error) {
+      console.error('[STARTUP] ✗ Startup failed:', error);
       process.exit(1);
-    });
-  }).catch((err) => {
-    console.error('[SEED] ✗ Failed to initialize seed data, aborting startup:', err);
-    process.exit(1);
-  });
+    }
+  }
+  
+  startup();
 }
 
 module.exports = app;
