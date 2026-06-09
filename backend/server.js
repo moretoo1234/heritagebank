@@ -107,6 +107,14 @@ const apiLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 console.log('[MIDDLEWARE] ✓ Rate limiting configured');
 
+// Request timeout middleware (30 seconds for all endpoints)
+app.use((req, res, next) => {
+  req.setTimeout(30000); // 30 second timeout for all requests
+  res.setTimeout(30000);
+  next();
+});
+console.log('[MIDDLEWARE] ✓ Request timeout middleware configured (30s)');
+
 console.log('[STARTUP] Setting up routes...');
 
 // ============ ROUTES ============
