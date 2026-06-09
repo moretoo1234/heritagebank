@@ -448,7 +448,13 @@ async function handleLoginSubmit(e) {
                     location.reload();
                 }, 15 * 60000);
             } else {
-                const safeMsg = (data.message || 'Login failed').replace(/[<>"'&]/g, c => ({'<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;','&':'&amp;'}[c]));
+                const safeMsg = (data.message || 'Login failed').replace(/[<>"'&]/g, c => ({
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                    '&': '&amp;'
+                }[c]));
                 if (alertBox) {
                     alertBox.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ${safeMsg}</div>`;
                 }
