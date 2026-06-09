@@ -7,6 +7,7 @@ const mysql = require('mysql2/promise');
 
 let pool = null;
 let passwordColumn = null;
+let passwordColumnDetecting = false;
 
 /**
  * Initialize database connection pool
@@ -24,6 +25,9 @@ async function initializePool() {
     connectionLimit: 10,
     queueLimit: 0,
     enableKeepAlive: true,
+    connectionTimeout: 10000,
+    enableTimestamps: true,
+    timezone: '+00:00',
     ssl: process.env.DB_SSL === 'false' || process.env.MYSQL_SSL === 'false'
       ? undefined
       : { rejectUnauthorized: true }
@@ -46,19 +50,35 @@ async function initializePool() {
  */
 async function detectPasswordColumn() {
   if (passwordColumn) return passwordColumn;
+  
+  // Prevent multiple simultaneous detection attempts
+  if (passwordColumnDetecting) {
+    // Wait for detection to complete
+    let attempts = 0;
+    while (!passwordColumn && attempts < 50) {
+      await new Promise(r => setTimeout(r, 100));
+      attempts++;
+    }
+    return passwordColumn || 'password';
+  }
+  
+  passwordColumnDetecting = true;
+  try {
+    const pool = await initializePool();
+    const [rows] = await pool.execute(
+      `SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME IN ('password', 'passwordHash')`,
+      [process.env.DB_NAME || 'heritage_bank']
+    );
 
-  const pool = await initializePool();
-  const [rows] = await pool.execute(
-    `SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME IN ('password', 'passwordHash')`,
-    [process.env.DB_NAME || 'heritage_bank']
-  );
-
-  if (rows.some((column) => column.COLUMN_NAME === 'passwordHash')) {
-    passwordColumn = 'passwordHash';
-  } else if (rows.some((column) => column.COLUMN_NAME === 'password')) {
-    passwordColumn = 'password';
-  } else {
-    passwordColumn = 'password';
+    if (rows.some((column) => column.COLUMN_NAME === 'passwordHash')) {
+      passwordColumn = 'passwordHash';
+    } else if (rows.some((column) => column.COLUMN_NAME === 'password')) {
+      passwordColumn = 'password';
+    } else {
+      passwordColumn = 'password';
+    }
+  } finally {
+    passwordColumnDetecting = false;
   }
 
   return passwordColumn;
