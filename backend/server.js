@@ -47,9 +47,12 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@heritage.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin123!@';
 
 console.log(`[STARTUP] Port configured: ${PORT}`);
 console.log('[STARTUP] JWT_SECRET: ' + (process.env.JWT_SECRET ? 'set' : 'using default'));
+console.log('[STARTUP] Admin email: ' + (process.env.ADMIN_EMAIL ? 'set from env' : 'using default'));
 
 // In-memory user storage (replace with database in production)
 const users = new Map();
@@ -366,9 +369,9 @@ app.use((err, req, res, next) => {
 // Initialize default admin account for production
 async function initializeSeedData() {
   try {
-    const adminEmail = 'admin@heritage.com';
+    const adminEmail = ADMIN_EMAIL;
     if (!users.has(adminEmail)) {
-      const adminPassword = 'Admin123!@';
+      const adminPassword = ADMIN_PASSWORD;
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
       users.set(adminEmail, {
         id: 'admin-001',
@@ -379,7 +382,7 @@ async function initializeSeedData() {
         balance: 10000,
         createdAt: new Date().toISOString()
       });
-      console.log('[SEED] ✓ Admin account initialized: admin@heritage.com / Admin123!@');
+      console.log(`[SEED] ✓ Admin account initialized: ${adminEmail}`);
     } else {
       console.log('[SEED] ℹ Admin account already exists');
     }
