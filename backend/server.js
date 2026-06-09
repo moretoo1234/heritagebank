@@ -185,12 +185,21 @@ app.post('/api/auth/register', async (req, res) => {
       token
     });
   } catch (error) {
-    console.error('[API] Registration error for', req.body.email || 'unknown', ':', error.message);
+    console.error('[API] ======= REGISTRATION ERROR =======');
+    console.error('[API] Email:', req.body.email);
+    console.error('[API] Error message:', error.message);
+    console.error('[API] Error name:', error.name);
+    console.error('[API] Error code:', error.code);
+    console.error('[API] Error errno:', error.errno);
+    console.error('[API] Full error:', JSON.stringify(error, null, 2));
     console.error('[API] Stack:', error.stack);
+    console.error('[API] Request body:', req.body);
+    console.error('[API] ===================================');
     res.status(500).json({
       success: false,
       message: 'Registration failed',
       error: error.message,
+      code: error.code,
       details: error.stack,
       body: req.body
     });
