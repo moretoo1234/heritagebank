@@ -216,31 +216,33 @@ const API_URL = (function() {
 
 console.log('[Auth] Detected API_URL:', API_URL);
 
-// Wrap all DOM-dependent code in DOMContentLoaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeSignIn);
-} else {
-    initializeSignIn();
-}
-
+// Initialize when DOM is ready
 function initializeSignIn() {
     console.log('[Auth] Initializing sign-in page');
     
     // Check if already authenticated
     checkExistingAuth();
     
-    // Initialize login form
+    // Initialize login form - bind directly to handler
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', handleLoginSubmit);
+        loginForm.onsubmit = function(e) {
+            e.preventDefault();
+            handleLoginSubmit(e);
+            return false;
+        };
+        console.log('[Auth] Login form handler bound');
     } else {
-        console.error('[Auth] Login form not found');
+        console.error('[Auth] Login form not found - page may not be fully loaded');
     }
     
     // Initialize password toggle
     const toggleBtn = document.getElementById('togglePassword');
     if (toggleBtn) {
-        toggleBtn.addEventListener('click', togglePasswordVisibility);
+        toggleBtn.onclick = function() {
+            togglePasswordVisibility();
+            return false;
+        };
     }
     
     // Initialize biometric section
@@ -257,6 +259,14 @@ function initializeSignIn() {
     
     // Check for lockout
     checkAccountLockout();
+}
+
+// Run initialization immediately
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeSignIn);
+} else {
+    // DOM already loaded
+    setTimeout(initializeSignIn, 0);
 }
 
 function checkExistingAuth() {

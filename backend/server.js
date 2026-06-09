@@ -193,8 +193,10 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log('[API] Login attempt for:', email);
 
     if (!email || !password) {
+      console.log('[API] Missing email or password');
       return res.status(400).json({
         success: false,
         message: 'Email and password required'
@@ -204,6 +206,7 @@ app.post('/api/auth/login', async (req, res) => {
     // Find user
     const user = users.get(email);
     if (!user) {
+      console.log('[API] User not found:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
@@ -213,6 +216,7 @@ app.post('/api/auth/login', async (req, res) => {
     // Check password
     const passwordMatch = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatch) {
+      console.log('[API] Password mismatch for:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
@@ -226,6 +230,8 @@ app.post('/api/auth/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    console.log('[API] Login successful for:', email, '- Token generated');
+    res.set('Content-Type', 'application/json');
     res.json({
       success: true,
       message: 'Login successful',
@@ -239,7 +245,7 @@ app.post('/api/auth/login', async (req, res) => {
       token
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('[API] Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Login failed',
