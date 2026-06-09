@@ -22,7 +22,8 @@ async function initializePool() {
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    enableKeepAlive: true
+    enableKeepAlive: true,
+    ssl: 'amazon'
   };
 
   try {
