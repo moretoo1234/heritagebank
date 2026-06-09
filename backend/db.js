@@ -40,7 +40,7 @@ async function initializePool() {
  * Initialize database schema (create tables if they don't exist)
  */
 async function initializeSchema() {
-  const pool = initializePool();
+  const pool = await initializePool();
   const connection = await pool.getConnection();
   try {
     console.log('[DB] Initializing schema...');
@@ -95,7 +95,7 @@ async function initializeSchema() {
  * Get user by email
  */
 async function getUserByEmail(email) {
-  const pool = initializePool();
+  const pool = await initializePool();
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.execute('SELECT * FROM users WHERE email = ?', [email]);
@@ -109,7 +109,7 @@ async function getUserByEmail(email) {
  * Get user by ID
  */
 async function getUserById(id) {
-  const pool = initializePool();
+  const pool = await initializePool();
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.execute('SELECT * FROM users WHERE id = ?', [id]);
@@ -123,7 +123,7 @@ async function getUserById(id) {
  * Create user
  */
 async function createUser(id, email, firstName, lastName, passwordHash, isAdmin = false) {
-  const pool = initializePool();
+  const pool = await initializePool();
   const connection = await pool.getConnection();
   try {
     await connection.execute(
@@ -140,7 +140,7 @@ async function createUser(id, email, firstName, lastName, passwordHash, isAdmin 
  * Update user balance
  */
 async function updateUserBalance(email, newBalance) {
-  const pool = initializePool();
+  const pool = await initializePool();
   const connection = await pool.getConnection();
   try {
     await connection.execute('UPDATE users SET balance = ? WHERE email = ?', [newBalance, email]);
@@ -154,7 +154,7 @@ async function updateUserBalance(email, newBalance) {
  * Lock/unlock user
  */
 async function setUserLocked(email, locked) {
-  const pool = initializePool();
+  const pool = await initializePool();
   const connection = await pool.getConnection();
   try {
     await connection.execute('UPDATE users SET isLocked = ? WHERE email = ?', [locked ? 1 : 0, email]);
@@ -168,7 +168,7 @@ async function setUserLocked(email, locked) {
  * Get all users (admin only)
  */
 async function getAllUsers() {
-  const pool = initializePool();
+  const pool = await initializePool();
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.execute('SELECT id, email, firstName, lastName, balance, isAdmin, isLocked, createdAt FROM users ORDER BY createdAt DESC');
@@ -182,7 +182,7 @@ async function getAllUsers() {
  * Record transaction
  */
 async function recordTransaction(id, fromUserId, toUserId, amount, type, description) {
-  const pool = initializePool();
+  const pool = await initializePool();
   const connection = await pool.getConnection();
   try {
     await connection.execute(
@@ -198,7 +198,7 @@ async function recordTransaction(id, fromUserId, toUserId, amount, type, descrip
  * Get user transactions
  */
 async function getUserTransactions(userId, limit = 50) {
-  const pool = initializePool();
+  const pool = await initializePool();
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.execute(
