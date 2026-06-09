@@ -201,156 +201,257 @@
         </div>
     </div>
     <script>
-// Heritage Bank API URL - dynamic detection
-        const API_URL = (function() {
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                return 'http://localhost:3001';
-            }
-            // Production: use current domain
-            return `${window.location.protocol}//${window.location.host}`;
-        })();
+// Heritage Bank API URL - dynamic detection for localhost, Railway, and Vercel
+const API_URL = (function() {
+    const hostname = window.location.hostname;
+    
+    // Local development
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+        return 'http://localhost:3001';
+    }
+    
+    // Production (Railway, Vercel, etc.) - use current protocol and domain
+    return `${window.location.protocol}//${window.location.host}`;
+})();
 
-        // Redirect authenticated users to dashboard
-        (function() {
-            const token = localStorage.getItem('token');
-            if (token) {
-                fetch(`${API_URL}/api/user/profile`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }).then(r => r.json()).then(data => {
-                    if (data.success && data.user) {
-                        window.location.href = data.user.isAdmin ? 'admin.html' : 'dashboard.html';
-                    }
-                }).catch(() => {});
-            }
-        })();
+console.log('[Auth] Detected API_URL:', API_URL);
 
-        let failedAttempts = parseInt(localStorage.getItem('failedAttempts') || '0');
-        let lockoutUntil = localStorage.getItem('lockoutUntil');
+// Wrap all DOM-dependent code in DOMContentLoaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeSignIn);
+} else {
+    initializeSignIn();
+}
 
-        // Check if account is locked
-        if (lockoutUntil && new Date() < new Date(lockoutUntil)) {
-            const remainingMinutes = Math.ceil((new Date(lockoutUntil) - new Date()) / 60000);
-            document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-lock"></i> Account temporarily locked. Try again in ${remainingMinutes} minute(s).</div>`;
-            document.getElementById('loginBtn').disabled = true;
-            setTimeout(() => {
-                localStorage.removeItem('lockoutUntil');
-                location.reload();
-            }, remainingMinutes * 60000);
+function initializeSignIn() {
+    console.log('[Auth] Initializing sign-in page');
+    
+    // Check if already authenticated
+    checkExistingAuth();
+    
+    // Initialize login form
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLoginSubmit);
+    } else {
+        console.error('[Auth] Login form not found');
+    }
+    
+    // Initialize password toggle
+    const toggleBtn = document.getElementById('togglePassword');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', togglePasswordVisibility);
+    }
+    
+    // Initialize biometric section
+    if (window.PublicKeyCredential) {
+        const bioSection = document.getElementById('biometricSection');
+        if (bioSection) bioSection.style.display = 'block';
+    }
+    
+    // Restore remember-me state
+    if (localStorage.getItem('rememberMe') === 'true') {
+        const rememberCheckbox = document.getElementById('rememberMe');
+        if (rememberCheckbox) rememberCheckbox.checked = true;
+    }
+    
+    // Check for lockout
+    checkAccountLockout();
+}
+
+function checkExistingAuth() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    console.log('[Auth] Found existing token, checking validity');
+    fetch(`${API_URL}/api/user/profile`, {
+        method: 'GET',
+        headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
         }
-
-        // Show failed attempts warning
-        if (failedAttempts > 0) {
-            document.getElementById('loginAttempts').innerHTML = `⚠️ ${failedAttempts} failed attempt(s). Account will lock after 5 attempts.`;
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.user) {
+            console.log('[Auth] Token valid, redirecting to', data.user.isAdmin ? 'admin' : 'dashboard');
+            window.location.href = data.user.isAdmin ? 'admin.html' : 'dashboard.html';
+        } else {
+            console.log('[Auth] Token invalid, clearing storage');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
         }
+    })
+    .catch(err => {
+        console.error('[Auth] Error checking auth:', err);
+        localStorage.removeItem('token');
+    });
+}
 
-        // Toggle password visibility
-        function togglePasswordVisibility() {
-            const passwordInput = document.getElementById('password');
-            const toggleIcon = document.getElementById('togglePassword');
+function checkAccountLockout() {
+    const lockoutUntil = localStorage.getItem('lockoutUntil');
+    const failedAttempts = parseInt(localStorage.getItem('failedAttempts') || '0');
+    
+    if (lockoutUntil && new Date() < new Date(lockoutUntil)) {
+        const remainingMinutes = Math.ceil((new Date(lockoutUntil) - new Date()) / 60000);
+        const alertBox = document.getElementById('alertBox');
+        if (alertBox) {
+            alertBox.innerHTML = `<div class="alert alert-danger"><i class="fas fa-lock"></i> Account temporarily locked. Try again in ${remainingMinutes} minute(s).</div>`;
+        }
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) loginBtn.disabled = true;
+        
+        setTimeout(() => {
+            localStorage.removeItem('lockoutUntil');
+            location.reload();
+        }, remainingMinutes * 60000);
+    } else if (failedAttempts > 0) {
+        const attemptsDiv = document.getElementById('loginAttempts');
+        if (attemptsDiv) {
+            attemptsDiv.innerHTML = `⚠️ ${failedAttempts} failed attempt(s). ${5 - failedAttempts} remaining before lockout.`;
+        }
+    }
+}
+
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('password');
+    const toggleIcon = document.getElementById('togglePassword');
+    
+    if (!passwordInput) return;
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+
+async function handleLoginSubmit(e) {
+    e.preventDefault();
+    console.log('[Auth] Login form submitted');
+    
+    const lockoutUntil = localStorage.getItem('lockoutUntil');
+    if (lockoutUntil && new Date() < new Date(lockoutUntil)) {
+        console.log('[Auth] Account is locked');
+        return;
+    }
+    
+    const loginBtn = document.getElementById('loginBtn');
+    const alertBox = document.getElementById('alertBox');
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    
+    if (!email || !password) {
+        if (alertBox) alertBox.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Please enter email and password</div>';
+        return;
+    }
+    
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+    
+    try {
+        console.log('[Auth] Sending login request to', API_URL + '/api/auth/login');
+        const response = await fetch(`${API_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            credentials: 'omit',
+            body: JSON.stringify({
+                email: email,
+                password: password,
+                rememberMe: document.getElementById('rememberMe')?.checked || false
+            })
+        });
+        
+        console.log('[Auth] Response status:', response.status);
+        const data = await response.json();
+        console.log('[Auth] Response data:', { success: data.success, message: data.message });
+        
+        if (data.success && data.token && data.user) {
+            console.log('[Auth] Login successful');
             
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleIcon.classList.remove('fa-eye');
-                toggleIcon.classList.add('fa-eye-slash');
+            // Clear failed attempts
+            localStorage.removeItem('failedAttempts');
+            localStorage.removeItem('lockoutUntil');
+            
+            // Save session
+            if (document.getElementById('rememberMe')?.checked) {
+                localStorage.setItem('rememberMe', 'true');
             } else {
-                passwordInput.type = 'password';
-                toggleIcon.classList.remove('fa-eye-slash');
-                toggleIcon.classList.add('fa-eye');
-            }
-        }
-
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // Check lockout
-            if (lockoutUntil && new Date() < new Date(lockoutUntil)) {
-                return;
+                localStorage.removeItem('rememberMe');
             }
             
-            const loginBtn = document.getElementById('loginBtn');
-            loginBtn.disabled = true;
-            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+            localStorage.setItem('token', data.token);
+            const safeUser = {
+                id: data.user.id,
+                firstName: data.user.firstName || '',
+                lastName: data.user.lastName || '',
+                email: data.user.email,
+                accountNumber: data.user.accountNumber,
+                accountType: data.user.accountType,
+                isAdmin: !!data.user.isAdmin
+            };
+            localStorage.setItem('user', JSON.stringify(safeUser));
             
-            try {
-                const res = await fetch(`${API_URL}/api/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: document.getElementById('email').value,
-                        password: document.getElementById('password').value,
-                        rememberMe: document.getElementById('rememberMe').checked
-                    })
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    // Clear failed attempts
-                    localStorage.removeItem('failedAttempts');
-                    localStorage.removeItem('lockoutUntil');
-                    
-                    // Save session
-                    if (document.getElementById('rememberMe').checked) {
-                        localStorage.setItem('rememberMe', 'true');
-                    }
-                    localStorage.setItem('token', data.token);
-                    const safeUser = { id: data.user.id, firstName: data.user.firstName, lastName: data.user.lastName, email: data.user.email, accountNumber: data.user.accountNumber, accountType: data.user.accountType, isAdmin: !!data.user.isAdmin };
-                    localStorage.setItem('user', JSON.stringify(safeUser));
-                    
-                    // Show success
-                    document.getElementById('alertBox').innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle"></i> Login successful! Redirecting...</div>`;
-                    
-                    // Show last login if available
-                    if (data.lastLogin) {
-                        document.getElementById('alertBox').innerHTML += `<div class="security-notice">Last login: ${new Date(data.lastLogin).toLocaleString()}</div>`;
-                    }
-                    
-                    setTimeout(() => {
-                        window.location.href = data.user.isAdmin ? 'admin.html' : 'dashboard.html';
-                    }, 1500);
-                } else {
-                    // Increment failed attempts
-                    failedAttempts++;
-                    localStorage.setItem('failedAttempts', failedAttempts);
-                    
-                    if (failedAttempts >= 5) {
-                        // Lock account for 15 minutes
-                        const lockoutTime = new Date(Date.now() + 15 * 60000);
-                        localStorage.setItem('lockoutUntil', lockoutTime.toISOString());
-                        document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-lock"></i> Too many failed attempts. Account locked for 15 minutes.</div>`;
-                        document.getElementById('loginBtn').disabled = true;
-                        setTimeout(() => {
-                            localStorage.removeItem('lockoutUntil');
-                            localStorage.removeItem('failedAttempts');
-                            location.reload();
-                        }, 15 * 60000);
-                    } else {
-                        const safeMsg = (data.message || 'Login failed').replace(/[<>"'&]/g, c => ({'<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','&':'&amp;'}[c]));
-                        document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ${safeMsg}</div>`;
-                        document.getElementById('loginAttempts').innerHTML = `⚠️ ${failedAttempts} failed attempt(s). ${5 - failedAttempts} remaining before lockout.`;
-                    }
-                    
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+            if (alertBox) {
+                alertBox.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> Login successful! Redirecting...</div>';
+            }
+            
+            // Redirect after short delay
+            setTimeout(() => {
+                const destination = data.user.isAdmin ? 'admin.html' : 'dashboard.html';
+                console.log('[Auth] Redirecting to', destination);
+                window.location.href = destination;
+            }, 1200);
+        } else {
+            console.log('[Auth] Login failed:', data.message);
+            let failedAttempts = parseInt(localStorage.getItem('failedAttempts') || '0');
+            failedAttempts++;
+            localStorage.setItem('failedAttempts', failedAttempts);
+            
+            if (failedAttempts >= 5) {
+                const lockoutTime = new Date(Date.now() + 15 * 60000);
+                localStorage.setItem('lockoutUntil', lockoutTime.toISOString());
+                if (alertBox) {
+                    alertBox.innerHTML = '<div class="alert alert-danger"><i class="fas fa-lock"></i> Too many failed attempts. Account locked for 15 minutes.</div>';
                 }
-            } catch (e) {
-                document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Connection error. Please try again.</div>`;
+                loginBtn.disabled = true;
+                setTimeout(() => {
+                    localStorage.removeItem('lockoutUntil');
+                    localStorage.removeItem('failedAttempts');
+                    location.reload();
+                }, 15 * 60000);
+            } else {
+                const safeMsg = (data.message || 'Login failed').replace(/[<>"'&]/g, c => ({'<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;','&':'&amp;'}[c]));
+                if (alertBox) {
+                    alertBox.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ${safeMsg}</div>`;
+                }
+                const attemptsDiv = document.getElementById('loginAttempts');
+                if (attemptsDiv) {
+                    attemptsDiv.innerHTML = `⚠️ ${failedAttempts} failed attempt(s). ${5 - failedAttempts} remaining before lockout.`;
+                }
+                
                 loginBtn.disabled = false;
                 loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
             }
-        });
+        }
+    } catch (error) {
+        console.error('[Auth] Login error:', error);
+        if (alertBox) {
+            alertBox.innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Connection error: ${error.message}</div>`;
+        }
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+    }
+}
 
-        // Auto-fill if remember me was checked
-        window.addEventListener('load', () => {
-            if (localStorage.getItem('rememberMe') === 'true') {
-                document.getElementById('rememberMe').checked = true;
-            }
-            // Show biometric button if browser supports it
-            if (window.PublicKeyCredential) {
-                document.getElementById('biometricSection').style.display = 'block';
-            }
-        });
-
-        // ===== Biometric / Passkey Login =====
+// ===== Biometric / Passkey Login =====
         function bufferToBase64url(buffer) {
             const bytes = new Uint8Array(buffer);
             let binary = '';

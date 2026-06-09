@@ -56,26 +56,36 @@ const users = new Map();
 console.log('[STARTUP] Setting up middleware...');
 
 // Middleware
+// Disable helmet's CSP (we'll set our own custom policy that allows inline scripts)
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   contentSecurityPolicy: {
+    // Disable default CSP directives - we'll set them explicitly below
+    useDefaults: false,
     directives: {
       defaultSrc: ["'self'", "https:"],
       scriptSrc: ["'self'", "'unsafe-inline'", "https:"],
+      scriptSrcAttr: ["'self'", "'unsafe-inline'"],  // Allow inline event handlers like onclick=
       styleSrc: ["'self'", "'unsafe-inline'", "https:"],
       imgSrc: ["'self'", "data:", "https:"],
       fontSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "https:"],
+      formAction: ["'self'", "https:"],
+      frameAncestors: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      upgradeInsecureRequests: [],
     },
   },
 }));
 console.log('[MIDDLEWARE] ✓ helmet configured');
 
 app.use(cors({
-  origin: '*',
-  credentials: false,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: ['http://localhost:3001', 'http://localhost:5173', 'http://127.0.0.1:3001', 'https://heritagebank-production.up.railway.app', '*'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  exposedHeaders: ['Content-Type', 'Authorization']
 }));
 console.log('[MIDDLEWARE] ✓ CORS configured');
 
