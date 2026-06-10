@@ -1,7 +1,9 @@
 // Heritage Bank - Main JavaScript
 
-// Use relative paths for API - works on any domain
-const API_URL = '';  // Empty string means use current domain
+// Proper API URL detection for both local and production
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://localhost:3001' 
+    : window.location.origin;
 
 // Intersection Observer for reveal animations
 const revealObserver = new IntersectionObserver((entries) => {

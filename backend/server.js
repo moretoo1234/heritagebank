@@ -86,7 +86,27 @@ app.use(helmet({
 console.log('[MIDDLEWARE] ✓ helmet configured with unsafe-inline scripts');
 
 app.use(cors({
-  origin: ['http://localhost:3001', 'http://localhost:5173', 'http://127.0.0.1:3001', 'https://heritagebank-production.up.railway.app', '*'],
+  origin: function(origin, callback) {
+    // Define allowed origins - both local dev and production
+    const allowedOrigins = [
+      'http://localhost:3001',
+      'http://localhost:5173',
+      'http://127.0.0.1:3001',
+      'https://heritage.up.railway.app',
+      'https://heritagebank-production.up.railway.app',
+      'https://heritagebank.up.railway.app'
+    ];
+    
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.warn(`[CORS] Rejected request from origin: ${origin}`);
+      return callback(new Error('CORS not allowed'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
