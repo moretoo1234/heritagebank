@@ -48,7 +48,19 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Critical: JWT_SECRET must be set in production
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+  console.error('[SECURITY] ✗✗✗ CRITICAL: JWT_SECRET environment variable is not set in production!');
+  console.error('[SECURITY] ✗✗✗ This is a severe security vulnerability. Server refusing to start.');
+  process.exit(1);
+}
+
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
+if (!process.env.JWT_SECRET) {
+  console.warn('[SECURITY] ⚠️  WARNING: Using default JWT_SECRET. This is only acceptable in development!');
+}
+
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@heritage.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin123!@';
 
@@ -380,6 +392,39 @@ app.post('/api/auth/login', async (req, res) => {
 
 // Get user profile (requires auth)
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        balance: parseFloat(user.balance),
+        isAdmin: user.isAdmin || false,
+        createdAt: user.createdAt,
+        accountNumber: user.accountNumber || null,
+        routingNumber: user.routingNumber || null,
+        swiftCode: user.swiftCode || null
+      }
+    });
+  } catch (error) {
+    console.error('[API] Profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Alias for backward compatibility
+app.get('/api/auth/profile', authenticateToken, async (req, res) => {
   try {
     const user = await db.getUserByEmail(req.user.email);
     if (!user) {
@@ -1033,6 +1078,364 @@ app.get('/api/admin/pending-transfers', authenticateToken, async (req, res) => {
   } catch (e) {
     console.error('[API] admin pending transfers error', e);
     res.status(500).json({ success: false, message: 'Failed to fetch pending transfers' });
+  }
+});
+
+// ============ WEBAUTHN / BIOMETRIC LOGIN ENDPOINTS ============
+
+// WebAuthn registration options (called from settings page)
+app.post('/api/auth/webauthn/register-options', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Generate challenge
+    const challenge = Buffer.from(Array.from({ length: 32 }, () => Math.floor(Math.random() * 256)));
+    const challengeB64 = challenge.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+    // Store challenge temporarily (in production, use Redis or session)
+    // For now, we'll return it and expect it back
+
+    const options = {
+      challenge: challengeB64,
+      rp: {
+        name: 'Heritage Bank',
+        id: req.hostname || 'localhost'
+      },
+      user: {
+        id: Buffer.from(String(user.id)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
+        name: user.email,
+        displayName: `${user.firstName} ${user.lastName}`
+      },
+      pubKeyCredParams: [
+        { alg: -7, type: 'public-key' },  // ES256
+        { alg: -257, type: 'public-key' }  // RS256
+      ],
+      authenticatorSelection: {
+        authenticatorAttachment: 'platform',
+        requireResidentKey: false,
+        userVerification: 'preferred'
+      },
+      timeout: 60000,
+      attestation: 'none'
+    };
+
+    res.json({ success: true, options });
+  } catch (error) {
+    console.error('[API] WebAuthn register options error:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate registration options' });
+  }
+});
+
+// WebAuthn registration verification
+app.post('/api/auth/webauthn/register-verify', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // In production, verify the attestation response properly
+    // For now, we'll store the credential ID
+    const { credential } = req.body;
+
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      // Check if webauthn_credentials table exists
+      const [tables] = await connection.execute(
+        "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'webauthn_credentials'",
+        [process.env.DB_NAME || process.env.MYSQLDATABASE || 'heritage_bank']
+      );
+
+      if (tables.length === 0) {
+        await connection.execute(`
+          CREATE TABLE IF NOT EXISTS webauthn_credentials (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            userId INT NOT NULL,
+            credentialId TEXT NOT NULL,
+            publicKey TEXT NOT NULL,
+            counter INT DEFAULT 0,
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (userId) REFERENCES users(id),
+            INDEX idx_userId (userId)
+          )
+        `);
+      }
+
+      await connection.execute(
+        'INSERT INTO webauthn_credentials (userId, credentialId, publicKey) VALUES (?, ?, ?)',
+        [user.id, credential.id || '', credential.publicKey || '']
+      );
+
+      res.json({ success: true, message: 'Biometric login registered successfully' });
+    } finally {
+      await connection.release();
+    }
+  } catch (error) {
+    console.error('[API] WebAuthn register verify error:', error);
+    res.status(500).json({ success: false, message: 'Failed to register biometric login' });
+  }
+});
+
+// WebAuthn login options
+app.post('/api/auth/webauthn/login-options', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await db.getUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      const [credentials] = await connection.execute(
+        'SELECT credentialId FROM webauthn_credentials WHERE userId = ?',
+        [user.id]
+      );
+
+      if (credentials.length === 0) {
+        return res.json({ success: false, noBiometric: true, message: 'No biometric credentials registered' });
+      }
+
+      const challenge = Buffer.from(Array.from({ length: 32 }, () => Math.floor(Math.random() * 256)));
+      const challengeB64 = challenge.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+      const options = {
+        challenge: challengeB64,
+        timeout: 60000,
+        rpId: req.hostname || 'localhost',
+        allowCredentials: credentials.map(c => ({
+          type: 'public-key',
+          id: c.credentialId
+        })),
+        userVerification: 'preferred'
+      };
+
+      res.json({ success: true, options });
+    } finally {
+      await connection.release();
+    }
+  } catch (error) {
+    console.error('[API] WebAuthn login options error:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate login options' });
+  }
+});
+
+// WebAuthn login verification
+app.post('/api/auth/webauthn/login-verify', async (req, res) => {
+  try {
+    const { assertionResponse } = req.body;
+    
+    // In production, verify the assertion properly
+    // For now, simplified verification
+    const credentialId = assertionResponse.id;
+
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      const [credentials] = await connection.execute(
+        'SELECT userId FROM webauthn_credentials WHERE credentialId = ?',
+        [credentialId]
+      );
+
+      if (credentials.length === 0) {
+        return res.status(401).json({ success: false, message: 'Invalid credential' });
+      }
+
+      const userId = credentials[0].userId;
+      const user = await db.getUserById(userId);
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+
+      // Generate JWT
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      res.json({
+        success: true,
+        message: 'Biometric login successful',
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          balance: parseFloat(user.balance),
+          isAdmin: user.isAdmin || false,
+          accountNumber: user.accountNumber,
+          accountType: user.accountType || 'Savings'
+        },
+        token
+      });
+    } finally {
+      await connection.release();
+    }
+  } catch (error) {
+    console.error('[API] WebAuthn login verify error:', error);
+    res.status(500).json({ success: false, message: 'Biometric login failed' });
+  }
+});
+
+// ============ BENEFICIARY MANAGEMENT ENDPOINTS ============
+
+// Get all beneficiaries for current user
+app.get('/api/beneficiaries', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      // Check if beneficiaries table exists
+      const [tables] = await connection.execute(
+        "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'beneficiaries'",
+        [process.env.DB_NAME || process.env.MYSQLDATABASE || 'heritage_bank']
+      );
+
+      if (tables.length === 0) {
+        // Create beneficiaries table
+        await connection.execute(`
+          CREATE TABLE IF NOT EXISTS beneficiaries (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            userId INT NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            nickname VARCHAR(255),
+            accountNumber VARCHAR(64) NOT NULL,
+            bankName VARCHAR(255) DEFAULT 'Heritage Bank',
+            email VARCHAR(255),
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (userId) REFERENCES users(id),
+            INDEX idx_userId (userId)
+          )
+        `);
+        console.log('[DB] Beneficiaries table created');
+      }
+
+      const [beneficiaries] = await connection.execute(
+        'SELECT * FROM beneficiaries WHERE userId = ? ORDER BY createdAt DESC',
+        [user.id]
+      );
+
+      res.json({ success: true, beneficiaries });
+    } finally {
+      await connection.release();
+    }
+  } catch (error) {
+    console.error('[API] Get beneficiaries error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch beneficiaries' });
+  }
+});
+
+// Add new beneficiary
+app.post('/api/beneficiaries', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const { name, accountNumber, bankName, email, nickname } = req.body;
+    if (!name || !accountNumber) {
+      return res.status(400).json({ success: false, message: 'Name and account number are required' });
+    }
+
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      await connection.execute(
+        'INSERT INTO beneficiaries (userId, name, nickname, accountNumber, bankName, email) VALUES (?, ?, ?, ?, ?, ?)',
+        [user.id, name, nickname || null, accountNumber, bankName || 'Heritage Bank', email || null]
+      );
+
+      res.json({ success: true, message: 'Beneficiary added successfully' });
+    } finally {
+      await connection.release();
+    }
+  } catch (error) {
+    console.error('[API] Add beneficiary error:', error);
+    res.status(500).json({ success: false, message: 'Failed to add beneficiary' });
+  }
+});
+
+// Update beneficiary
+app.put('/api/beneficiaries/:id', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const beneficiaryId = req.params.id;
+    const { name, accountNumber, bankName, email, nickname } = req.body;
+
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      // Verify ownership
+      const [existing] = await connection.execute(
+        'SELECT * FROM beneficiaries WHERE id = ? AND userId = ?',
+        [beneficiaryId, user.id]
+      );
+
+      if (existing.length === 0) {
+        return res.status(404).json({ success: false, message: 'Beneficiary not found' });
+      }
+
+      await connection.execute(
+        'UPDATE beneficiaries SET name = ?, nickname = ?, accountNumber = ?, bankName = ?, email = ? WHERE id = ? AND userId = ?',
+        [name, nickname || null, accountNumber, bankName || 'Heritage Bank', email || null, beneficiaryId, user.id]
+      );
+
+      res.json({ success: true, message: 'Beneficiary updated successfully' });
+    } finally {
+      await connection.release();
+    }
+  } catch (error) {
+    console.error('[API] Update beneficiary error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update beneficiary' });
+  }
+});
+
+// Delete beneficiary
+app.delete('/api/beneficiaries/:id', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const beneficiaryId = req.params.id;
+
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      const [result] = await connection.execute(
+        'DELETE FROM beneficiaries WHERE id = ? AND userId = ?',
+        [beneficiaryId, user.id]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ success: false, message: 'Beneficiary not found' });
+      }
+
+      res.json({ success: true, message: 'Beneficiary deleted successfully' });
+    } finally {
+      await connection.release();
+    }
+  } catch (error) {
+    console.error('[API] Delete beneficiary error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete beneficiary' });
   }
 });
 

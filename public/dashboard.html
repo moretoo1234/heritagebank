@@ -297,9 +297,20 @@
             
             try {
                 // Load user profile
-                const res = await fetch(`${API_URL}/api/auth/profile`, {
+                const res = await fetch(`${API_URL}/api/user/profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+                
+                if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        window.location.href = 'signin.html';
+                        return;
+                    }
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+                
                 const data = await res.json();
                 
                 if (data.success && data.user) {
