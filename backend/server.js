@@ -1228,15 +1228,15 @@ app.post('/api/admin/debit-account', authenticateToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid debit details' });
     }
     
-    const user = await db.getUserByEmail;  // Get user by ID instead
+    // Get user by ID first
+    const user = await db.getUserById(userId);
+    if (!user || user.balance < amount) {
+      return res.status(400).json({ success: false, message: 'Insufficient balance' });
+    }
+    
     const pool = await db.initializePool();
     const connection = await pool.getConnection();
     try {
-      // Check balance
-      const [rows] = await connection.execute('SELECT balance FROM users WHERE id = ?', [userId]);
-      if (!rows.length || rows[0].balance < amount) {
-        return res.status(400).json({ success: false, message: 'Insufficient balance' });
-      }
       
       await connection.execute(
         'UPDATE users SET balance = balance - ? WHERE id = ?',
