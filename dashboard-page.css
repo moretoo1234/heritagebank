@@ -618,6 +618,26 @@ body.dark-mode .txn-detail-value { color: #e2e8f0; }
     font-size: 1.1rem;
 }
 
+/* ===== SIDEBAR OVERLAY (mobile) ===== */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+.sidebar.open ~ .sidebar-overlay,
+.dashboard:has(.sidebar.open) .sidebar-overlay {
+    opacity: 1;
+    visibility: visible;
+}
+
 /* ===== FOOTER ===== */
 .app-footer { background: #0f172a; padding: 20px 0; text-align: center; }
 .app-footer-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
@@ -649,6 +669,7 @@ h1, h2, h3, h4, p, span, strong { overflow-wrap: break-word; word-wrap: break-wo
         transition: left 0.3s;
     }
     .sidebar.open { left: 0; }
+    .sidebar-overlay { display: block; }
     .mobile-toggle { display: flex; align-items: center; justify-content: center; }
     .logout-btn { display: block; }
     .main-content { padding: 20px; }
