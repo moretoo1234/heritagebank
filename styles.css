@@ -5587,3 +5587,110 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, li, a, label, input, textarea, select {
     .legal-intro-box { flex-direction: column; align-items: center; text-align: center; }
     .legal-subsection-cards { grid-template-columns: 1fr; }
 }
+/* ====== ENHANCED MOBILE OPTIMIZATION ====== */
+@media (max-width: 768px) {
+    html, body {
+        font-size: 15px;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+    }
+    
+    h3 {
+        font-size: 1.3rem;
+    }
+    
+    h4 {
+        font-size: 1.1rem;
+    }
+    
+    .section-title {
+        font-size: 1.3rem !important;
+    }
+    
+    .card {
+        padding: 15px !important;
+    }
+    
+    .quick-actions {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+    
+    .action-card {
+        padding: 12px !important;
+        font-size: 0.9rem;
+    }
+    
+    .action-card h4 {
+        font-size: 0.95rem;
+    }
+    
+    .main-content, main {
+        padding: 15px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    html, body {
+        font-size: 14px;
+    }
+    
+    h1 {
+        font-size: 1.6rem;
+    }
+    
+    h2 {
+        font-size: 1.35rem;
+    }
+    
+    h3 {
+        font-size: 1.2rem;
+    }
+    
+    .section-title {
+        font-size: 1.2rem !important;
+    }
+    
+    .quick-actions {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+    }
+    
+    .action-card {
+        padding: 10px !important;
+        font-size: 0.85rem;
+    }
+    
+    .action-card i {
+        font-size: 1.5rem !important;
+    }
+    
+    .hero-content h1 {
+        font-size: 1.8rem;
+        line-height: 1.2;
+    }
+    
+    .hero-content p {
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+    
+    .card {
+        padding: 12px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .main-content, main {
+        padding: 12px !important;
+    }
+    
+    .grid-2, .grid-3 {
+        grid-template-columns: 1fr !important;
+    }
+}

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <link rel="icon" type="image/png" href="assets/logo.png">
     <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="stylesheet" href="loading.css">
@@ -159,31 +159,31 @@
             <!-- Quick Actions -->
             <h3 class="section-title"><i class="fas fa-bolt"></i> Quick Actions</h3>
             <div class="quick-actions">
-                <div class="action-card" onclick="location.href='transfer.html'">
+                <div class="action-card" onclick="navigateTo('transfer.html')">
                     <i class="fas fa-paper-plane"></i>
                     <h4>Send Money</h4>
                 </div>
-                <div class="action-card" onclick="location.href='mobile-deposit.html'">
+                <div class="action-card" onclick="navigateTo('mobile-deposit.html')">
                     <i class="fas fa-camera"></i>
                     <h4>Deposit Check</h4>
                 </div>
-                <div class="action-card" onclick="location.href='pay-bills.html'">
+                <div class="action-card" onclick="navigateTo('pay-bills.html')">
                     <i class="fas fa-file-invoice-dollar"></i>
                     <h4>Pay Bills</h4>
                 </div>
-                <div class="action-card" onclick="location.href='bulk-payments.html'">
+                <div class="action-card" onclick="navigateTo('bulk-payments.html')">
                     <i class="fas fa-money-check-alt"></i>
                     <h4>Bulk Payments</h4>
                 </div>
-                <div class="action-card" onclick="location.href='savings-goals.html'">
+                <div class="action-card" onclick="navigateTo('savings-goals.html')">
                     <i class="fas fa-piggy-bank"></i>
                     <h4>Savings Goals</h4>
                 </div>
-                <div class="action-card" onclick="location.href='analytics.html'">
+                <div class="action-card" onclick="navigateTo('analytics.html')">
                     <i class="fas fa-chart-pie"></i>
                     <h4>Analytics</h4>
                 </div>
-                <div class="action-card" onclick="location.href='statements.html'">
+                <div class="action-card" onclick="navigateTo('statements.html')">
                     <i class="fas fa-file-invoice"></i>
                     <h4>Statements</h4>
                 </div>
@@ -233,6 +233,17 @@
         let idleTimer = null;
         let warningTimer = null;
         let countdownInterval = null;
+        
+        // Safe navigation function to prevent session flash
+        function navigateTo(url) {
+            // Ensure token is in localStorage before navigating
+            const token = localStorage.getItem('token');
+            if (token) {
+                window.location.href = url;
+            } else {
+                window.location.href = 'signin.html';
+            }
+        }
         
         // Initialize dark mode
         if (localStorage.getItem('darkMode') === 'true') {

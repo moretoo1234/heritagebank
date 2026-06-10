@@ -669,11 +669,49 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
     const limit = Math.min(Number(req.query.limit) || 10, 50);
     const currentUser = await db.getUserByEmail(req.user.email);
     
-    // Mock notifications for now
-    const notifications = [
-      { id: 1, type: 'transaction', title: 'Transaction Completed', message: 'Your transfer of $500 has been completed', read: false, createdAt: new Date() },
-      { id: 2, type: 'account', title: 'Account Update', message: 'Your account information was updated', read: true, createdAt: new Date(Date.now() - 86400000) }
-    ];
+    if (!currentUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Get user-specific notifications from transactions
+    const [transactions] = await db.pool.query(
+      'SELECT * FROM transactions WHERE fromUserId = ? OR toUserId = ? ORDER BY createdAt DESC LIMIT ?',
+      [currentUser.id, currentUser.id, limit]
+    );
+    
+    // Build notifications from user's transactions only
+    const notifications = (transactions || []).map(tx => {
+      let message = '';
+      if (tx.fromUserId === currentUser.id) {
+        message = `You transferred $${parseFloat(tx.amount).toFixed(2)}`;
+      } else {
+        message = `You received $${parseFloat(tx.amount).toFixed(2)}`;
+      }
+      return {
+        id: tx.id,
+        type: 'transaction',
+        title: 'Transaction ' + (tx.status === 'completed' ? 'Completed' : 'Pending'),
+        message: message,
+        amount: tx.amount,
+        read: false,
+        createdAt: tx.createdAt
+      };
+    });
+    
+    // Add account notifications only for this user
+    if (currentUser.createdAt) {
+      const daysSinceCreation = Math.floor((Date.now() - new Date(currentUser.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+      if (daysSinceCreation === 0) {
+        notifications.unshift({
+          id: 0,
+          type: 'account',
+          title: 'Welcome',
+          message: 'Welcome to Heritage Bank! Your account is now active.',
+          read: false,
+          createdAt: new Date()
+        });
+      }
+    }
     
     res.json({ success: true, notifications: notifications.slice(0, limit) });
   } catch (e) {
