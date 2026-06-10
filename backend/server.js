@@ -397,6 +397,44 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// Get complete user profile (for settings page)
+app.get('/api/user/profile/complete', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        balance: parseFloat(user.balance),
+        isAdmin: user.isAdmin || false,
+        createdAt: user.createdAt,
+        accountNumber: user.accountNumber || null,
+        routingNumber: user.routingNumber || null,
+        swiftCode: user.swiftCode || null,
+        phoneNumber: user.phoneNumber || '',
+        address: user.address || '',
+        city: user.city || '',
+        state: user.state || '',
+        zipCode: user.zipCode || ''
+      }
+    });
+  } catch (error) {
+    console.error('[API] Complete profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch complete profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Get dashboard data
 app.get('/api/dashboard', authenticateToken, async (req, res) => {
   try {
