@@ -24,8 +24,13 @@
         <!-- SIDEBAR -->
         <nav class="sidebar" id="sidebar">
             <div class="sidebar-logo">
-                <img src="assets/logo.png" alt="Heritage Bank" onerror="this.style.display='none'">
-                <span>Heritage Bank</span>
+                <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                    <img src="assets/logo.png" alt="Heritage Bank" onerror="this.style.display='none'">
+                    <span>Heritage Bank</span>
+                </div>
+                <button class="sidebar-close-btn" onclick="toggleSidebar()" title="Close sidebar">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="sidebar-user-avatar" id="sidebarUserAvatar">
                 <div class="sidebar-avatar-circle">
