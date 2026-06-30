@@ -2962,29 +2962,38 @@ app.post('/api/admin/request-documents/:userId', authenticateToken, requireAdmin
 // ============ CARDS ENDPOINTS ============
 
 async function ensureCardsTable(connection) {
-  await connection.execute(`
-    CREATE TABLE IF NOT EXISTS cards (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      userId INT NOT NULL,
-      cardType VARCHAR(20) NOT NULL DEFAULT 'virtual',
-      cardNumber VARCHAR(255),
-      cardNumberMasked VARCHAR(30),
-      cardholderName VARCHAR(255),
-      expirationDate VARCHAR(10),
-      cvv VARCHAR(10),
-      status VARCHAR(20) DEFAULT 'active',
-      deliveryStatus VARCHAR(30) DEFAULT 'not_applicable',
-      deliveryAddress TEXT,
-      deliveryEtaText VARCHAR(100),
-      dailySpendLimit DECIMAL(12,2) DEFAULT 5000,
-      monthlySpendLimit DECIMAL(12,2) DEFAULT 25000,
-      onlineEnabled TINYINT(1) DEFAULT 1,
-      internationalEnabled TINYINT(1) DEFAULT 0,
-      issuedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (userId) REFERENCES users(id),
-      INDEX idx_userId (userId)
-    )
-  `);
+  console.log('[DB] Ensuring cards table exists...');
+  try {
+    const createTableSQL = `
+      CREATE TABLE IF NOT EXISTS cards (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        userId INT NOT NULL,
+        cardType VARCHAR(20) NOT NULL DEFAULT 'virtual',
+        cardNumber VARCHAR(255),
+        cardNumberMasked VARCHAR(30),
+        cardholderName VARCHAR(255),
+        expirationDate VARCHAR(10),
+        cvv VARCHAR(10),
+        status VARCHAR(20) DEFAULT 'active',
+        deliveryStatus VARCHAR(30) DEFAULT 'not_applicable',
+        deliveryAddress TEXT,
+        deliveryEtaText VARCHAR(100),
+        dailySpendLimit DECIMAL(12,2) DEFAULT 5000,
+        monthlySpendLimit DECIMAL(12,2) DEFAULT 25000,
+        onlineEnabled TINYINT(1) DEFAULT 1,
+        internationalEnabled TINYINT(1) DEFAULT 0,
+        issuedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(id),
+        INDEX idx_userId (userId)
+      )
+    `;
+    console.log('[DB] Executing CREATE TABLE IF NOT EXISTS for cards...');
+    await connection.execute(createTableSQL);
+    console.log('[DB] ✓ Cards table ready');
+  } catch (err) {
+    console.error('[DB] Error ensuring cards table:', err.message);
+    throw err;
+  }
 }
 
 app.get('/api/cards', authenticateToken, async (req, res) => {
@@ -3057,15 +3066,26 @@ app.post('/api/cards/apply', authenticateToken, async (req, res) => {
       const deliveryStatus = cardType === 'virtual' ? 'not_applicable' : 'processing';
       
       console.log('[CARDS_APPLY] Inserting card into database...');
-      const [result] = await connection.execute(
-        `INSERT INTO cards (userId, cardType, cardNumber, cardNumberMasked, cardholderName, expirationDate, cvv, status, deliveryStatus, deliveryAddress)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
-        [user.id, cardType, rawNumber, masked, holderName, expiry, cvv, deliveryStatus, deliveryAddress || null]
-      );
-      console.log('[CARDS_APPLY] Card created successfully, ID:', result.insertId);
+      console.log('[CARDS_APPLY] Insert params:', { userId: user.id, cardType, holderName, deliveryStatus, addressLength: deliveryAddress?.length || 0 });
+      
+      let insertResult;
+      try {
+        const [result] = await connection.execute(
+          `INSERT INTO cards (userId, cardType, cardNumber, cardNumberMasked, cardholderName, expirationDate, cvv, status, deliveryStatus, deliveryAddress)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [user.id, cardType, rawNumber, masked, holderName, expiry, cvv, 'active', deliveryStatus, deliveryAddress || null]
+        );
+        insertResult = result;
+        console.log('[CARDS_APPLY] Card inserted successfully, ID:', result.insertId);
+      } catch (insertErr) {
+        console.error('[CARDS_APPLY] ❌ INSERT FAILED:', insertErr.message);
+        console.error('[CARDS_APPLY] SQL Error Code:', insertErr.code);
+        console.error('[CARDS_APPLY] SQL Error Errno:', insertErr.errno);
+        throw insertErr;
+      }
       
       const responseCard = { 
-        id: result.insertId, 
+        id: insertResult.insertId, 
         cardType, 
         cardNumberMasked: masked, 
         cardholderName: holderName, 
@@ -3096,6 +3116,7 @@ app.post('/api/cards/apply', authenticateToken, async (req, res) => {
     console.error('[CARDS_APPLY] Error stack:', e.stack);
     console.error('[CARDS_APPLY] Error code:', e.code);
     console.error('[CARDS_APPLY] Error sqlMessage:', e.sqlMessage);
+    console.error('[CARDS_APPLY] Error errno:', e.errno);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to issue card: ' + e.message,
