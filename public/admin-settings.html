@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Heritage Bank Admin</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="app-layout.css">
+    <style>
+        .settings-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .settings-header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .settings-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a472a;
+            margin: 0;
+        }
+
+        .settings-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .settings-card h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a472a;
+            margin: 0 0 20px 0;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .settings-card p {
+            color: #666;
+            margin: 0 0 20px 0;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #1a472a;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-hint {
+            display: block;
+            font-size: 12px;
+            color: #999;
+            margin-top: 6px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #764ba2;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+        }
+
+        .setting-example {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .setting-example strong {
+            font-weight: 600;
+            color: #1a472a;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <div class="app-sidebar" id="sidebar"></div>
+
+        <main class="app-main">
+            <div class="settings-header">
+                <h1 class="settings-title">Admin Settings</h1>
+            </div>
+
+            <div id="loadingMsg" class="loading">Loading settings...</div>
+
+            <div id="content" style="display: none;">
+                <div id="successMsg" class="alert success"></div>
+                <div id="errorMsg" class="alert error"></div>
+
+                <!-- Transaction Origin Settings -->
+                <div class="settings-card">
+                    <h2>Transaction Receipt Settings</h2>
+                    <p>Configure how transactions appear in customer receipts and statements.</p>
+
+                    <form id="transactionOriginForm">
+                        <div class="form-group">
+                            <label for="transactionOrigin">Default Transaction Origin</label>
+                            <input 
+                                type="text" 
+                                id="transactionOrigin" 
+                                placeholder="e.g., Heritage Bank, USA"
+                                value="Heritage Bank, USA"
+                            >
+                            <span class="form-hint">This appears as the 'From' field in transaction receipts and is shown to customers</span>
+                            <div class="setting-example">
+                                <strong>Example Receipt:</strong><br>
+                                Transaction From: Heritage Bank, USA<br>
+                                Amount: $500.00
+                            </div>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- General Settings -->
+                <div class="settings-card">
+                    <h2>Banking Configuration</h2>
+                    <p>Configure core banking parameters for the system.</p>
+
+                    <form id="bankingConfigForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="bankName">Bank Name</label>
+                                <input 
+                                    type="text" 
+                                    id="bankName" 
+                                    placeholder="Heritage Bank"
+                                    value="Heritage Bank"
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label for="routingNumber">Routing Number</label>
+                                <input 
+                                    type="text" 
+                                    id="routingNumber" 
+                                    placeholder="021000021"
+                                    value="021000021"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="swiftCode">SWIFT Code</label>
+                                <input 
+                                    type="text" 
+                                    id="swiftCode" 
+                                    placeholder="HBKUUS33"
+                                    value="HBKUUS33"
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label for="supportEmail">Support Email</label>
+                                <input 
+                                    type="email" 
+                                    id="supportEmail" 
+                                    placeholder="support@heritagebank.com"
+                                    value="support@heritagebank.com"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="supportPhone">Support Phone</label>
+                            <input 
+                                type="tel" 
+                                id="supportPhone" 
+                                placeholder="1-800-HERITAGE"
+                                value="1-800-HERITAGE"
+                            >
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">Save Configuration</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetBankingForm()">Reset</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- API Settings -->
+                <div class="settings-card">
+                    <h2>API & Integration Settings</h2>
+                    <p>Configure API endpoints and third-party integrations.</p>
+
+                    <form id="apiConfigForm">
+                        <div class="form-group">
+                            <label for="apiEndpoint">API Endpoint</label>
+                            <input 
+                                type="url" 
+                                id="apiEndpoint" 
+                                placeholder="https://api.heritagebank.com"
+                                value="https://api.heritagebank.com"
+                            >
+                            <span class="form-hint">The base URL for API calls</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="webhookUrl">Webhook URL</label>
+                            <input 
+                                type="url" 
+                                id="webhookUrl" 
+                                placeholder="https://your-domain.com/webhooks"
+                            >
+                            <span class="form-hint">Optional: URL to receive transaction webhooks</span>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">Save API Settings</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetApiForm()">Reset</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- PDF Settings -->
+                <div class="settings-card">
+                    <h2>PDF Receipt Settings</h2>
+                    <p>Configure how transaction receipts are generated and branded.</p>
+
+                    <form id="pdfConfigForm">
+                        <div class="form-group">
+                            <label for="companyLogo">Company Logo URL</label>
+                            <input 
+                                type="url" 
+                                id="companyLogo" 
+                                placeholder="https://example.com/logo.png"
+                            >
+                            <span class="form-hint">URL to your company logo (displayed on receipts)</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="receiptFooter">Receipt Footer Message</label>
+                            <textarea 
+                                id="receiptFooter" 
+                                placeholder="Thank you for banking with Heritage Bank. This is an official receipt for your records."
+                            >Thank you for banking with Heritage Bank. This is an official receipt for your records.</textarea>
+                            <span class="form-hint">Text to appear at the bottom of all receipts</span>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">Save Receipt Settings</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetPdfForm()">Reset</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app-sidebar.js"></script>
+    <script>
+        const API_URL = window.location.origin;
+
+        async function loadSettings() {
+            const loading = document.getElementById('loadingMsg');
+            const content = document.getElementById('content');
+            loading.style.display = 'block';
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_URL}/api/admin/settings/transaction-origin`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.transactionOrigin) {
+                    document.getElementById('transactionOrigin').value = data.transactionOrigin;
+                }
+
+                loading.style.display = 'none';
+                content.style.display = 'block';
+            } catch (e) {
+                console.error('Error loading settings:', e);
+                loading.style.display = 'none';
+                content.style.display = 'block';
+            }
+        }
+
+        // Transaction Origin Form
+        document.getElementById('transactionOriginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const transactionOrigin = document.getElementById('transactionOrigin').value.trim();
+            
+            if (!transactionOrigin) {
+                showError('Transaction origin cannot be empty');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_URL}/api/admin/settings/transaction-origin`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ transactionOrigin })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('Transaction origin updated successfully!');
+                } else {
+                    showError(data.message || 'Failed to save settings');
+                }
+            } catch (e) {
+                console.error('Error:', e);
+                showError(`Error: ${e.message}`);
+            }
+        });
+
+        // Banking Configuration Form
+        document.getElementById('bankingConfigForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            showSuccess('Banking configuration saved successfully! (Local save)');
+            // In production, send to API
+        });
+
+        // API Configuration Form
+        document.getElementById('apiConfigForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            showSuccess('API settings saved successfully! (Local save)');
+        });
+
+        // PDF Configuration Form
+        document.getElementById('pdfConfigForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            showSuccess('PDF receipt settings saved successfully! (Local save)');
+        });
+
+        function showSuccess(message) {
+            const msg = document.getElementById('successMsg');
+            msg.textContent = message;
+            msg.style.display = 'block';
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 4000);
+        }
+
+        function showError(message) {
+            const msg = document.getElementById('errorMsg');
+            msg.textContent = message;
+            msg.style.display = 'block';
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 4000);
+        }
+
+        function resetForm() {
+            document.getElementById('transactionOriginForm').reset();
+            document.getElementById('transactionOrigin').value = 'Heritage Bank, USA';
+        }
+
+        function resetBankingForm() {
+            document.getElementById('bankingConfigForm').reset();
+        }
+
+        function resetApiForm() {
+            document.getElementById('apiConfigForm').reset();
+        }
+
+        function resetPdfForm() {
+            document.getElementById('pdfConfigForm').reset();
+        }
+
+        // Load settings on page load
+        loadSettings();
+    </script>
+</body>
+</html>

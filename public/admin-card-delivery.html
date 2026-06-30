@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Delivery Management - Heritage Bank Admin</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="app-layout.css">
+    <style>
+        .admin-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card-delivery-header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a472a;
+            margin: 0 0 10px 0;
+        }
+
+        .header-subtitle {
+            color: #666;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        th {
+            padding: 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a472a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 14px;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-shipped {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .status-delivered {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .status-cancelled {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .btn-update {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-update:hover {
+            background: #764ba2;
+        }
+
+        .btn-view {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #5a6268;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .modal.show {
+            display: block;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a472a;
+            margin: 0 0 20px 0;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .modal-body {
+            margin: 20px 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1a472a;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: #764ba2;
+        }
+
+        .btn-secondary {
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 12px;
+            color: #999;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-card .label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a472a;
+        }
+
+        .user-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .user-info-row {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            margin-bottom: 10px;
+        }
+
+        .user-info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .user-info-label {
+            font-weight: 600;
+            color: #1a472a;
+        }
+
+        .user-info-value {
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .filters {
+                flex-direction: column;
+            }
+
+            .search-box {
+                min-width: 100%;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 12px 8px;
+            }
+
+            .action-btns {
+                flex-direction: column;
+            }
+
+            .modal-content {
+                margin: 20% auto;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="app-sidebar" id="sidebar"></div>
+
+        <main class="app-main">
+            <div class="card-delivery-header">
+                <h1 class="header-title">Physical Card Delivery Management</h1>
+                <p class="header-subtitle">Manage and track physical card delivery requests</p>
+
+                <div class="filters">
+                    <div class="filter-group">
+                        <button class="filter-btn active" data-status="">All</button>
+                        <button class="filter-btn" data-status="processing">Processing</button>
+                        <button class="filter-btn" data-status="shipped">Shipped</button>
+                        <button class="filter-btn" data-status="delivered">Delivered</button>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search by name, email, or address...">
+                    </div>
+                </div>
+            </div>
+
+            <div id="successMsg" class="success" style="display: none;"></div>
+            <div id="errorMsg" class="error" style="display: none;"></div>
+
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="label">Processing</div>
+                    <div class="value" id="statProcessing">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Shipped</div>
+                    <div class="value" id="statShipped">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Delivered</div>
+                    <div class="value" id="statDelivered">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Total Requests</div>
+                    <div class="value" id="statTotal">0</div>
+                </div>
+            </div>
+
+            <div id="loading" class="loading">Loading card delivery requests...</div>
+
+            <div id="content" style="display: none;">
+                <div class="table-container">
+                    <table id="cardTable">
+                        <thead>
+                            <tr>
+                                <th>Cardholder</th>
+                                <th>Email</th>
+                                <th>Delivery Address</th>
+                                <th>Status</th>
+                                <th>Requested</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cardTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noData" class="no-data" style="display: none;">No card delivery requests found</div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Update Delivery Status Modal -->
+    <div id="deliveryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Update Delivery Status</div>
+            <div class="modal-body">
+                <div class="user-info" id="userInfo"></div>
+
+                <div class="form-group">
+                    <label>Delivery Status</label>
+                    <select id="deliveryStatus">
+                        <option value="processing">Processing</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Delivery ETA / Notes</label>
+                    <textarea id="deliveryEta" placeholder="e.g., Expected delivery: 5-7 business days" rows="3"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDeliveryModal()">Cancel</button>
+                <button class="btn-primary" onclick="saveDeliveryStatus()">Update Status</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Details Modal -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Card Delivery Details</div>
+            <div class="modal-body" id="detailsContent"></div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDetailsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app-sidebar.js"></script>
+    <script>
+        const API_URL = window.location.origin;
+        let allCards = [];
+        let currentCardId = null;
+        let currentFilter = '';
+
+        async function loadCardRequests(status = '') {
+            const loading = document.getElementById('loading');
+            const content = document.getElementById('content');
+            const noData = document.getElementById('noData');
+            loading.style.display = 'block';
+
+            try {
+                const token = localStorage.getItem('token');
+                const url = status 
+                    ? `${API_URL}/api/admin/card-requests?status=${status}`
+                    : `${API_URL}/api/admin/card-requests`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to load card requests');
+                }
+
+                allCards = data.cardRequests || [];
+                updateStats();
+                renderTable(allCards);
+
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                noData.style.display = allCards.length === 0 ? 'block' : 'none';
+            } catch (e) {
+                console.error('Error loading cards:', e);
+                document.getElementById('errorMsg').textContent = `Error: ${e.message}`;
+                document.getElementById('errorMsg').style.display = 'block';
+                loading.style.display = 'none';
+            }
+        }
+
+        function updateStats() {
+            const stats = {
+                processing: 0,
+                shipped: 0,
+                delivered: 0,
+                total: allCards.length
+            };
+
+            allCards.forEach(card => {
+                const status = card.deliveryStatus || 'processing';
+                stats[status]++;
+            });
+
+            document.getElementById('statProcessing').textContent = stats.processing;
+            document.getElementById('statShipped').textContent = stats.shipped;
+            document.getElementById('statDelivered').textContent = stats.delivered;
+            document.getElementById('statTotal').textContent = stats.total;
+        }
+
+        function renderTable(cards) {
+            const tbody = document.getElementById('cardTableBody');
+            
+            if (cards.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">No card requests found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = cards.map(card => `
+                <tr>
+                    <td><strong>${card.cardholderName || `${card.firstName} ${card.lastName}`}</strong></td>
+                    <td>${card.email || 'N/A'}</td>
+                    <td>${card.deliveryAddress ? card.deliveryAddress.substring(0, 40) + '...' : 'Not provided'}</td>
+                    <td>
+                        <span class="status-badge status-${card.deliveryStatus || 'processing'}">
+                            ${card.deliveryStatus || 'processing'}
+                        </span>
+                    </td>
+                    <td>${new Date(card.issuedAt).toLocaleDateString()}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-small btn-update" onclick="openDeliveryModal('${card.id}', '${card.cardholderName}', '${card.email}')">Update</button>
+                            <button class="btn-small btn-view" onclick="viewDetails('${card.id}')">View</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterCards() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allCards.filter(card => {
+                const matchesSearch = !search || 
+                    card.cardholderName?.toLowerCase().includes(search) ||
+                    card.firstName?.toLowerCase().includes(search) ||
+                    card.lastName?.toLowerCase().includes(search) ||
+                    card.email?.toLowerCase().includes(search) ||
+                    card.deliveryAddress?.toLowerCase().includes(search);
+
+                const matchesStatus = !currentFilter || 
+                    (card.deliveryStatus || 'processing') === currentFilter;
+
+                return matchesSearch && matchesStatus;
+            });
+
+            renderTable(filtered);
+        }
+
+        function openDeliveryModal(cardId, name, email) {
+            currentCardId = cardId;
+            const card = allCards.find(c => c.id == cardId);
+            
+            const userInfo = `
+                <div class="user-info-row">
+                    <div class="user-info-label">Cardholder:</div>
+                    <div class="user-info-value">${name}</div>
+                </div>
+                <div class="user-info-row">
+                    <div class="user-info-label">Email:</div>
+                    <div class="user-info-value">${email}</div>
+                </div>
+                <div class="user-info-row">
+                    <div class="user-info-label">Address:</div>
+                    <div class="user-info-value">${card?.deliveryAddress || 'Not provided'}</div>
+                </div>
+            `;
+            
+            document.getElementById('userInfo').innerHTML = userInfo;
+            document.getElementById('deliveryStatus').value = card?.deliveryStatus || 'processing';
+            document.getElementById('deliveryEta').value = card?.deliveryEtaText || '';
+            document.getElementById('deliveryModal').classList.add('show');
+        }
+
+        function closeDeliveryModal() {
+            document.getElementById('deliveryModal').classList.remove('show');
+            currentCardId = null;
+        }
+
+        async function saveDeliveryStatus() {
+            if (!currentCardId) return;
+
+            const status = document.getElementById('deliveryStatus').value;
+            const etaText = document.getElementById('deliveryEta').value;
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_URL}/api/admin/cards/${currentCardId}/delivery`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        deliveryStatus: status,
+                        deliveryEtaText: etaText
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to update status');
+                }
+
+                document.getElementById('successMsg').textContent = 'Delivery status updated successfully!';
+                document.getElementById('successMsg').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('successMsg').style.display = 'none';
+                }, 3000);
+
+                closeDeliveryModal();
+                loadCardRequests(currentFilter);
+            } catch (e) {
+                console.error('Error saving status:', e);
+                document.getElementById('errorMsg').textContent = `Error: ${e.message}`;
+                document.getElementById('errorMsg').style.display = 'block';
+            }
+        }
+
+        function viewDetails(cardId) {
+            const card = allCards.find(c => c.id == cardId);
+            if (!card) return;
+
+            const content = `
+                <div class="user-info">
+                    <div class="user-info-row">
+                        <div class="user-info-label">Cardholder:</div>
+                        <div class="user-info-value">${card.cardholderName || `${card.firstName} ${card.lastName}`}</div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Email:</div>
+                        <div class="user-info-value">${card.email || 'N/A'}</div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Phone:</div>
+                        <div class="user-info-value">${card.phoneNumber || 'Not provided'}</div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Street Address:</div>
+                        <div class="user-info-value">${card.deliveryAddress || 'Not provided'}</div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">City:</div>
+                        <div class="user-info-value">${card.city || 'N/A'}</div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">State/Province:</div>
+                        <div class="user-info-value">${card.state || 'N/A'}</div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">ZIP Code:</div>
+                        <div class="user-info-value">${card.zipCode || 'N/A'}</div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Delivery Status:</div>
+                        <div class="user-info-value">
+                            <span class="status-badge status-${card.deliveryStatus || 'processing'}">
+                                ${card.deliveryStatus || 'processing'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Requested:</div>
+                        <div class="user-info-value">${new Date(card.issuedAt).toLocaleString()}</div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Delivery ETA:</div>
+                        <div class="user-info-value">${card.deliveryEtaText || 'Not specified'}</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('detailsContent').innerHTML = content;
+            document.getElementById('detailsModal').classList.add('show');
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').classList.remove('show');
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.dataset.status;
+                filterCards();
+            });
+        });
+
+        // Search
+        document.getElementById('searchInput').addEventListener('input', filterCards);
+
+        // Initial load
+        loadCardRequests();
+    </script>
+</body>
+</html>

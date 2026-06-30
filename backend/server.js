@@ -41,6 +41,8 @@ const jwt = require('jsonwebtoken');
 console.log('[STARTUP] ✓ jsonwebtoken loaded');
 const db = require('./db');
 console.log('[STARTUP] ✓ database module loaded');
+const ReceiptGenerator = require('./pdf-receipt-generator');
+console.log('[STARTUP] ✓ PDF receipt generator loaded');
 
 console.log('[STARTUP] All dependencies loaded successfully!');
 
