@@ -518,10 +518,14 @@
                         '$' + currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
                     loadDepositHistory();
                 } else {
+                    // Token invalid, redirect to login
+                    localStorage.removeItem('token');
                     window.location.href = 'signin.html';
                 }
             } catch (e) {
                 console.error('Auth error:', e);
+                showAlert('Authentication failed. Please login again.', 'danger');
+                setTimeout(() => { window.location.href = 'signin.html'; }, 2000);
             }
         }
 

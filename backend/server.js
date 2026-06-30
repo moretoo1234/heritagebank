@@ -833,20 +833,130 @@ app.put('/api/notifications/read-all', authenticateToken, async (req, res) => {
 });
 
 // ============ SAVINGS GOALS ENDPOINTS ============
+
+async function ensureSavingsGoalsTable(connection) {
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS savings_goals (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      userId INT NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      targetAmount DECIMAL(12,2) NOT NULL,
+      currentAmount DECIMAL(12,2) DEFAULT 0,
+      targetDate DATE,
+      category VARCHAR(50) DEFAULT 'other',
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+      INDEX idx_userId (userId)
+    )
+  `);
+}
+
 app.get('/api/savings-goals', authenticateToken, async (req, res) => {
   try {
-    const currentUser = await db.getUserByEmail(req.user.email);
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     
-    // Mock savings goals
-    const goals = [
-      { id: 1, name: 'Emergency Fund', targetAmount: 10000, currentAmount: 5234.50, deadline: '2026-12-31', created: new Date() },
-      { id: 2, name: 'Vacation', targetAmount: 5000, currentAmount: 2100.00, deadline: '2026-08-31', created: new Date() }
-    ];
-    
-    res.json({ success: true, goals });
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      await ensureSavingsGoalsTable(connection);
+      const [goals] = await connection.execute(
+        'SELECT * FROM savings_goals WHERE userId = ? ORDER BY createdAt DESC',
+        [user.id]
+      );
+      res.json({ success: true, goals });
+    } finally { await connection.release(); }
   } catch (e) {
     console.error('[API] savings-goals error', e);
     res.status(500).json({ success: false, message: 'Failed to fetch savings goals' });
+  }
+});
+
+app.post('/api/savings-goals', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    const { name, targetAmount, currentAmount, targetDate, category } = req.body;
+    if (!name || !targetAmount) {
+      return res.status(400).json({ success: false, message: 'Name and target amount are required' });
+    }
+    
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      await ensureSavingsGoalsTable(connection);
+      const [result] = await connection.execute(
+        'INSERT INTO savings_goals (userId, name, targetAmount, currentAmount, targetDate, category) VALUES (?, ?, ?, ?, ?, ?)',
+        [user.id, name, targetAmount, currentAmount || 0, targetDate || null, category || 'other']
+      );
+      res.json({ success: true, message: 'Goal created successfully', goalId: result.insertId });
+    } finally { await connection.release(); }
+  } catch (e) {
+    console.error('[API] create savings-goal error', e);
+    res.status(500).json({ success: false, message: 'Failed to create savings goal' });
+  }
+});
+
+app.put('/api/savings-goals/:id', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    const { name, targetAmount, currentAmount, targetDate, category } = req.body;
+    
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      await ensureSavingsGoalsTable(connection);
+      
+      // Verify ownership
+      const [[existing]] = await connection.execute(
+        'SELECT * FROM savings_goals WHERE id = ? AND userId = ?',
+        [req.params.id, user.id]
+      );
+      
+      if (!existing) {
+        return res.status(404).json({ success: false, message: 'Goal not found' });
+      }
+      
+      await connection.execute(
+        'UPDATE savings_goals SET name = ?, targetAmount = ?, currentAmount = ?, targetDate = ?, category = ? WHERE id = ? AND userId = ?',
+        [name, targetAmount, currentAmount, targetDate || null, category || 'other', req.params.id, user.id]
+      );
+      
+      res.json({ success: true, message: 'Goal updated successfully' });
+    } finally { await connection.release(); }
+  } catch (e) {
+    console.error('[API] update savings-goal error', e);
+    res.status(500).json({ success: false, message: 'Failed to update savings goal' });
+  }
+});
+
+app.delete('/api/savings-goals/:id', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      await ensureSavingsGoalsTable(connection);
+      const [result] = await connection.execute(
+        'DELETE FROM savings_goals WHERE id = ? AND userId = ?',
+        [req.params.id, user.id]
+      );
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ success: false, message: 'Goal not found' });
+      }
+      
+      res.json({ success: true, message: 'Goal deleted successfully' });
+    } finally { await connection.release(); }
+  } catch (e) {
+    console.error('[API] delete savings-goal error', e);
+    res.status(500).json({ success: false, message: 'Failed to delete savings goal' });
   }
 });
 
@@ -965,24 +1075,118 @@ app.get('/api/bulk-payments/:batchId', authenticateToken, async (req, res) => {
 // ============ ANALYTICS ENDPOINTS ============
 app.get('/api/analytics', authenticateToken, async (req, res) => {
   try {
-    const period = req.query.period || 'monthly';
+    const period = req.query.period || 'month';
     const currentUser = await db.getUserByEmail(req.user.email);
+    if (!currentUser) return res.status(404).json({ success: false, message: 'User not found' });
     
-    res.json({
-      success: true,
-      period,
-      analytics: {
-        totalIncome: 50000.00,
-        totalExpense: 15000.00,
-        netChange: 35000.00,
-        transactionCount: 42,
-        categoryBreakdown: {
-          'Salary': 50000.00,
-          'Transfers': 12000.00,
-          'Utilities': 3000.00
+    const pool = await db.initializePool();
+    const conn = await pool.getConnection();
+    try {
+      // Calculate date range based on period
+      const now = new Date();
+      let startDate;
+      switch (period) {
+        case 'week':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'quarter':
+          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        case 'year':
+          startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+          break;
+        case 'all':
+          startDate = new Date('2020-01-01');
+          break;
+        default: // month
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      }
+      
+      // Get income (money received)
+      const [[incomeResult]] = await conn.execute(
+        'SELECT COALESCE(SUM(amount), 0) as total, COUNT(*) as count FROM transactions WHERE toUserId = ? AND status = ? AND createdAt >= ?',
+        [currentUser.id, 'completed', startDate.toISOString()]
+      );
+      
+      // Get expenses (money sent)
+      const [[expenseResult]] = await conn.execute(
+        'SELECT COALESCE(SUM(amount), 0) as total, COUNT(*) as count FROM transactions WHERE fromUserId = ? AND status = ? AND createdAt >= ?',
+        [currentUser.id, 'completed', startDate.toISOString()]
+      );
+      
+      const totalIncome = parseFloat(incomeResult.total || 0);
+      const totalExpenses = parseFloat(expenseResult.total || 0);
+      const transactionCount = (incomeResult.count || 0) + (expenseResult.count || 0);
+      
+      // Get spending by category
+      const [categories] = await conn.execute(
+        `SELECT category, COUNT(*) as count, SUM(amount) as total FROM transactions 
+         WHERE fromUserId = ? AND status = ? AND createdAt >= ? AND category IS NOT NULL 
+         GROUP BY category ORDER BY total DESC LIMIT 10`,
+        [currentUser.id, 'completed', startDate.toISOString()]
+      );
+      
+      // Generate trend data (weekly breakdown for month, monthly for year, etc.)
+      let trend = [];
+      if (period === 'month' || period === 'week') {
+        // Weekly breakdown
+        for (let i = 3; i >= 0; i--) {
+          const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+          const weekStart = new Date(weekEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+          
+          const [[weekIncome]] = await conn.execute(
+            'SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE toUserId = ? AND status = ? AND createdAt BETWEEN ? AND ?',
+            [currentUser.id, 'completed', weekStart.toISOString(), weekEnd.toISOString()]
+          );
+          
+          const [[weekExpense]] = await conn.execute(
+            'SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE fromUserId = ? AND status = ? AND createdAt BETWEEN ? AND ?',
+            [currentUser.id, 'completed', weekStart.toISOString(), weekEnd.toISOString()]
+          );
+          
+          trend.push({
+            label: `Week ${4 - i}`,
+            income: parseFloat(weekIncome.total || 0),
+            expenses: parseFloat(weekExpense.total || 0)
+          });
+        }
+      } else {
+        // Monthly breakdown for longer periods
+        const months = period === 'year' ? 12 : 4;
+        for (let i = months - 1; i >= 0; i--) {
+          const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+          const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          
+          const [[monthIncome]] = await conn.execute(
+            'SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE toUserId = ? AND status = ? AND createdAt BETWEEN ? AND ?',
+            [currentUser.id, 'completed', monthStart.toISOString(), monthEnd.toISOString()]
+          );
+          
+          const [[monthExpense]] = await conn.execute(
+            'SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE fromUserId = ? AND status = ? AND createdAt BETWEEN ? AND ?',
+            [currentUser.id, 'completed', monthStart.toISOString(), monthEnd.toISOString()]
+          );
+          
+          trend.push({
+            label: monthStart.toLocaleDateString('en-US', { month: 'short' }),
+            month: monthStart.toISOString().slice(0, 7),
+            income: parseFloat(monthIncome.total || 0),
+            expenses: parseFloat(monthExpense.total || 0)
+          });
         }
       }
-    });
+      
+      res.json({
+        success: true,
+        period,
+        totalIncome,
+        totalExpenses,
+        netFlow: totalIncome - totalExpenses,
+        transactionCount,
+        categories: categories.map(c => ({ category: c.category, count: c.count, total: parseFloat(c.total) })),
+        trend
+      });
+    } finally { await conn.release(); }
   } catch (e) {
     console.error('[API] analytics error', e);
     res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
@@ -1761,7 +1965,7 @@ const BILLERS = [
   { id: 17, name: 'Rocket Mortgage', category: 'Housing', logo: 'assets/biller-logos/rocketmortgage.png' }
 ];
 
-app.get('/api/bills/billers', authenticateToken, (req, res) => {
+app.get('/api/bills/billers', (req, res) => {
   res.json({ success: true, billers: BILLERS });
 });
 
@@ -2097,14 +2301,43 @@ app.post('/api/user/profile/picture', authenticateToken, async (req, res) => {
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     const { fileData } = req.body;
     if (!fileData) return res.status(400).json({ success: false, message: 'No file data' });
+    
+    // Validate file size (5MB max)
+    const sizeInMB = (fileData.length * 0.75) / (1024 * 1024);
+    if (sizeInMB > 5) {
+      return res.status(400).json({ success: false, message: 'File size exceeds 5MB limit' });
+    }
+    
     const pool = await db.initializePool();
     const conn = await pool.getConnection();
     try {
-      await conn.execute('UPDATE users SET profileImage = ? WHERE id = ?', [fileData, user.id]).catch(() => {});
-      res.json({ success: true, profileImage: fileData });
+      // Ensure profileImage column exists
+      await conn.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profileImage LONGTEXT`).catch(() => {});
+      await conn.execute('UPDATE users SET profileImage = ? WHERE id = ?', [fileData, user.id]);
+      res.json({ success: true, profileImage: fileData, message: 'Profile picture uploaded successfully' });
     } finally { await conn.release(); }
   } catch (e) {
+    console.error('[API] profile picture upload error:', e);
     res.status(500).json({ success: false, message: 'Upload failed' });
+  }
+});
+
+app.get('/api/user/profile/picture', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    const pool = await db.initializePool();
+    const conn = await pool.getConnection();
+    try {
+      const [[result]] = await conn.execute('SELECT profileImage FROM users WHERE id = ?', [user.id]).catch(() => [[{}]]);
+      if (result && result.profileImage) {
+        res.json({ success: true, profileImage: result.profileImage });
+      } else {
+        res.json({ success: true, profileImage: null });
+      }
+    } finally { await conn.release(); }
+  } catch (e) {
+    res.status(500).json({ success: false, message: 'Failed to fetch profile picture' });
   }
 });
 
@@ -2792,15 +3025,27 @@ app.get('/api/cards/:cardId', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/cards/apply', authenticateToken, async (req, res) => {
+  console.log('[CARDS_APPLY] Request received');
   try {
+    console.log('[CARDS_APPLY] Authenticating user:', req.user?.email);
     const user = await db.getUserByEmail(req.user.email);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!user) {
+      console.log('[CARDS_APPLY] User not found');
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    console.log('[CARDS_APPLY] User found:', user.id, user.email);
+    
     const { kind, deliveryAddress, pin, cardholderName } = req.body;
     const cardType = kind === 'physical' ? 'physical' : 'virtual';
+    console.log('[CARDS_APPLY] Card type:', cardType);
+    
     const pool = await db.initializePool();
     const connection = await pool.getConnection();
     try {
+      console.log('[CARDS_APPLY] Ensuring cards table exists...');
       await ensureCardsTable(connection);
+      console.log('[CARDS_APPLY] Cards table ready');
+      
       const rawNumber = Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join('');
       const masked = '****-****-****-' + rawNumber.slice(-4);
       const cvv = String(Math.floor(100 + Math.random() * 900));
@@ -2808,21 +3053,52 @@ app.post('/api/cards/apply', authenticateToken, async (req, res) => {
       const expiry = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getFullYear() + 4).slice(-2)}`;
       const holderName = (cardholderName || `${user.firstName} ${user.lastName}`).toUpperCase();
       const deliveryStatus = cardType === 'virtual' ? 'not_applicable' : 'processing';
+      
+      console.log('[CARDS_APPLY] Inserting card into database...');
       const [result] = await connection.execute(
         `INSERT INTO cards (userId, cardType, cardNumber, cardNumberMasked, cardholderName, expirationDate, cvv, status, deliveryStatus, deliveryAddress)
          VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
         [user.id, cardType, rawNumber, masked, holderName, expiry, cvv, deliveryStatus, deliveryAddress || null]
       );
-      const responseCard = { id: result.insertId, cardType, cardNumberMasked: masked, cardholderName: holderName, expirationDate: expiry, status: 'active', deliveryStatus, issuedAt: new Date().toISOString() };
+      console.log('[CARDS_APPLY] Card created successfully, ID:', result.insertId);
+      
+      const responseCard = { 
+        id: result.insertId, 
+        cardType, 
+        cardNumberMasked: masked, 
+        cardholderName: holderName, 
+        expirationDate: expiry, 
+        status: 'active', 
+        deliveryStatus, 
+        issuedAt: new Date().toISOString() 
+      };
+      
       if (cardType === 'virtual') {
         responseCard.cardNumber = rawNumber;
         responseCard.cvv = cvv;
+        console.log('[CARDS_APPLY] Virtual card details included in response');
       }
-      res.status(201).json({ success: true, message: cardType === 'virtual' ? 'Virtual card issued' : 'Physical card requested', card: responseCard });
-    } finally { await connection.release(); }
+      
+      console.log('[CARDS_APPLY] Sending success response');
+      res.status(201).json({ 
+        success: true, 
+        message: cardType === 'virtual' ? 'Virtual card issued' : 'Physical card requested', 
+        card: responseCard 
+      });
+    } finally { 
+      await connection.release();
+      console.log('[CARDS_APPLY] Database connection released');
+    }
   } catch (e) {
-    console.error('[API] cards apply error', e);
-    res.status(500).json({ success: false, message: 'Failed to issue card: ' + e.message });
+    console.error('[CARDS_APPLY] ❌ ERROR:', e);
+    console.error('[CARDS_APPLY] Error stack:', e.stack);
+    console.error('[CARDS_APPLY] Error code:', e.code);
+    console.error('[CARDS_APPLY] Error sqlMessage:', e.sqlMessage);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to issue card: ' + e.message,
+      error: process.env.NODE_ENV === 'development' ? e.message : undefined
+    });
   }
 });
 
@@ -2876,6 +3152,217 @@ app.put('/api/admin/cards/:cardId/delivery', authenticateToken, requireAdmin, as
   } catch (e) {
     console.error('[API] card delivery update error', e);
     res.status(500).json({ success: false, message: 'Failed to update delivery status' });
+  }
+});
+
+// ============ NEW FEATURES (Scheduled Transfers, Budgets, Disputes, Investments, etc) ============
+
+require('./new-features')(app, authenticateToken, requireAdmin, db);
+
+// ============ INVESTMENTS ENDPOINTS ============
+
+async function ensureInvestmentsTable(connection) {
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS investments (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      userId INT NOT NULL,
+      product VARCHAR(100) NOT NULL,
+      amount DECIMAL(14,2) NOT NULL,
+      apy DECIMAL(5,2) NOT NULL,
+      period INT NOT NULL,
+      estimatedReturn DECIMAL(14,2) NOT NULL,
+      maturityDate DATE NOT NULL,
+      status VARCHAR(30) DEFAULT 'active',
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+      INDEX idx_userId (userId),
+      INDEX idx_status (status)
+    )
+  `);
+}
+
+app.post('/api/investments/invest', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    const { product, amount, period } = req.body;
+    if (!product || !amount || !period) {
+      return res.status(400).json({ success: false, message: 'Product, amount, and period are required' });
+    }
+    
+    // Define product rates
+    const products = {
+      'Savings Bond': { rate: 3.5, min: 500 },
+      'Index Fund': { rate: 7.2, min: 1000 },
+      'Fixed Deposit': { rate: 4.8, min: 1000 },
+      'Growth Fund': { rate: 9.5, min: 2000 }
+    };
+    
+    const productInfo = products[product];
+    if (!productInfo) {
+      return res.status(400).json({ success: false, message: 'Invalid product' });
+    }
+    
+    if (amount < productInfo.min) {
+      return res.status(400).json({ success: false, message: `Minimum investment for ${product} is $${productInfo.min}` });
+    }
+    
+    if (parseFloat(user.balance) < amount) {
+      return res.status(400).json({ success: false, message: 'Insufficient balance' });
+    }
+    
+    // Calculate returns
+    const estimatedReturn = amount * Math.pow(1 + productInfo.rate / 100, period) - amount;
+    const maturityDate = new Date();
+    maturityDate.setFullYear(maturityDate.getFullYear() + period);
+    
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      await ensureInvestmentsTable(connection);
+      
+      // Deduct from balance
+      await connection.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amount, user.id]);
+      
+      // Create investment
+      const [result] = await connection.execute(
+        'INSERT INTO investments (userId, product, amount, apy, period, estimatedReturn, maturityDate) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [user.id, product, amount, productInfo.rate, period, estimatedReturn, maturityDate.toISOString().split('T')[0]]
+      );
+      
+      // Record transaction
+      await connection.execute(
+        'INSERT INTO transactions (fromUserId, toUserId, amount, type, description, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, NOW())',
+        [user.id, null, amount, 'investment', `Investment in ${product}`, 'completed']
+      );
+      
+      await connection.commit();
+      
+      res.json({
+        success: true,
+        message: 'Investment created successfully',
+        investment: {
+          id: result.insertId,
+          product,
+          amount,
+          apy: productInfo.rate,
+          period,
+          estimatedReturn,
+          maturityDate: maturityDate.toISOString().split('T')[0]
+        }
+      });
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      await connection.release();
+    }
+  } catch (e) {
+    console.error('[API] invest error', e);
+    res.status(500).json({ success: false, message: 'Investment failed: ' + e.message });
+  }
+});
+
+app.get('/api/investments/my-investments', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      await ensureInvestmentsTable(connection);
+      const [investments] = await connection.execute(
+        'SELECT * FROM investments WHERE userId = ? ORDER BY createdAt DESC',
+        [user.id]
+      );
+      
+      const totalInvested = investments.filter(i => i.status === 'active').reduce((sum, i) => sum + parseFloat(i.amount), 0);
+      const totalEstimatedReturn = investments.filter(i => i.status === 'active').reduce((sum, i) => sum + parseFloat(i.estimatedReturn), 0);
+      
+      res.json({
+        success: true,
+        investments,
+        totalInvested,
+        totalEstimatedReturn
+      });
+    } finally { await connection.release(); }
+  } catch (e) {
+    console.error('[API] my-investments error', e);
+    res.status(500).json({ success: false, message: 'Failed to fetch investments' });
+  }
+});
+
+app.post('/api/investments/:id/withdraw', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.getUserByEmail(req.user.email);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    const pool = await db.initializePool();
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      await ensureInvestmentsTable(connection);
+      
+      const [[investment]] = await connection.execute(
+        'SELECT * FROM investments WHERE id = ? AND userId = ? AND status = ?',
+        [req.params.id, user.id, 'active']
+      );
+      
+      if (!investment) {
+        return res.status(404).json({ success: false, message: 'Investment not found or already withdrawn' });
+      }
+      
+      const isMatured = new Date(investment.maturityDate) <= new Date();
+      let payout = parseFloat(investment.amount);
+      let penalty = 0;
+      
+      if (isMatured) {
+        // Matured - give full amount + returns
+        payout += parseFloat(investment.estimatedReturn);
+      } else {
+        // Early withdrawal - 10% penalty on principal
+        penalty = payout * 0.10;
+        payout -= penalty;
+      }
+      
+      // Update investment status
+      await connection.execute(
+        'UPDATE investments SET status = ? WHERE id = ?',
+        [isMatured ? 'matured' : 'withdrawn', req.params.id]
+      );
+      
+      // Credit user account
+      await connection.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [payout, user.id]);
+      
+      // Record transaction
+      await connection.execute(
+        'INSERT INTO transactions (fromUserId, toUserId, amount, type, description, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, NOW())',
+        [null, user.id, payout, 'investment_withdrawal', `${isMatured ? 'Matured' : 'Early'} withdrawal from ${investment.product}`, 'completed']
+      );
+      
+      await connection.commit();
+      
+      const [[updatedUser]] = await connection.execute('SELECT balance FROM users WHERE id = ?', [user.id]);
+      
+      res.json({
+        success: true,
+        message: isMatured ? 'Investment matured and collected' : 'Investment withdrawn with penalty',
+        payout,
+        penalty,
+        newBalance: parseFloat(updatedUser.balance)
+      });
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      await connection.release();
+    }
+  } catch (e) {
+    console.error('[API] withdraw investment error', e);
+    res.status(500).json({ success: false, message: 'Withdrawal failed: ' + e.message });
   }
 });
 

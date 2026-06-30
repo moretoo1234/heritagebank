@@ -122,9 +122,13 @@ async function initializeSchema() {
           transferRestricted BOOLEAN DEFAULT FALSE,
           isAdmin BOOLEAN DEFAULT FALSE,
           isLocked BOOLEAN DEFAULT FALSE,
+          referralCode VARCHAR(16) UNIQUE,
+          referredBy INT,
           createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_email (email)
+          INDEX idx_email (email),
+          INDEX idx_referralCode (referralCode),
+          FOREIGN KEY (referredBy) REFERENCES users(id)
         )
       `);
       console.log('[DB] ✓ Users table created');
@@ -139,15 +143,108 @@ async function initializeSchema() {
           type VARCHAR(50),
           description TEXT,
           status VARCHAR(50) DEFAULT 'completed',
+          category VARCHAR(50),
           createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (fromUserId) REFERENCES users(id),
           FOREIGN KEY (toUserId) REFERENCES users(id),
           INDEX idx_fromUser (fromUserId),
           INDEX idx_toUser (toUserId),
-          INDEX idx_createdAt (createdAt)
+          INDEX idx_createdAt (createdAt),
+          INDEX idx_category (category)
         )
       `);
       console.log('[DB] ✓ Transactions table created');
+
+      // New tables for features
+      console.log('[DB] Creating scheduled_transfers table...');
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS scheduled_transfers (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          userId INT NOT NULL,
+          recipientId INT,
+          recipientEmail VARCHAR(255),
+          amount DECIMAL(19, 2) NOT NULL,
+          frequency VARCHAR(20) DEFAULT 'once',
+          nextRunDate DATE NOT NULL,
+          endDate DATE,
+          description TEXT,
+          status VARCHAR(20) DEFAULT 'active',
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (userId) REFERENCES users(id),
+          INDEX idx_userId (userId),
+          INDEX idx_nextRunDate (nextRunDate)
+        )
+      `);
+      console.log('[DB] ✓ Scheduled transfers table created');
+
+      console.log('[DB] Creating budgets table...');
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS budgets (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          userId INT NOT NULL,
+          category VARCHAR(50) NOT NULL,
+          limit DECIMAL(12, 2) NOT NULL,
+          month VARCHAR(7) NOT NULL,
+          spent DECIMAL(12, 2) DEFAULT 0,
+          alertSent BOOLEAN DEFAULT FALSE,
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (userId) REFERENCES users(id),
+          INDEX idx_userId (userId),
+          UNIQUE KEY unique_budget (userId, category, month)
+        )
+      `);
+      console.log('[DB] ✓ Budgets table created');
+
+      console.log('[DB] Creating disputes table...');
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS disputes (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          userId INT NOT NULL,
+          transactionId INT,
+          reason TEXT NOT NULL,
+          status VARCHAR(20) DEFAULT 'open',
+          adminNotes TEXT,
+          resolution VARCHAR(50),
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (userId) REFERENCES users(id),
+          INDEX idx_userId (userId),
+          INDEX idx_status (status)
+        )
+      `);
+      console.log('[DB] ✓ Disputes table created');
+
+      console.log('[DB] Creating support_messages table...');
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS support_messages (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          userId INT NOT NULL,
+          adminId INT,
+          message TEXT NOT NULL,
+          senderType VARCHAR(10) DEFAULT 'user',
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (userId) REFERENCES users(id),
+          INDEX idx_userId (userId),
+          INDEX idx_createdAt (createdAt)
+        )
+      `);
+      console.log('[DB] ✓ Support messages table created');
+
+      console.log('[DB] Creating referral_rewards table...');
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS referral_rewards (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          referrerId INT NOT NULL,
+          referredUserId INT NOT NULL,
+          rewardAmount DECIMAL(12, 2) DEFAULT 50,
+          status VARCHAR(20) DEFAULT 'pending',
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (referrerId) REFERENCES users(id),
+          FOREIGN KEY (referredUserId) REFERENCES users(id),
+          INDEX idx_referrerId (referrerId)
+        )
+      `);
+      console.log('[DB] ✓ Referral rewards table created');
+
     } else {
       // Tables already exist in production - just verify they have required columns
       console.log('[DB] ✓ Users table already exists (production schema)');
@@ -159,6 +256,86 @@ async function initializeSchema() {
         console.log('[DB] ✓ Backfilled accountNumber for existing users');
       } catch (backfillErr) {
         console.error('[DB] ✗ Backfill accountNumber failed:', backfillErr.message);
+      }
+      // Create new feature tables if missing
+      try {
+        await connection.execute(`
+          CREATE TABLE IF NOT EXISTS scheduled_transfers (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            userId INT NOT NULL,
+            recipientId INT,
+            recipientEmail VARCHAR(255),
+            amount DECIMAL(19, 2) NOT NULL,
+            frequency VARCHAR(20) DEFAULT 'once',
+            nextRunDate DATE NOT NULL,
+            endDate DATE,
+            description TEXT,
+            status VARCHAR(20) DEFAULT 'active',
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (userId) REFERENCES users(id),
+            INDEX idx_userId (userId),
+            INDEX idx_nextRunDate (nextRunDate)
+          )
+        `);
+        await connection.execute(`
+          CREATE TABLE IF NOT EXISTS budgets (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            userId INT NOT NULL,
+            category VARCHAR(50) NOT NULL,
+            limit DECIMAL(12, 2) NOT NULL,
+            month VARCHAR(7) NOT NULL,
+            spent DECIMAL(12, 2) DEFAULT 0,
+            alertSent BOOLEAN DEFAULT FALSE,
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (userId) REFERENCES users(id),
+            INDEX idx_userId (userId),
+            UNIQUE KEY unique_budget (userId, category, month)
+          )
+        `);
+        await connection.execute(`
+          CREATE TABLE IF NOT EXISTS disputes (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            userId INT NOT NULL,
+            transactionId INT,
+            reason TEXT NOT NULL,
+            status VARCHAR(20) DEFAULT 'open',
+            adminNotes TEXT,
+            resolution VARCHAR(50),
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (userId) REFERENCES users(id),
+            INDEX idx_userId (userId),
+            INDEX idx_status (status)
+          )
+        `);
+        await connection.execute(`
+          CREATE TABLE IF NOT EXISTS support_messages (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            userId INT NOT NULL,
+            adminId INT,
+            message TEXT NOT NULL,
+            senderType VARCHAR(10) DEFAULT 'user',
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (userId) REFERENCES users(id),
+            INDEX idx_userId (userId),
+            INDEX idx_createdAt (createdAt)
+          )
+        `);
+        await connection.execute(`
+          CREATE TABLE IF NOT EXISTS referral_rewards (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            referrerId INT NOT NULL,
+            referredUserId INT NOT NULL,
+            rewardAmount DECIMAL(12, 2) DEFAULT 50,
+            status VARCHAR(20) DEFAULT 'pending',
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (referrerId) REFERENCES users(id),
+            FOREIGN KEY (referredUserId) REFERENCES users(id),
+            INDEX idx_referrerId (referrerId)
+          )
+        `);
+        console.log('[DB] ✓ New feature tables created/verified');
+      } catch (tableErr) {
+        console.error('[DB] ✗ New feature tables may not have been created:', tableErr.message);
       }
     }
 
@@ -348,6 +525,10 @@ async function getUserTransactions(userId, limit = 50) {
   }
 }
 
+function generateReferralCode() {
+  return 'REF' + Math.random().toString(36).substr(2, 10).toUpperCase();
+}
+
 module.exports = {
   initializePool,
   initializeSchema,
@@ -358,5 +539,6 @@ module.exports = {
   setUserLocked,
   getAllUsers,
   recordTransaction,
-  getUserTransactions
+  getUserTransactions,
+  generateReferralCode
 };
